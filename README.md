@@ -80,7 +80,7 @@ And, yes, these are valid reasons considering that Laravel itself created [Herd]
 - Choose to [**setup**](./scripts/setup.sh) your Ubuntu environment first, which will install everything necessary for local Laravel development, and eventually create a [`done-setup.flag`] file in the directory.
 
 - Then choose to either:
-  - Create a [**TALL**](./scripts/TALL/create.sh) project through its management section, then continue onwards with the installed [TALL-Stacker](https://github.com/GoodM4ven/tall-stacker) package via its Artisan command (soon™).
+  - Create a [**TALL**](./scripts/TALL/create.sh) project through its management section, then continue onwards with the installed [TALL-Stacker](https://github.com/GoodM4ven/PACKAGE_LARAVEL_tall-stacker) package via its Artisan command (soon™).
   - Or just create a [**raw**](./scripts/create_raw.sh) Laravel one, instead.
   - You can also [**import**](./scripts/TALL/import.sh) an already existing project into the same TALL setup.
 
