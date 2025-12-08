@@ -151,6 +151,20 @@ minioUp $escaped_project_name
 
 cd $projects_directory/$escaped_project_name
 
+# ? Install Composer dependencies if vendor folder is missing
+if [[ ! -f "vendor/autoload.php" ]]; then
+    echo -e "\nInstalling Composer dependencies for the project..." >&3
+
+    sudo -i -u $USERNAME bash <<EOF
+cd "$projects_directory/$escaped_project_name"
+if $cancel_suppression; then
+    composer install $conditional_quiet 2>&1
+else
+    composer install $conditional_quiet 2>&1 >/dev/null
+fi
+EOF
+fi
+
 # ? Migrate the database
 php artisan migrate:fresh --seed
 

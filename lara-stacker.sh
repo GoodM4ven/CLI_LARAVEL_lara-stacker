@@ -214,9 +214,10 @@ while true; do
             echo "2. Create A Project"
             echo "3. Delete A Project"
             echo "4. Import A Project"
-            echo -e "5. Go Back To Main Menu\n"
+            echo "5. Refresh A Project"
+            echo -e "6. Go Back To Main Menu\n"
 
-            read -p "Choose an operation (1-5): " stack_choice
+            read -p "Choose an operation (1-6): " stack_choice
 
             case $stack_choice in
             1)
@@ -232,6 +233,9 @@ while true; do
                 sudo RAN_MAIN_SCRIPT="true" ./scripts/TALL/import.sh
                 ;;
             5)
+                sudo RAN_MAIN_SCRIPT="true" ./scripts/TALL/refresh.sh
+                ;;
+            6)
                 clear
                 break
                 ;;

@@ -125,15 +125,47 @@ else
     sudo apt install php-xdebug -y 2>&1 >/dev/null
 fi
 
-mkdir -p /home/$USERNAME/.config/xdebug
-touch /home/$USERNAME/.config/xdebug/xdebug.log
+sudo mkdir -p /var/log/xdebug
+sudo touch /var/log/xdebug/xdebug.log
+sudo chown www-data:adm /var/log/xdebug/xdebug.log
+sudo chmod 640 /var/log/xdebug/xdebug.log
 
-sudo chown www-data:www-data /home/$USERNAME/.config/xdebug/xdebug.log
-sudo chmod 664 /home/$USERNAME/.config/xdebug/xdebug.log
+XDEBUG_MODS="/etc/php/${PHP_VERSION}/mods-available/xdebug.ini"
+XDEBUG_APACHE_CONF="/etc/php/${PHP_VERSION}/apache2/conf.d/99-xdebug.ini"
+XDEBUG_CLI_CONF="/etc/php/${PHP_VERSION}/cli/conf.d/99-xdebug.ini"
 
-sudo sed -i "s~zend_extension=xdebug.so~zend_extension=xdebug.so\n\nxdebug.log=\"/home/$USERNAME/.config/xdebug/xdebug.log\"\nxdebug.log_level=10\nxdebug.mode=develop,debug,coverage\nxdebug.client_port=9003\nxdebug.start_with_request=yes\nxdebug.discover_client_host=true~g" "/etc/php/$PHP_VERSION/mods-available/xdebug.ini"
+sudo bash -c "cat > '$XDEBUG_MODS' <<'XEOF'
+zend_extension=xdebug.so
+XEOF"
 
-sudo $lara_stacker_dir/scripts/helpers/permit.sh /home/$USERNAME/.config/xdebug
+sudo bash -c "cat > '$XDEBUG_APACHE_CONF' <<'XEOF'
+; Xdebug (Apache SAPI)
+; Features: develop,debug for day-to-day; coverage is intentionally OFF by default
+xdebug.mode=develop,debug,coverage
+
+; Start only when triggered (browser extension / cookie / GET / POST / env)
+xdebug.start_with_request=trigger
+
+; Auto-discover client host (Docker/WSL/VPN friendly). Alternatively set xdebug.client_host.
+xdebug.discover_client_host=1
+xdebug.client_port=9003
+
+; Logging — keep low to avoid noise; raise to 7-10 if troubleshooting.
+xdebug.log=/var/log/xdebug/xdebug.log
+xdebug.log_level=0
+XEOF"
+
+sudo bash -c "cat > '$XDEBUG_CLI_CONF' <<'XEOF'
+; Xdebug (CLI)
+xdebug.mode=develop,debug,coverage
+xdebug.start_with_request=trigger
+xdebug.discover_client_host=1
+xdebug.client_port=9003
+xdebug.log=/var/log/xdebug/xdebug.log
+xdebug.log_level=0
+XEOF"
+
+# sudo $lara_stacker_dir/scripts/helpers/permit.sh /var/log/xdebug
 
 sudo systemctl restart apache2
 
@@ -283,6 +315,15 @@ else
 fi
 sudo systemctl start mailpit.service
 
+# ? Add an entry for the service to the /etc/hosts file if it doesn't exist
+if ! grep -q "127.0.0.1 mailpit" /etc/hosts; then
+    echo "127.0.0.1 mailpit" | sudo tee -a /etc/hosts >/dev/null
+
+    echo -e "\nAdded the service to [/etc/hosts] file." >&3
+else
+    echo -e "\nThe service mailpit is already in the [/etc/hosts] file." >&3
+fi
+
 # ? Install MinIO (server, client, and service)
 echo -e "\nInstalling MinIO and setting up a service for it..." >&3
 
@@ -328,15 +369,6 @@ RestartSec=10
 [Install]
 WantedBy=multi-user.target" | sudo tee /etc/systemd/system/minio.service >/dev/null
 
-# ? Add an entry for the service to the /etc/hosts file if it doesn't exist
-if ! grep -q "127.0.0.1 mailpit" /etc/hosts; then
-    echo "127.0.0.1 mailpit" | sudo tee -a /etc/hosts >/dev/null
-
-    echo -e "\nAdded the service to [/etc/hosts] file." >&3
-else
-    echo -e "\nThe service mailpit is already in the [/etc/hosts] file." >&3
-fi
-
 sudo systemctl daemon-reload
 if $cancel_suppression; then
     sudo systemctl enable minio.service 2>&1
@@ -344,6 +376,15 @@ else
     sudo systemctl enable minio.service 2>&1 >/dev/null
 fi
 sudo systemctl start minio.service
+
+# ? Add an entry for the service to the /etc/hosts file if it doesn't exist
+if ! grep -q "127.0.0.1 minio" /etc/hosts; then
+    echo "127.0.0.1 minio" | sudo tee -a /etc/hosts >/dev/null
+
+    echo -e "\nAdded the service to [/etc/hosts] file." >&3
+else
+    echo -e "\nThe service minio is already in the [/etc/hosts] file." >&3
+fi
 
 sleep 5
 
