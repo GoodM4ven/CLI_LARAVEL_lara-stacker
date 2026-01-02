@@ -389,7 +389,7 @@ fi
 sleep 5
 
 sudo -i -u $USERNAME bash <<EOF
-minio-client alias set myminio/ http://localhost:9000 minioadmin minioadmin
+minio-client alias set myminio http://localhost:9000 minioadmin minioadmin
 EOF
 
 if [ -n "$EXPOSE_TOKEN" ]; then

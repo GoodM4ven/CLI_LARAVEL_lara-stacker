@@ -1,16 +1,21 @@
 minioUp() {
     # ? Take in the arguments
     local escaped_project_name="$1"
+    local minio_alias="myminio"
 
     local projects_directory=/var/www/html
 
-    # ? Create the bucket via MinIO
-    cd /home/$USERNAME/.config/minio/data/ && minio-client mb --region=us-east-1 $escaped_project_name
-
-    # ? Update its privacy setting to public
+    # ? Ensure the MinIO alias exists (covers legacy setups) and create bucket
     sudo -i -u $USERNAME bash <<EOF
-cd /home/$USERNAME/
-minio-client anonymous set public myminio/$escaped_project_name
+minio_alias="$minio_alias"
+escaped_project_name="$escaped_project_name"
+
+if ! minio-client alias list 2>/dev/null | awk 'NR>1 {print \$1}' | grep -qx "\$minio_alias"; then
+    minio-client alias set "\$minio_alias" http://localhost:9000 minioadmin minioadmin
+fi
+
+cd /home/$USERNAME/.config/minio/data/ && minio-client mb --region=us-east-1 "\$minio_alias/\$escaped_project_name"
+minio-client anonymous set public "\$minio_alias/\$escaped_project_name"
 EOF
 
     # ? Ensure proper system permissions over the data

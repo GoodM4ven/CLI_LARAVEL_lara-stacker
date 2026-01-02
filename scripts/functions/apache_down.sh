@@ -22,10 +22,10 @@ apacheDown() {
     # ? Remove site's url from the system hosts file
     # ? ===========================================
 
-    local pattern="127.0.0.1\s*$escaped_project_name\.test"
+    local host_entry="127.0.0.1 $escaped_project_name.test"
 
-    if grep -q "$pattern" /etc/hosts; then
-        sudo sed -i "/^$pattern/d" /etc/hosts
+    if grep -Fq "$host_entry" /etc/hosts; then
+        sudo sed -i "\|$host_entry|d" /etc/hosts
 
         echo -e "\nRemoved the site from [/etc/hosts] file." >&3
     else

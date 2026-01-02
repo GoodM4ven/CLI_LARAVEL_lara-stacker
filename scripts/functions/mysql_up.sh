@@ -24,12 +24,27 @@ mysqlUp() {
         cd $projects_directory/$db_or_project_name
 
         # ? Modify the Laravel project's environment variables
-        sed -i "s/DB_CONNECTION=sqlite/DB_CONNECTION=mysql/g" ./.env
-        sed -i "s/# DB_HOST=127.0.0.1/DB_HOST=127.0.0.1/g" ./.env
-        sed -i "s/# DB_PORT=3306/DB_PORT=3306/g" ./.env
-        sed -i "s/# DB_DATABASE=laravel/DB_DATABASE=$db_name/g" ./.env
-        sed -i "s/# DB_USERNAME=root/DB_USERNAME=root/g" ./.env
-        sed -i "s/# DB_PASSWORD=/DB_PASSWORD=$DB_PASSWORD/g" ./.env
+        local env_file="./.env"
+
+        set_env_var() {
+            local key="$1"
+            local value="$2"
+            local escaped_value
+            escaped_value=$(printf '%s\n' "$value" | sed -e 's/[\\/&|]/\\&/g')
+
+            if grep -q "^$key=" "$env_file"; then
+                sed -i -E "s|^$key=.*|$key=$escaped_value|" "$env_file"
+            else
+                echo "$key=$value" >>"$env_file"
+            fi
+        }
+
+        set_env_var "DB_CONNECTION" "mysql"
+        set_env_var "DB_HOST" "127.0.0.1"
+        set_env_var "DB_PORT" "3306"
+        set_env_var "DB_DATABASE" "$db_name"
+        set_env_var "DB_USERNAME" "root"
+        set_env_var "DB_PASSWORD" "$DB_PASSWORD"
 
         echo -e "\nSet up MySQL in the project's environment variables file." >&3
     fi

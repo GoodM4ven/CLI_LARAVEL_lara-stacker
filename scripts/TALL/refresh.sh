@@ -110,15 +110,46 @@ else
 fi
 EOF
 
-export BUN="/home/$USERNAME/.bun/bin/bun"
-sudo -i -u $USERNAME bash <<EOF
+package_manager=""
+BUN_PATH=""
+
+if command -v bun >/dev/null 2>&1; then
+    BUN_PATH="$(command -v bun)"
+elif [ -x "/home/$USERNAME/.bun/bin/bun" ]; then
+    BUN_PATH="/home/$USERNAME/.bun/bin/bun"
+fi
+
+if [[ -n "$BUN_PATH" ]]; then
+    package_manager="bun"
+elif command -v npm >/dev/null 2>&1; then
+    package_manager="npm"
+fi
+
+case "$package_manager" in
+    bun)
+        sudo -i -u $USERNAME bash <<EOF
 cd "$project_path"
 if $cancel_suppression; then
-    $BUN install --no-interaction 2>&1
+    "$BUN_PATH" install --no-interaction 2>&1
 else
-    $BUN install --no-interaction 2>&1 >/dev/null
+    "$BUN_PATH" install --no-interaction 2>&1 >/dev/null
 fi
 EOF
+        ;;
+    npm)
+        sudo -i -u $USERNAME bash <<EOF
+cd "$project_path"
+if $cancel_suppression; then
+    npm install 2>&1
+else
+    npm install 2>&1 >/dev/null
+fi
+EOF
+        ;;
+    *)
+        echo -e "Skipped JS dependencies reinstall (bun/npm not found)." >&3
+        ;;
+esac
 
 cd "$project_path"
 
