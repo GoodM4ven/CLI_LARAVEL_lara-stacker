@@ -92,6 +92,9 @@ viteUp() {
             cert: certPath,\n\
             key: keyPath,\n\
         },\n\
+        watch: {\n\
+            ignored: ['"'"'**/storage/framework/views/**'"'"'],\n\
+        },\n\
     },' "$FILE"
 
         # ? Remove leftover empty lines 

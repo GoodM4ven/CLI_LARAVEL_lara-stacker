@@ -27,16 +27,16 @@ mysqlUp() {
         local env_file="./.env"
 
         set_env_var() {
-            local key="$1"
-            local value="$2"
-            local escaped_value
-            escaped_value=$(printf '%s\n' "$value" | sed -e 's/[\\/&|]/\\&/g')
+        local key="$1"
+        local value="$2"
+        local escaped_value
+        escaped_value=$(printf '%s' "$value" | sed -e 's/[\\/&|]/\\&/g')
 
-            if grep -q "^$key=" "$env_file"; then
-                sed -i -E "s|^$key=.*|$key=$escaped_value|" "$env_file"
-            else
-                echo "$key=$value" >>"$env_file"
-            fi
+        if grep -Eq "^[#[:space:]]*${key}=" "$env_file"; then
+            sed -i -E "0,/^[#[:space:]]*${key}=/{s|^[#[:space:]]*${key}=.*|${key}=${escaped_value}|}" "$env_file"
+        else
+            echo "$key=$value" >>"$env_file"
+        fi
         }
 
         set_env_var "DB_CONNECTION" "mysql"

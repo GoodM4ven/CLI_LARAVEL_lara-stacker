@@ -9,17 +9,24 @@ clear
 current_version="???"
 is_updateable=false
 script_dir="$(pwd)"
+git_runner=()
+git_remote_url=""
 
 if command -v git &> /dev/null && [ -d ".git" ]; then
-    is_updateable=true
-    
-    # ? Add the current script directory to the Git safe list
-    git config --global --add safe.directory "$script_dir"
-fi
+    if [[ -n "$SUDO_USER" ]]; then
+        git_runner=(sudo -u "$SUDO_USER" git -C "$script_dir")
+    else
+        git_runner=(git -C "$script_dir")
+    fi
 
-if [[ "$is_updateable" == true ]]; then
-    # ? Fetch the latest commit message that starts with a version tag
-    current_version=$(git log --pretty=format:'%s' | grep -o '\[v[0-9]*\.[0-9]*\.[0-9]*\]' | head -1 | tr -d '[]')
+    if "${git_runner[@]}" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+        is_updateable=true
+        git_remote_url=$("${git_runner[@]}" config --get remote.origin.url 2>/dev/null || true)
+
+        current_version=$("${git_runner[@]}" describe --tags --abbrev=0 2>/dev/null \
+            || "${git_runner[@]}" rev-parse --short HEAD 2>/dev/null \
+            || echo "???")
+    fi
 fi
 
 echo -e "-=|[ LARA-STACKER $current_version ]|=-"
@@ -121,15 +128,17 @@ update_available=false
 latest_version=""
 
 # ? Check for updates if it's possible
-if [[ "$is_updateable" == true ]]; then
-    git fetch origin
+if [[ "$is_updateable" == true && -n "$git_remote_url" ]]; then
+    latest_version=$(git ls-remote --tags "$git_remote_url" "v*" 2>/dev/null | awk '{print $2}' | sed 's#refs/tags/##' | sed 's#\^{}##' | sort -V | tail -1)
 
-    LOCAL=$(git rev-parse @)
-    REMOTE=$(git rev-parse "origin/main")
+    local_head=$("${git_runner[@]}" rev-parse HEAD 2>/dev/null)
+    remote_main=$(git ls-remote "$git_remote_url" "refs/heads/main" 2>/dev/null | awk '{print $1}')
 
-    if [ "$LOCAL" != "$REMOTE" ]; then
+    if [[ -n "$latest_version" && "$latest_version" != "$current_version" ]]; then
         update_available=true
-        latest_version=$(git ls-remote --tags origin | grep -o 'v[0-9]*\.[0-9]*\.[0-9]*$' | sort -V | tail -1)
+    elif [[ -n "$remote_main" && -n "$local_head" && "$remote_main" != "$local_head" ]]; then
+        update_available=true
+        latest_version="${latest_version:-${remote_main:0:7}}"
     fi
 fi
 
