@@ -29,22 +29,39 @@ if command -v git &> /dev/null && [ -d ".git" ]; then
     fi
 fi
 
-echo -e "   __     ___   ___   ___        _____ _______ _____ _____ _  __ ______ _   __\n  / /    / _ \\ / _ \\ / _ \\      / ____|__   __|_   _/ ____| |/ /|  ____| | / /\n / /    | | | | | | | | | |____| (___    | |    | || |    | ' / | |__  | |/ / \n \\ \\    | |_| | |_| | |_| |____|\\___ \\   | |    | || |    |  <  |  __| |    \\ \\\n  \\_\\    \\___/ \\___/ \\___/      ____) |  | |   _| || |____| . \\ | |____| |\\  \\\n                          v4 |_____/   |_|  |_____\\_____|_|\\_\\|______|_| \\_\\\n"
+cat <<'EOF'
+ _               _____                 _____ _______       _____ _  __ _____ _____  
+| |        /\   |  __ \     /\        / ____|__   __|/\   / ____| |/ /  ____|  __ \ 
+| |       /  \  | |__) |   /  \ _____| (___    | |  /  \ | |    | ' /| |__  | |__) |
+| |      / /\ \ |  _  /   / /\ \______\___ \   | | / /\ \| |    |  < |  __| |  _  / 
+| |____ / ____ \| | \ \  / ____ \     ____) |  | |/ ____ \ |____| . \| |____| | \ \ 
+|______/_/    \_\_|  \_\/_/    \_\   |_____/   |_/_/    \_\_____|_|\_\______|_|  \_\
+EOF
 
 release_version="unknown"
 if command -v curl >/dev/null 2>&1 && [[ -n "$git_remote_url" ]]; then
-    if [[ "$git_remote_url" =~ github.com[:/](.+)/(.+?)(\\.git)?$ ]]; then
+    if [[ "$git_remote_url" =~ github.com[:/]+([^/]+)/([^/]+)(\\.git)?$ ]]; then
         repo_owner="${BASH_REMATCH[1]}"
         repo_name="${BASH_REMATCH[2]}"
+        repo_name="${repo_name%.git}"
         api_url="https://api.github.com/repos/$repo_owner/$repo_name/releases/latest"
-        release_version=$(curl -fsSL --max-time 2 "$api_url" | awk -F'\"' '/\"tag_name\":/ {print $4; exit}')
+        release_json=$(curl -sL --max-time 2 "$api_url" 2>/dev/null || true)
+        if [[ -n "$release_json" ]]; then
+            release_version=$(printf '%s' "$release_json" | grep -m1 '"tag_name":' | cut -d'"' -f4)
+        fi
+        if [[ -z "$release_version" ]]; then
+            tags_json=$(curl -sL --max-time 2 "https://api.github.com/repos/$repo_owner/$repo_name/tags?per_page=1" 2>/dev/null || true)
+            if [[ -n "$tags_json" ]]; then
+                release_version=$(printf '%s' "$tags_json" | grep -m1 '"name":' | cut -d'"' -f4)
+            fi
+        fi
         if [[ -z "$release_version" ]]; then
             release_version="unknown"
         fi
     fi
 fi
 
-echo -e "Local:   $current_version"
+echo -e "\nLocal:   $current_version"
 echo -e "Release: $release_version\n"
 
 # * ===========
