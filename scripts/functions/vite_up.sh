@@ -16,6 +16,7 @@ viteUp() {
     fi
 
     local vite_host="vite-${escaped_project_name}.${domain_suffix}"
+    local https_port="${CADDY_HTTPS_PORT:-8443}"
 
     if grep -q "server:" "$file"; then
         if grep -q "hmr:" "$file"; then
@@ -23,7 +24,7 @@ viteUp() {
             return 0
         fi
 
-        local insert="        host: true,\n        strictPort: true,\n        port: 5173,\n        hmr: {\n            host: '${vite_host}',\n            protocol: 'wss',\n            clientPort: 443,\n        },"
+        local insert="        host: true,\n        strictPort: true,\n        port: 5173,\n        hmr: {\n            host: '${vite_host}',\n            protocol: 'wss',\n            clientPort: ${https_port},\n        },"
 
         awk -v insert="$insert" '
         {
@@ -45,7 +46,7 @@ viteUp() {
         hmr: {\n\
             host: '$vite_host',\n\
             protocol: 'wss',\n\
-            clientPort: 443,\n\
+            clientPort: ${https_port},\n\
         },\n\
     }," "$file"
 

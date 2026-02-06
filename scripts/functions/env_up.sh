@@ -48,11 +48,17 @@ envUp() {
     local app_domain="${escaped_project_name}.${domain_suffix}"
     local vite_domain="vite-${escaped_project_name}.${domain_suffix}"
 
+    local https_port="${CADDY_HTTPS_PORT:-8443}"
+    local https_suffix=""
+    if [[ "$https_port" != "443" ]]; then
+        https_suffix=":$https_port"
+    fi
+
     local db_name
     db_name=$(echo "$escaped_project_name" | sed 's/\([[:lower:]]\)\([[:upper:]]\)/\1_\2/g' | sed 's/\([[:upper:]]\)\([[:upper:]][[:lower:]]\)/\1_\2/g' | tr '-' '_' | tr '[:upper:]' '[:lower:]' | sed 's/__/_/g' | sed 's/^_//')
 
     set_env_var "APP_NAME" "$escaped_project_name"
-    set_env_var "APP_URL" "https://${app_domain}"
+    set_env_var "APP_URL" "https://${app_domain}${https_suffix}"
 
     set_env_var "DB_CONNECTION" "mysql"
     set_env_var "DB_HOST" "mysql"
@@ -85,7 +91,7 @@ envUp() {
         set_env_var "AWS_USE_PATH_STYLE_ENDPOINT" "true"
     fi
 
-    set_env_var "VITE_DEV_SERVER_URL" "https://${vite_domain}"
+    set_env_var "VITE_DEV_SERVER_URL" "https://${vite_domain}${https_suffix}"
 
     echo -e "\nWired Docker services into the project's .env file." >&3
 }

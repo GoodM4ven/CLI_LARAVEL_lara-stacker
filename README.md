@@ -24,7 +24,7 @@ Now **Docker-only**! It runs a single containerized stack that serves **all** La
 
 ### Installation
 
-1. Clone this repo, the `docker` branch of course.
+1. Clone this repo, from the new main `docker` branch of course.
 2. Create `.env` from `.env.example` and fill the values.
    ```bash
    cp .env.example .env
@@ -54,6 +54,9 @@ Projects:
 Extra:
 - `Trust HTTPS (Caddy CA)` — installs the local CA for clean HTTPS
 
+Access:
+- Visit: `https://<app>.localhost:8443` (or the `CADDY_HTTPS_PORT` value)
+
 ### Configuration
 
 Edit `.env`:
@@ -61,6 +64,7 @@ Edit `.env`:
 - `APP_ROOT` (default `/var/www/html`): where projects live
 - `APP_DOMAIN_SUFFIX` (default `localhost`)
 - `DOCKER_PROFILES` (default `redis,mailpit,minio`)
+- `CADDY_HTTP_PORT` and `CADDY_HTTPS_PORT` (default `8080/8443`)
 - `PHP_VERSION` and `NODE_VERSION`
 - `AUTO_TRUST_HTTPS=true` to install Caddy’s local CA automatically
 - `USE_VSC=true` to generate Xdebug `launch.json` files
@@ -79,9 +83,19 @@ The CLI will create `APP_ROOT` if missing and make it owned by `USERNAME`.
 ### Notes
 
 - Projects can be **disabled** via the CLI. This creates a `.disabled` file, and Caddy responds with 503 while keeping files intact.
-- Vite HMR is exposed via `https://vite-<app>.localhost`. Run: `docker compose -f ./compose.yaml --project-name lara-stacker exec app bash -lc "cd /var/www/html/<app> && npm run dev"`
-- Optional UIs: Mailpit at `http://mailpit.localhost`, MinIO Console at `http://minio.localhost`, etc.
+- Vite HMR is exposed via `https://vite-<app>.localhost:8443`. Run: `docker compose -f ./compose.yaml --project-name lara-stacker exec app bash -lc "cd /var/www/html/<app> && npm run dev"`
+- Optional UIs: `https://mailpit.localhost:8443` and `https://minio.localhost:8443` (or use the host ports below)
 - If `certutil` is available, the CLI also adds the CA to the NSS store for browsers that use it.
+
+### Ports
+
+This stack is isolated from host installs (v3-style). It only conflicts if a host service already uses these same ports:
+
+- [Caddy](https://caddyserver.com/): `8080/8443`
+- [MySQL](https://www.mysql.com/): `3307` (container `3306`)
+- [Redis](https://redis.io/): `6380` (container `6379`)
+- [Mailpit](https://mailpit.axllent.org/) SMTP/UI: `1026` / `8026`
+- [MinIO](https://www.min.io/) API/Console: `9100` / `9101`
 
 
 ## Support

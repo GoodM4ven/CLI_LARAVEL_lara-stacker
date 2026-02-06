@@ -2,8 +2,8 @@ services:
   caddy:
     image: caddy:2
     ports:
-      - "80:80"
-      - "443:443"
+      - "${CADDY_HTTP_PORT:-8080}:80"
+      - "${CADDY_HTTPS_PORT:-8443}:443"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
@@ -41,22 +41,22 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
     ports:
-      - "3306:3306"
+      - "3307:3306"
 
   redis:
     image: redis:7-alpine
     profiles:
       - redis
     ports:
-      - "6379:6379"
+      - "6380:6379"
 
   mailpit:
     image: axllent/mailpit:latest
     profiles:
       - mailpit
     ports:
-      - "1025:1025"
-      - "8025:8025"
+      - "1026:1025"
+      - "8026:8025"
 
   minio:
     image: minio/minio:latest
@@ -69,8 +69,8 @@ services:
     volumes:
       - minio_data:/data
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "9100:9000"
+      - "9101:9001"
 
   minio-client:
     image: minio/mc
