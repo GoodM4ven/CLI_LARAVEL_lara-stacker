@@ -149,24 +149,37 @@ while true; do
 
     echo -e "Available Operations:\n"
 
-    echo "1. Start Stack"
-    echo "2. Stop Stack"
-    echo "3. Stack Status"
-    echo "4. List Projects"
-    echo "5. Create A Project"
-    echo "6. Import A Project"
-    echo "7. Refresh A Project"
-    echo "8. Delete A Project"
-    echo "9. Wire Project .env"
-    echo "10. Enable A Project"
-    echo "11. Disable A Project"
+    echo "    Project Management"
+    echo "    =================="
+    echo "01. List Projects"
+    echo "02. Create Project"
+    echo "03. Import Project"
+    echo "04. Refresh Project"
+    echo "05. Delete Project"
+    echo "06. Wire Project Environment File"
+    echo "07. Enable Project"
+    echo -e "08. Disable Project\n"
+
+    echo "    Stack Setup"
+    echo "    ==========="
+    echo "09. Start Stack"
+    echo "10. Stop Stack"
+    echo "11. Stack Status"
     echo "12. Trust HTTPS (Caddy CA)"
-    echo -e "13. Exit\n"
+    echo "13. Purge Stack (containers/images/volumes/cache)"
+    echo -e "14. Exit\n"
 
     if [[ $counter -eq 1 && "$1" ]]; then
         choice="$1"
     else
-        read -p "Choose an operation (1-13): " choice
+        read -p "Choose an operation (1-14): " choice
+    fi
+    choice=$(echo "$choice" | tr -d '[:space:]')
+    if [[ "$choice" =~ ^0+[0-9]+$ ]]; then
+        choice="$(echo "$choice" | sed 's/^0\+//')"
+        if [[ -z "$choice" ]]; then
+            choice="0"
+        fi
     fi
 
     clear
@@ -174,42 +187,45 @@ while true; do
     # ? Options logic
     case $choice in
     1)
-        RAN_MAIN_SCRIPT="true" ./scripts/up.sh
-        ;;
-    2)
-        RAN_MAIN_SCRIPT="true" ./scripts/down.sh
-        ;;
-    3)
-        RAN_MAIN_SCRIPT="true" ./scripts/status.sh
-        ;;
-    4)
         RAN_MAIN_SCRIPT="true" ./scripts/list.sh
         ;;
-    5)
+    2)
         RAN_MAIN_SCRIPT="true" ./scripts/create.sh
         ;;
-    6)
+    3)
         RAN_MAIN_SCRIPT="true" ./scripts/import.sh
         ;;
-    7)
+    4)
         RAN_MAIN_SCRIPT="true" ./scripts/refresh.sh
         ;;
-    8)
+    5)
         RAN_MAIN_SCRIPT="true" ./scripts/delete.sh
         ;;
-    9)
+    6)
         RAN_MAIN_SCRIPT="true" ./scripts/env.sh
         ;;
-    10)
+    7)
         RAN_MAIN_SCRIPT="true" ./scripts/enable.sh
         ;;
-    11)
+    8)
         RAN_MAIN_SCRIPT="true" ./scripts/disable.sh
+        ;;
+    9)
+        RAN_MAIN_SCRIPT="true" ./scripts/up.sh
+        ;;
+    10)
+        RAN_MAIN_SCRIPT="true" ./scripts/down.sh
+        ;;
+    11)
+        RAN_MAIN_SCRIPT="true" ./scripts/status.sh
         ;;
     12)
         RAN_MAIN_SCRIPT="true" ./scripts/trust.sh
         ;;
     13)
+        RAN_MAIN_SCRIPT="true" ./scripts/purge.sh
+        ;;
+    14)
         echo -e "\nExiting Lara-Stacker...\n"
         exit 0
         ;;

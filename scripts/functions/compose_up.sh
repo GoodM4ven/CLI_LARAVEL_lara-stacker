@@ -20,7 +20,8 @@ composeUp() {
         normalized_profiles=$(IFS=,; echo "${sorted_profiles[*]}")
     fi
 
-    local state_file="$PWD/.stacker-build.env"
+    local state_dir="${HOME:-/tmp}/.lara-stacker"
+    local state_file="$state_dir/stacker-build.env"
     local last_php_version=""
     local last_node_version=""
     local last_profiles=""
@@ -46,16 +47,35 @@ composeUp() {
         profiles_changed="true"
     fi
 
-    if [[ "$profiles_changed" == "true" ]]; then
+    local faulty="false"
+    local ps_output
+    ps_output=$(dockerCompose ps -a --format '{{.Name}}|{{.State}}|{{.Status}}' 2>/dev/null || true)
+    if [[ -n "$ps_output" ]]; then
+        while IFS='|' read -r name state status; do
+            [[ -z "$name" ]] && continue
+            if [[ "$state" != "running" ]] || [[ "$status" =~ (unhealthy|Exited|exited|dead|restarting) ]]; then
+                faulty="true"
+                break
+            fi
+        done <<< "$ps_output"
+    fi
+
+    if [[ "$profiles_changed" == "true" ]] || [[ "$faulty" == "true" ]]; then
         dockerCompose down
     fi
 
+    local up_status=0
     if [[ "$need_rebuild" == "true" ]]; then
-        dockerCompose "${profiles[@]}" up -d --remove-orphans --build
+        dockerCompose "${profiles[@]}" up -d --remove-orphans --build || up_status=$?
     else
-        dockerCompose "${profiles[@]}" up -d --remove-orphans
+        dockerCompose "${profiles[@]}" up -d --remove-orphans || up_status=$?
     fi
 
+    if [[ "$up_status" -ne 0 ]]; then
+        return "$up_status"
+    fi
+
+    mkdir -p "$state_dir" 2>/dev/null || true
     cat > "$state_file" <<EOF
 STACKER_PHP_VERSION="$current_php"
 STACKER_NODE_VERSION="$current_node"

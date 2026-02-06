@@ -1,9 +1,40 @@
 ARG PHP_VERSION=8.3
-FROM php:${PHP_VERSION}-fpm
+FROM php:${PHP_VERSION}-fpm-bookworm
 
 # System dependencies
 ARG NODE_VERSION=20
-RUN apt-get update \
+ARG APT_MIRROR=deb.debian.org
+ARG APT_SECURITY_MIRROR=security.debian.org
+ARG APT_PROXY=
+ARG INSTALL_MEDIA_TOOLS=true
+RUN mirror="$APT_MIRROR"; \
+    security="$APT_SECURITY_MIRROR"; \
+    case "$mirror" in \
+        http://*|https://*) ;; \
+        "") mirror="https://deb.debian.org" ;; \
+        *) mirror="https://$mirror" ;; \
+    esac; \
+    case "$security" in \
+        http://*|https://*) ;; \
+        "") security="https://security.debian.org" ;; \
+        *) security="https://$security" ;; \
+    esac; \
+    mirror="${mirror%/}"; \
+    security="${security%/}"; \
+    if [ -f /etc/apt/sources.list ]; then \
+        sed -i "s|http://deb.debian.org|$mirror|g; s|https://deb.debian.org|$mirror|g; s|http://security.debian.org|$security|g; s|https://security.debian.org|$security|g" /etc/apt/sources.list; \
+    fi; \
+    if [ -f /etc/apt/sources.list.d/debian.sources ]; then \
+        sed -i "s|http://deb.debian.org|$mirror|g; s|https://deb.debian.org|$mirror|g; s|http://security.debian.org|$security|g; s|https://security.debian.org|$security|g" /etc/apt/sources.list.d/debian.sources; \
+    fi
+RUN if [ -n "$APT_PROXY" ]; then \
+        echo "Acquire::http::Proxy \"$APT_PROXY\";" > /etc/apt/apt.conf.d/01proxy; \
+        echo "Acquire::https::Proxy \"$APT_PROXY\";" >> /etc/apt/apt.conf.d/01proxy; \
+    fi
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    rm -f /var/lib/apt/lists/lock /var/cache/apt/archives/lock /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock; \
+    apt-get update \
     && apt-get install -y --no-install-recommends \
         ca-certificates \
         curl \
@@ -20,16 +51,8 @@ RUN apt-get update \
         libicu-dev \
         libsqlite3-dev \
         libcurl4-openssl-dev \
-        libmagickwand-dev \
-        imagemagick \
-        ghostscript \
-        ffmpeg \
-        python3 \
-        python3-pip \
-        python3-venv \
-        watchman \
-        libpcre3 \
-        openjdk-17-jdk \
+        libpcre2-8-0 \
+        libpcre2-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install \
         bcmath \
@@ -47,10 +70,26 @@ RUN apt-get update \
         xml \
     && pecl install xdebug \
     && pecl install redis \
-    && pecl install imagick \
-    && docker-php-ext-enable xdebug redis imagick opcache \
-    && python3 -m pip install --no-cache-dir pywatchman \
+    && docker-php-ext-enable xdebug redis opcache \
     && rm -rf /var/lib/apt/lists/*
+
+# Optional media tools + imagick (cached separately)
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    if [ "$INSTALL_MEDIA_TOOLS" = "true" ]; then \
+        rm -f /var/lib/apt/lists/lock /var/cache/apt/archives/lock /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock; \
+        apt-get update \
+        && apt-get install -y --no-install-recommends \
+            libmagickwand-dev \
+            imagemagick \
+            ghostscript \
+            ffmpeg \
+        && pecl install imagick \
+        && docker-php-ext-enable imagick \
+        && rm -rf /var/lib/apt/lists/*; \
+    fi
+
+# Host-only tools (watchman, java) are intentionally not installed here.
 
 # Node.js (for Vite)
 RUN curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION}.x | bash - \

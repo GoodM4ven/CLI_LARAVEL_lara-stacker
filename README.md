@@ -10,7 +10,7 @@ Now **Docker-only**! It runs a single containerized stack that serves **all** La
 
 - One Docker stack, many projects.
 - `https://<app>.localhost` for every project (no `/etc/hosts`).
-- Optional services via profiles: MySQL, Redis, Mailpit, MinIO.
+- Optional services via profiles: Redis, Mailpit, MinIO, PostgreSQL.
 - Xdebug is **trigger-only** (no idle cost).
 - Enable/disable projects without deleting them.
 
@@ -39,7 +39,7 @@ Now **Docker-only**! It runs a single containerized stack that serves **all** La
 Container:
 - `Start Stack` — boots the Docker stack and prepares HTTPS (auto-trusts if enabled)
 - `Stop Stack` — shuts down all stack services
-- `Stack Status` — shows running containers in the stack
+- `Stack Status` — shows running container in the stack
 
 Projects:
 - `List Projects` — lists folders under `APP_ROOT` and whether they’re enabled
@@ -54,27 +54,51 @@ Projects:
 Extra:
 - `Trust HTTPS (Caddy CA)` — installs the local CA for clean HTTPS
   - Requires sudo once to write to system trust store
+- `Purge Stack` — removes all stack containers, images, volumes, networks, and build cache
 
 Access:
 - Visit: `https://<app>.localhost:8443` (or `https://<app>.localhost` if `CADDY_HTTPS_PORT=443`)
 
+### Responsibilities
+
+**What the container does for you (main services + runtime stack):**
+- Runs the **main services** and exposes them on ports (Caddy + PHP-FPM, MySQL, and optional Redis/Mailpit/MinIO/PostgreSQL via profiles).
+- Installs the **runtime stack** needed to serve apps **inside the container** (PHP + extensions).
+- Installs **container-side build tools** (Composer, Node.js + npm) for project creation inside Docker.
+- Optionally installs **media tooling** (ImageMagick/Ghostscript/FFmpeg) when `INSTALL_MEDIA_TOOLS=true`.
+
+**What the container does NOT do for you (and you must install it yourself):**
+- The **same build tools** in order to run them locally (Composer, Node.js + npm).
+- Java, Android tooling, pywatchman, etc (for NativePHP development).
+
+In short: **Docker provides shared tools for container workflows**, but **you still need the shared tools on the host for local/IDE workflows**.
+
 ### Configuration
 
-Edit `.env`:
+Edit `.env` (same order as the file):
 
-- `APP_ROOT` (default `/var/www/html`): where projects live
-- Inside containers, projects are always mounted at `/var/www/html` (Caddy/PHP-FPM depend on this)
-- Domains are always `https://<app>.localhost`
-- `DOCKER_PROFILES` (default `redis,mailpit,minio`) — available: `redis`, `mailpit`, `minio` (MySQL is always on)
-- `CADDY_HTTP_PORT` and `CADDY_HTTPS_PORT` (default `8080/8443`, recommend `80/443` if free)
-- `PHP_VERSION` and `NODE_VERSION` (changing these triggers a rebuild on next `Start Stack`)
-- `AUTO_TRUST_HTTPS=true` to install Caddy’s local CA automatically
-- `USE_VSC=true` to generate Xdebug `launch.json` files
-- `VSC_WORKSPACES_DIR` to auto-create `.code-workspace` files (leave empty to disable)
-- `OPINIONATED=true` to copy `files/.opinionated/.prettierrc` into projects
-- When `USE_VSC=true`, the CLI also copies `files/.vscode/launch.json` into each project
+Host
+- `USERNAME` — system user that owns project files
+- `DB_PASSWORD` — root password for MySQL/PostgreSQL container images
+- `APP_ROOT` (default `/var/www/html`) — host directory where projects live
+- `OPINIONATED` — copy opinionated project files (Prettier config)
+- `USE_VSC` — generate Xdebug `launch.json` files
+- `VSC_WORKSPACES_DIR` — auto-create `.code-workspace` files (leave empty to disable)
 
-The CLI will create `APP_ROOT` if missing and make it owned by `USERNAME`.
+Container
+- `DOCKER_COMPOSE_FILE` — override the compose file path
+- `DOCKER_PROFILES` (default `redis,mailpit,minio`) — available: `redis`, `mailpit`, `minio`, `postgres` (MySQL always on)
+- `PHP_VERSION` / `NODE_VERSION` — changing triggers a rebuild on next `Start Stack`
+- `AUTO_TRUST_HTTPS` — auto-install Caddy’s local CA
+- `APT_MIRROR` — Debian main mirror (HTTPS)
+- `APT_SECURITY_MIRROR` — Debian security mirror (HTTPS)
+- `APT_PROXY` — apt proxy (e.g., `http://host.docker.internal:3142`)
+- `INSTALL_MEDIA_TOOLS` — ImageMagick/Ghostscript/FFmpeg + imagick extension
+- `CADDY_HTTP_PORT` / `CADDY_HTTPS_PORT` — host ports for Caddy (use `80/443` if free)
+
+Notes:
+- When `USE_VSC=true`, the CLI also copies `files/.vscode/launch.json` into each project.
+- The CLI will create `APP_ROOT` if missing and make it owned by `USERNAME`.
 
 ### Xdebug (On-Demand)
 
@@ -84,6 +108,7 @@ The CLI will create `APP_ROOT` if missing and make it owned by `USERNAME`.
 
 ### Notes
 
+- Inside the container, projects are always mounted at `/var/www/html` (Caddy/PHP-FPM depend on this).
 - Projects can be **disabled** via the CLI. This creates a `.disabled` file, and Caddy responds with 503 while keeping files intact.
 - Vite HMR is exposed via `https://vite-<app>.localhost:8443`. Run: `docker compose -f ./compose.yaml --project-name lara-stacker exec app bash -lc "cd /var/www/html/<app> && npm run dev"`
 - Optional UIs: `https://mailpit.localhost:8443` and `https://minio.localhost:8443` (or use the host ports below)
@@ -99,6 +124,7 @@ This stack is isolated from host installs (v4-style). It only conflicts if a hos
 - [Redis](https://redis.io/): `6380` (container `6379`)
 - [Mailpit](https://mailpit.axllent.org/) SMTP/UI: `1026` / `8026`
 - [MinIO](https://www.min.io/) API/Console: `9100` / `9101`
+- [PostgreSQL](https://www.postgresql.org/): `5433` (container `5432`)
 
 
 ## Support

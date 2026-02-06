@@ -60,12 +60,27 @@ envUp() {
     set_env_var "APP_NAME" "$escaped_project_name"
     set_env_var "APP_URL" "https://${app_domain}${https_suffix}"
 
-    set_env_var "DB_CONNECTION" "mysql"
-    set_env_var "DB_HOST" "mysql"
-    set_env_var "DB_PORT" "3306"
+    local db_connection="mysql"
+    local db_host="mysql"
+    local db_port="3306"
+
+    if profile_enabled "postgres"; then
+        db_connection="pgsql"
+        db_host="postgres"
+        db_port="5432"
+    fi
+
+    set_env_var "DB_CONNECTION" "$db_connection"
+    set_env_var "DB_HOST" "$db_host"
+    set_env_var "DB_PORT" "$db_port"
     set_env_var "DB_DATABASE" "$db_name"
-    set_env_var "DB_USERNAME" "root"
-    set_env_var "DB_PASSWORD" "$DB_PASSWORD"
+    if [[ "$db_connection" == "pgsql" ]]; then
+        set_env_var "DB_USERNAME" "postgres"
+        set_env_var "DB_PASSWORD" "$DB_PASSWORD"
+    else
+        set_env_var "DB_USERNAME" "root"
+        set_env_var "DB_PASSWORD" "$DB_PASSWORD"
+    fi
 
     if profile_enabled "redis"; then
         set_env_var "CACHE_STORE" "redis"

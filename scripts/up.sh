@@ -76,7 +76,7 @@ sourcer "trustCa"
 
 composeUp
 if [[ $? -ne 0 ]]; then
-    prompt "Failed to start Docker stack." "Check Docker daemon and socket permissions, then retry." false
+    prompt "Failed to start Docker stack." "Check the Docker build output above (apt mirror speed or package errors), then retry." false
 fi
 
 if [[ "${AUTO_TRUST_HTTPS:-true}" == "true" ]]; then
