@@ -40,3 +40,30 @@ resolveDockerHost() {
 
     return 1
 }
+
+ensureDockerAccess() {
+    if docker info >/dev/null 2>&1; then
+        return 0
+    fi
+
+    local uid="${SUDO_UID:-$(id -u)}"
+    local user="${SUDO_USER:-$(id -un)}"
+    local sockets=(
+        "/home/$user/.docker/desktop/docker-cli.sock"
+        "/home/$user/.docker/desktop/docker.sock"
+        "/run/user/$uid/docker.sock"
+        "/var/run/docker.sock"
+    )
+
+    local sock
+    for sock in "${sockets[@]}"; do
+        if [[ -S "$sock" ]]; then
+            if DOCKER_HOST="unix://$sock" docker info >/dev/null 2>&1; then
+                export DOCKER_HOST="unix://$sock"
+                return 0
+            fi
+        fi
+    done
+
+    return 1
+}
