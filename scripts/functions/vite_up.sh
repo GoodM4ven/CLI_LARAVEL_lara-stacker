@@ -1,107 +1,53 @@
 viteUp() {
-    # ? Take in the arguments
     local project_name="$1"
-    local escaped_project_name="$2"
 
-    local projects_directory="/var/www/html"
-    local vite_config_file="vite.config.js"
+    local app_root="${APP_ROOT:-/var/www/html}"
+    local domain_suffix="${APP_DOMAIN_SUFFIX:-localhost}"
 
-    if ! [ -d "$projects_directory/$escaped_project_name" ]; then
-        return 1
+    local escaped_project_name
+    escaped_project_name=$(echo "$project_name" | tr ' ' '-' | tr '_' '-' | tr '[:upper:]' '[:lower:]')
+    escaped_project_name=${escaped_project_name// /}
+
+    local project_path="$app_root/$escaped_project_name"
+    local file="$project_path/vite.config.js"
+
+    if [[ ! -f "$file" ]]; then
+        return 0
     fi
 
-    cd "$projects_directory/$escaped_project_name"
+    local vite_host="vite-${escaped_project_name}.${domain_suffix}"
 
-    PROJECT_NAME="$project_name"
-    FILE="$vite_config_file"
-
-    if ! grep -q "const host =" "$FILE"; then
-        if ! grep -q '^import path from "path";' "$FILE"; then
-            sed -i '1i import path from "path";' "$FILE"
+    if grep -q "server:" "$file"; then
+        if grep -q "hmr:" "$file"; then
+            echo -e "\nDetected existing Vite HMR config; skipped auto-patch." >&3
+            return 0
         fi
 
-        # ? Insert const variables right AFTER the last import statement
-        awk -v project="$PROJECT_NAME" '
+        local insert="        host: true,\n        strictPort: true,\n        port: 5173,\n        hmr: {\n            host: '${vite_host}',\n            protocol: 'wss',\n            clientPort: 443,\n        },"
+
+        awk -v insert="$insert" '
         {
-            lines[NR] = $0
-        }
-        END {
-            max = NR
-            lastImport = 0
-            # Find the index of the LAST import line:
-            for (i = 1; i <= max; i++) {
-                if (match(lines[i], /^import /)) {
-                    lastImport = i
-                }
+            print $0
+            if ($0 ~ /server:[[:space:]]*{/) {
+                print insert
             }
+        }' "$file" > "$file.tmp" && mv "$file.tmp" "$file"
 
-            # If no imports found, we’ll just print everything then add our const lines.
-            if (lastImport == 0) {
-                for (i = 1; i <= max; i++) {
-                    print lines[i]
-                }
-                print ""
-                print "const host = \"" project ".test\";"
-                print "const certPath = path.resolve(__dirname, \"./.certs/" project ".test.pem\");"
-                print "const keyPath = path.resolve(__dirname, \"./.certs/" project ".test-key.pem\");"
-            } else {
-                # Print lines up to (and including) lastImport
-                for (i = 1; i <= max; i++) {
-                    print lines[i]
-                    # Right after printing that line, insert our const lines:
-                    if (i == lastImport) {
-                        print ""
-                        print "const host = \"" project ".test\";"
-                        print "const certPath = path.resolve(__dirname, \"./.certs/" project ".test.pem\");"
-                        print "const keyPath = path.resolve(__dirname, \"./.certs/" project ".test-key.pem\");"
-                    }
-                }
-            }
-        }
-        ' "$FILE" > "$FILE.tmp" && mv "$FILE.tmp" "$FILE"
-
-        # ? Insert the server block (or remove if found)
-        if grep -q 'server:' "$FILE"; then
-            awk '
-                BEGIN { serverBlock=0; braceCount=0 }
-                /server:\s*\{/ {
-                    serverBlock=1
-                    braceCount=1
-                    next
-                }
-                {
-                    if (serverBlock == 0) {
-                        print $0
-                    } else {
-                        # We are inside `server: { ... }`
-                        if (index($0, "{") > 0) braceCount++
-                        if (index($0, "}") > 0) braceCount--
-                        if (braceCount == 0) serverBlock=0
-                    }
-                }
-            ' "$FILE" > "$FILE.tmp" && mv "$FILE.tmp" "$FILE"
-        fi
-
-        # ? Add your new server block right after inside the export
-        sed -i '/export default defineConfig({/a \
-    server: {\n\
-        host,\n\
-        hmr: { host },\n\
-        cors: { origin: `*` },\n\
-        https: {\n\
-            cert: certPath,\n\
-            key: keyPath,\n\
-        },\n\
-        watch: {\n\
-            ignored: ['"'"'**/storage/framework/views/**'"'"'],\n\
-        },\n\
-    },' "$FILE"
-
-        # ? Remove leftover empty lines 
-        sed -i '/export default defineConfig({/,$ { /^[[:space:]]*$/d }' "$FILE"
-
-        sudo "$lara_stacker_dir/scripts/helpers/permit.sh" "./$vite_config_file"
-
-        echo -e "\nLinked the site URL in the project's Vite configuration file." >&3
+        echo -e "\nPatched existing Vite server config for Docker HMR." >&3
+        return 0
     fi
+
+    sed -i "/export default defineConfig({/a \
+    server: {\n\
+        host: true,\n\
+        strictPort: true,\n\
+        port: 5173,\n\
+        hmr: {\n\
+            host: '$vite_host',\n\
+            protocol: 'wss',\n\
+            clientPort: 443,\n\
+        },\n\
+    }," "$file"
+
+    echo -e "\nAdded Docker-friendly Vite dev server config." >&3
 }

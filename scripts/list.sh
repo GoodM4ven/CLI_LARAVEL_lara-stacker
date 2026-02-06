@@ -2,14 +2,8 @@
 
 clear
 
-# * Display a status indicator
-echo -e "-=|[ Lara-Stacker |> TALL Projects Management |> LIST ]|=-"
+echo -e "-=|[ Lara-Stacker |> Docker Stack |> PROJECTS LIST ]|=-"
 
-# * ===========
-# * Validation
-# * =========
-
-# ? Source the helper function scripts first
 functions=(
     "./scripts/functions/helpers/prompt.sh"
     "./scripts/functions/helpers/sourcer.sh"
@@ -21,52 +15,34 @@ for script in "${functions[@]}"; do
     fi
 done
 
-# ? Ensure the script isn't ran directly
 if [[ -z "$RAN_MAIN_SCRIPT" ]]; then
     prompt "Aborted for direct execution flow." "Please use the main [lara-stacker.sh] script."
 fi
 
-# * ============
-# * Preparation
-# * ==========
-
-# ? Get environment variables and defaults
 lara_stacker_dir=$PWD
 source $lara_stacker_dir/.env
 
-# * ========
-# * Process
-# * ======
-
-echo
-
-# ? ===========================================
-# ? Count and list directories and their names
-# ? =========================================
-
-projects_directory=/var/www/html
+app_root="${APP_ROOT:-/var/www/html}"
 
 count=0
-for dir in $(ls -d $projects_directory/*/ 2>/dev/null); do
+for dir in $(ls -d $app_root/*/ 2>/dev/null); do
     if [ ! -d "$dir" ]; then
         continue
     fi
     ((count++))
-    echo "$dir"
+    status="enabled"
+    if [ -f "$dir/.disabled" ]; then
+        status="disabled"
+    fi
+    echo "$dir ($status)"
 done
 
 if [ $count -gt 0 ]; then
     echo ""
 fi
 
-# * Display the total count of directories found
 echo -e "Total projects: $count\n"
 
-# * ========
-# * The End
-# * ======
-
-# * Prompt to continue
 read -p "Press any key to continue..." whatever
 
 clear

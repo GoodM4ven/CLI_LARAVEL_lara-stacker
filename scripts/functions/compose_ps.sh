@@ -1,0 +1,3 @@
+composePs() {
+    dockerCompose ps
+}

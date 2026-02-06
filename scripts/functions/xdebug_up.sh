@@ -1,23 +1,29 @@
 xdebugUp() {
-    # ? Take in the arguments
-    local USING_VSC="$1"
-    local escaped_project_name="$2"
+    local project_name="$1"
 
-    local projects_directory=/var/www/html
-
-    # ? Copy and modify the VSC debugging file when it's installed
-    if $USING_VSC; then
-        if [ ! -d "$projects_directory/$escaped_project_name/.vscode" ]; then
-            mkdir $projects_directory/$escaped_project_name/.vscode
-        fi
-
-        cd $projects_directory/$escaped_project_name/.vscode
-
-        sudo cp $lara_stacker_dir/files/.vscode/launch.json ./
-
-        sed -i "s~\[projectsDirectory\]~$projects_directory~g" ./launch.json
-        sed -i "s~\[projectName\]~$escaped_project_name~g" ./launch.json
-
-        echo -e "\nConfigured VSC debug settings for Xdebug support." >&3
+    local app_root="${APP_ROOT:-/var/www/html}"
+    if [[ "$USE_VSC" != "true" ]]; then
+        return 0
     fi
+
+    local escaped_project_name
+    escaped_project_name=$(echo "$project_name" | tr ' ' '-' | tr '_' '-' | tr '[:upper:]' '[:lower:]')
+    escaped_project_name=${escaped_project_name// /}
+
+    local project_path="$app_root/$escaped_project_name"
+
+    if [ ! -d "$project_path" ]; then
+        return 0
+    fi
+
+    if [ ! -d "$project_path/.vscode" ]; then
+        mkdir -p "$project_path/.vscode"
+    fi
+
+    cp "$lara_stacker_dir/files/.vscode/launch.json" "$project_path/.vscode/launch.json"
+
+    sed -i "s~\[projectName\]~$escaped_project_name~g" "$project_path/.vscode/launch.json"
+    sed -i "s~\[appRoot\]~$app_root~g" "$project_path/.vscode/launch.json"
+
+    echo -e "\nConfigured VSC debug settings for Xdebug (Docker)." >&3
 }

@@ -29,7 +29,23 @@ if command -v git &> /dev/null && [ -d ".git" ]; then
     fi
 fi
 
-echo -e "-=|[ LARA-STACKER $current_version ]|=-"
+echo -e "   __     ___   ___   ___        _____ _______ _____ _____ _  __ ______ _   __\n  / /    / _ \\ / _ \\ / _ \\      / ____|__   __|_   _/ ____| |/ /|  ____| | / /\n / /    | | | | | | | | | |____| (___    | |    | || |    | ' / | |__  | |/ / \n \\ \\    | |_| | |_| | |_| |____|\\___ \\   | |    | || |    |  <  |  __| |    \\ \\\n  \\_\\    \\___/ \\___/ \\___/      ____) |  | |   _| || |____| . \\ | |____| |\\  \\\n                          v4 |_____/   |_|  |_____\\_____|_|\\_\\|______|_| \\_\\\n"
+
+release_version="unknown"
+if command -v curl >/dev/null 2>&1 && [[ -n "$git_remote_url" ]]; then
+    if [[ "$git_remote_url" =~ github.com[:/](.+)/(.+?)(\\.git)?$ ]]; then
+        repo_owner="${BASH_REMATCH[1]}"
+        repo_name="${BASH_REMATCH[2]}"
+        api_url="https://api.github.com/repos/$repo_owner/$repo_name/releases/latest"
+        release_version=$(curl -fsSL --max-time 2 "$api_url" | awk -F'\"' '/\"tag_name\":/ {print $4; exit}')
+        if [[ -z "$release_version" ]]; then
+            release_version="unknown"
+        fi
+    fi
+fi
+
+echo -e "Local:   $current_version"
+echo -e "Release: $release_version\n"
 
 # * ===========
 # * Validation
@@ -108,48 +124,7 @@ source $lara_stacker_dir/.env
 
 # * ========
 # * Process
-# * ======
-
-# ? =====================
-# ? Checking for updates
-# ? ===================
-
-if [[ -f "/tmp/updated-lara-stacker.flag" ]]; then
-    rm /tmp/updated-lara-stacker.flag
-fi
-
-echo -en "\nChecking for updates"
-sleep 1
-echo -en "."
-sleep 1
-echo -en "."
-
-update_available=false
-latest_version=""
-
-# ? Check for updates if it's possible
-if [[ "$is_updateable" == true && -n "$git_remote_url" ]]; then
-    latest_version=$(git ls-remote --tags "$git_remote_url" "v*" 2>/dev/null | awk '{print $2}' | sed 's#refs/tags/##' | sed 's#\^{}##' | sort -V | tail -1)
-
-    local_head=$("${git_runner[@]}" rev-parse HEAD 2>/dev/null)
-    remote_main=$(git ls-remote "$git_remote_url" "refs/heads/main" 2>/dev/null | awk '{print $1}')
-
-    if [[ -n "$latest_version" && "$latest_version" != "$current_version" ]]; then
-        update_available=true
-    elif [[ -n "$remote_main" && -n "$local_head" && "$remote_main" != "$local_head" ]]; then
-        update_available=true
-        latest_version="${latest_version:-${remote_main:0:7}}"
-    fi
-fi
-
-echo -en "."
-
-clear
-
-# ? Display the update version, if any
-if [ "$update_available" == true ]; then
-    echo -e "New version ($latest_version) is available!\n"
-fi
+# * ========
 
 # ? Loop the menu until user chooses to exit
 counter=0
@@ -160,186 +135,69 @@ while true; do
 
     echo -e "Available Operations:\n"
 
-    options=("1. Manage TALL Projects" "2. Manage MySQL Databases" "3. Manage Apache Sites" "4. Create A Raw Laravel Project" "5. Exit")
+    echo "1. Start Stack"
+    echo "2. Stop Stack"
+    echo "3. Stack Status"
+    echo "4. List Projects"
+    echo "5. Create A Project"
+    echo "6. Import A Project"
+    echo "7. Refresh A Project"
+    echo "8. Delete A Project"
+    echo "9. Wire Project .env"
+    echo "10. Enable A Project"
+    echo "11. Disable A Project"
+    echo "12. Trust HTTPS (Caddy CA)"
+    echo -e "13. Exit\n"
 
-    # ? Conditional options
-    include_zero=false
-    if [[ -f "/tmp/updated-lara-stacker.flag" ]]; then
-        rm /tmp/updated-lara-stacker.flag
-        update_available=false
-    fi
-    if [ "$update_available" == true ]; then
-        options+=("6. Download Updates")
-    fi
-    if [[ ! -f "$lara_stacker_dir/done-setup.flag" ]]; then
-        options+=("0. Initial Setup")
-        include_zero=true
-    fi
-
-    for opt in "${options[@]}"; do
-        echo "$opt "
-    done
-
-    echo ""
     if [[ $counter -eq 1 && "$1" ]]; then
         choice="$1"
     else
-        if [ "$include_zero" == true ]; then
-            options_count=$((${#options[@]} - 1))
-            read -p "Choose an operation (0-$options_count): " choice
-        else
-            options_count=$((${#options[@]}))
-            read -p "Choose an operation (1-$options_count): " choice
-        fi
+        read -p "Choose an operation (1-13): " choice
     fi
 
     clear
 
     # ? Options logic
     case $choice in
-    0)
-        if [[ -f "$lara_stacker_dir/done-setup.flag" ]]; then
-            prompt "-=|[ LARA-STACKER [$current_version] ]|=-" "Invalid option! Please type one the of digits in the list..." false
-        else
-            sudo RAN_MAIN_SCRIPT="true" ./scripts/setup.sh
-        fi
-        ;;
     1)
-        while true; do
-            clear
-
-            echo -e "-=|[ Lara-Stacker |> TALL PROJECTS MANAGEMENT ]|=-\n"
-
-            echo -e "TALL Stack Frameworks:\n"
-
-            echo "- TailwindCSS"
-            echo "- AlpineJS"
-            echo "- Livewire"
-            echo -e "- Laravel\n"
-
-            echo -e "Available Operations:\n"
-
-            echo "1. List All Projects"
-            echo "2. Create A Project"
-            echo "3. Delete A Project"
-            echo "4. Import A Project"
-            echo "5. Refresh A Project"
-            echo -e "6. Go Back To Main Menu\n"
-
-            read -p "Choose an operation (1-6): " stack_choice
-
-            case $stack_choice in
-            1)
-                RAN_MAIN_SCRIPT="true" ./scripts/TALL/list.sh
-                ;;
-            2)
-                sudo RAN_MAIN_SCRIPT="true" ./scripts/TALL/create.sh
-                ;;
-            3)
-                sudo RAN_MAIN_SCRIPT="true" ./scripts/TALL/delete.sh
-                ;;
-            4)
-                sudo RAN_MAIN_SCRIPT="true" ./scripts/TALL/import.sh
-                ;;
-            5)
-                sudo RAN_MAIN_SCRIPT="true" ./scripts/TALL/refresh.sh
-                ;;
-            6)
-                clear
-                break
-                ;;
-            *)
-                clear
-                prompt "-=|[ Lara-Stacker |> TALL PROJECTS MANAGEMENT ]|=-" "Invalid option! Please type one the of digits in the list..." false true
-                ;;
-            esac
-        done
+        sudo RAN_MAIN_SCRIPT="true" ./scripts/up.sh
         ;;
     2)
-        while true; do
-            clear
-
-            echo -e "-=|[ Lara-Stacker |> MYSQL DATABASE MANAGEMENT ]|=-\n"
-
-            echo -e "Available Operations:\n"
-
-            echo "1. List All Databases"
-            echo "2. Create A Database"
-            echo "3. Delete A Database"
-            echo -e "4. Go Back To Main Menu\n"
-
-            read -p "Choose an operation (1-4): " db_choice
-
-            case $db_choice in
-            1)
-                RAN_MAIN_SCRIPT="true" ./scripts/mysql/list.sh
-                ;;
-            2)
-                RAN_MAIN_SCRIPT="true" ./scripts/mysql/create.sh
-                ;;
-            3)
-                RAN_MAIN_SCRIPT="true" ./scripts/mysql/delete.sh
-                ;;
-            4)
-                clear
-                break
-                ;;
-            *)
-                clear
-                prompt "-=|[ Lara-Stacker |> MYSQL DATABASE MANAGEMENT ]|=-" "Invalid option! Please type one the of digits in the list..." false true
-                ;;
-            esac
-        done
+        sudo RAN_MAIN_SCRIPT="true" ./scripts/down.sh
         ;;
     3)
-        while true; do
-            clear
-
-            echo -e "-=|[ Lara-Stacker |> APACHE SITE MANAGEMENT ]|=-\n"
-
-            echo -e "Available Operations:\n"
-
-            echo "1. List All Sites"
-            echo "2. Enable A Site"
-            echo "3. Disable A Site"
-            echo -e "4. Go Back To Main Menu\n"
-
-            read -p "Choose an operation (1-4): " site_choice
-
-            case $site_choice in
-            1)
-                RAN_MAIN_SCRIPT="true" ./scripts/apache/list.sh
-                ;;
-            2)
-                RAN_MAIN_SCRIPT="true" ./scripts/apache/enable.sh
-                ;;
-            3)
-                RAN_MAIN_SCRIPT="true" ./scripts/apache/disable.sh
-                ;;
-            4)
-                clear
-                break
-                ;;
-            *)
-                clear
-                prompt "-=|[ Lara-Stacker |> APACHE SITE MANAGEMENT ]|=-" "Invalid option! Please type one the of digits in the list..." false true
-                ;;
-            esac
-        done
+        RAN_MAIN_SCRIPT="true" ./scripts/status.sh
         ;;
     4)
-        sudo RAN_MAIN_SCRIPT="true" ./scripts/create_raw.sh
+        RAN_MAIN_SCRIPT="true" ./scripts/list.sh
         ;;
     5)
-        echo -e "\nExiting Lara-Stacker...\n"
-        exit 0
+        sudo RAN_MAIN_SCRIPT="true" ./scripts/create.sh
         ;;
     6)
-        if [ "$update_available" == false ]; then
-            prompt "-=|[ LARA-STACKER [$current_version] ]|=-" "Invalid option! Please type one the of digits in the list..." false
-        else
-            sudo RAN_MAIN_SCRIPT="true" ./scripts/update.sh
-        fi
+        sudo RAN_MAIN_SCRIPT="true" ./scripts/import.sh
+        ;;
+    7)
+        sudo RAN_MAIN_SCRIPT="true" ./scripts/refresh.sh
+        ;;
+    8)
+        sudo RAN_MAIN_SCRIPT="true" ./scripts/delete.sh
+        ;;
+    9)
+        sudo RAN_MAIN_SCRIPT="true" ./scripts/env.sh
+        ;;
+    10)
+        sudo RAN_MAIN_SCRIPT="true" ./scripts/enable.sh
+        ;;
+    11)
+        sudo RAN_MAIN_SCRIPT="true" ./scripts/disable.sh
+        ;;
+    12)
+        sudo RAN_MAIN_SCRIPT="true" ./scripts/trust.sh
+        ;;
+    13)
+        echo -e "\nExiting Lara-Stacker...\n"
+        exit 0
         ;;
     *)
         prompt "-=|[ LARA-STACKER [$current_version] ]|=-" "Invalid option! Please type one the of digits in the list..." false true

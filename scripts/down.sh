@@ -1,8 +1,9 @@
-# * ===========
-# * Validation
-# * =========
+#!/bin/bash
 
-# ? Source the helper function scripts first
+clear
+
+echo -e "-=|[ Lara-Stacker |> Docker Stack |> DOWN ]|=-"
+
 functions=(
     "./scripts/functions/helpers/prompt.sh"
     "./scripts/functions/helpers/sourcer.sh"
@@ -14,7 +15,21 @@ for script in "${functions[@]}"; do
     fi
 done
 
-# ? Ensure the script isn't ran directly
 if [[ -z "$RAN_MAIN_SCRIPT" ]]; then
     prompt "Aborted for direct execution flow." "Please use the main [lara-stacker.sh] script."
 fi
+
+lara_stacker_dir=$PWD
+source $lara_stacker_dir/.env
+
+sourcer "composeCmd"
+sourcer "composeDown"
+
+composeDown
+
+echo -e "\nDocker stack is stopped."
+
+echo -n "Press any key to continue..."
+read whatever
+
+clear

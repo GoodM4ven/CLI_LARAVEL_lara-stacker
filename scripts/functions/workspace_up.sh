@@ -1,18 +1,31 @@
 workspaceUp() {
-    # ? Take in the arguments
-    local escaped_project_name="$1"
+    if [[ "$USE_VSC" != "true" ]]; then
+        return 0
+    fi
 
-    local projects_directory="/var/www/html"
+    local workspaces_dir="${VSC_WORKSPACES_DIR:-}"
+    if [[ -z "$workspaces_dir" ]]; then
+        return 0
+    fi
 
-    cd /home/$USERNAME/Desktop
+    local app_root="${APP_ROOT:-/var/www/html}"
 
-    # ? Create a workspace VSC file in desktop
-    sudo cp $lara_stacker_dir/files/.opinionated/project.code-workspace ./$escaped_project_name.code-workspace
-    sudo sed -i "s/<projectName>/$escaped_project_name/g" ./$escaped_project_name.code-workspace
-    sudo sed -i "s~<projectsDirectory>~$projects_directory~g" ./$escaped_project_name.code-workspace
+    local escaped_project_name
+    escaped_project_name=$(echo "$1" | tr ' ' '-' | tr '_' '-' | tr '[:upper:]' '[:lower:]')
+    escaped_project_name=${escaped_project_name// /}
 
-    # ? Ensure proper system permissions over the file
-    sudo $lara_stacker_dir/scripts/helpers/permit.sh ./$escaped_project_name.code-workspace
+    mkdir -p "$workspaces_dir"
+    chown -R "$USERNAME:$USERNAME" "$workspaces_dir"
 
-    echo -e "\nCreated a dedicated VSC workspace in Desktop." >&3
+    local workspace_file="$workspaces_dir/$escaped_project_name.code-workspace"
+    if [ -f "$workspace_file" ]; then
+        return 0
+    fi
+
+    if [ -f "$lara_stacker_dir/files/.opinionated/project.code-workspace" ]; then
+        cp "$lara_stacker_dir/files/.opinionated/project.code-workspace" "$workspace_file"
+        sed -i "s~<projectsDirectory>~$app_root~g" "$workspace_file"
+        sed -i "s~<projectName>~$escaped_project_name~g" "$workspace_file"
+        echo -e "\nCreated VSC workspace file." >&3
+    fi
 }
