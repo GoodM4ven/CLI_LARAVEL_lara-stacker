@@ -78,11 +78,19 @@ read full_directory
 
 full_directory="${full_directory%/}"
 project_path=$(dirname "$full_directory")
-project_name=$(basename "$full_directory")
+source_project_name=$(basename "$full_directory")
+project_name="$source_project_name"   # default target name = source folder name
 
 # ? Cancel if the project path doesn't exists
-if [ ! -d "$project_path/$project_name" ]; then
+if [ ! -d "$project_path/$source_project_name" ]; then
     prompt "The project path doesn't exist!" "Project importing cancelled." $cancel_suppression
+fi
+
+echo -ne "Enter a custom project name (leave empty to use '$source_project_name'): " >&3
+read custom_project_name
+
+if [[ -n "$custom_project_name" ]]; then
+    project_name="$custom_project_name"
 fi
 
 escaped_project_name=$(echo "$project_name" | tr ' ' '-' | tr '_' '-' | tr '[:upper:]' '[:lower:]')
@@ -114,11 +122,11 @@ sourcer "xdebugUp" $cancel_suppression
 # ? ==========================================
 
 # ? Ensures .certs folder exists nevertheless
-if [ ! -d "$project_path/$project_name/.certs" ]; then
-    mkdir $project_path/$project_name/.certs
+if [ ! -d "$project_path/$source_project_name/.certs" ]; then
+    mkdir "$project_path/$source_project_name/.certs"
 fi
 
-sudo cp -r $project_path/$project_name $projects_directory/$escaped_project_name
+sudo cp -r "$project_path/$source_project_name" "$projects_directory/$escaped_project_name"
 
 sudo $lara_stacker_dir/scripts/helpers/permit.sh $projects_directory/$escaped_project_name
 
