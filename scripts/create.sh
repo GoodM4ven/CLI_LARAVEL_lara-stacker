@@ -44,6 +44,12 @@ sourcer "xdebugUp"
 sourcer "trustCa"
 sourcer "opinionatedUp"
 sourcer "workspaceUp"
+sourcer "dockerHost"
+
+resolveDockerHost || true
+if ! ensureDockerAccess; then
+    prompt "Docker daemon is not reachable." "Start Docker and retry project creation." false
+fi
 
 # ? Get the project name from the user
 echo -ne "\nEnter the project name: "
@@ -58,7 +64,9 @@ fi
 
 # ? Ensure stack is up
 if [[ -z "$(dockerCompose ps -q app)" ]]; then
-    composeUp
+    if ! composeUp; then
+        prompt "Failed to start the Docker stack." "Start the stack and retry project creation." false
+    fi
 fi
 if [[ "${AUTO_TRUST_HTTPS:-true}" == "true" ]]; then
     trustCa || true
@@ -66,7 +74,9 @@ fi
 
 # ? Create the Laravel project
 echo -e "\nInstalling the project via Composer..."
-composeExecApp composer create-project laravel/laravel "/var/www/html/$escaped_project_name" -n
+if ! composeExecApp composer create-project laravel/laravel "/var/www/html/$escaped_project_name" -n; then
+    prompt "App container is not running." "Start the stack and retry project creation." false
+fi
 
 # ? Wire project configuration
 envUp "$escaped_project_name"

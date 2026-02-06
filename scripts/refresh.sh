@@ -40,6 +40,12 @@ sourcer "xdebugUp"
 sourcer "trustCa"
 sourcer "opinionatedUp"
 sourcer "workspaceUp"
+sourcer "dockerHost"
+
+resolveDockerHost || true
+if ! ensureDockerAccess; then
+    prompt "Docker daemon is not reachable." "Start Docker and retry refresh." false
+fi
 
 # ? Get the project name from the user
 echo -ne "\nEnter the project name: "
@@ -55,25 +61,35 @@ fi
 
 # ? Ensure stack is up
 if [[ -z "$(dockerCompose ps -q app)" ]]; then
-    composeUp
+    if ! composeUp; then
+        prompt "Failed to start the Docker stack." "Start the stack and retry refresh." false
+    fi
 fi
 if [[ "${AUTO_TRUST_HTTPS:-true}" == "true" ]]; then
     trustCa || true
 fi
 
 # ? Clear dependencies
-composeExecApp bash -lc "cd /var/www/html/$escaped_project_name && rm -rf node_modules vendor composer.lock package-lock.json bun.lock bun.lockb"
+if ! composeExecApp bash -lc "cd /var/www/html/$escaped_project_name && rm -rf node_modules vendor composer.lock package-lock.json bun.lock bun.lockb"; then
+    prompt "App container is not running." "Start the stack and retry refresh." false
+fi
 
 # ? Reinstall Composer dependencies
-composeExecApp composer install --no-interaction --working-dir="/var/www/html/$escaped_project_name"
+if ! composeExecApp composer install --no-interaction --working-dir="/var/www/html/$escaped_project_name"; then
+    prompt "App container is not running." "Start the stack and retry refresh." false
+fi
 
 # ? Reinstall JS dependencies (if package.json exists)
 if [[ -f "$project_path/package.json" ]]; then
-    composeExecApp npm install --silent --prefix "/var/www/html/$escaped_project_name"
+    if ! composeExecApp npm install --silent --prefix "/var/www/html/$escaped_project_name"; then
+        prompt "App container is not running." "Start the stack and retry refresh." false
+    fi
 fi
 
 # ? Clear Laravel caches
-composeExecApp php /var/www/html/$escaped_project_name/artisan optimize:clear --quiet
+if ! composeExecApp php /var/www/html/$escaped_project_name/artisan optimize:clear --quiet; then
+    prompt "App container is not running." "Start the stack and retry refresh." false
+fi
 
 # ? Re-wire project configuration
 envUp "$escaped_project_name"

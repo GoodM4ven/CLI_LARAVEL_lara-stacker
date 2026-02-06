@@ -44,6 +44,12 @@ sourcer "xdebugUp"
 sourcer "trustCa"
 sourcer "opinionatedUp"
 sourcer "workspaceUp"
+sourcer "dockerHost"
+
+resolveDockerHost || true
+if ! ensureDockerAccess; then
+    prompt "Docker daemon is not reachable." "Start Docker and retry project import." false
+fi
 
 # ? Get the project path from the user
 echo -ne "\nEnter the full project path (e.g., /home/$USERNAME/Code/some_laravel_app): "
@@ -74,7 +80,9 @@ fi
 
 # ? Ensure stack is up
 if [[ -z "$(dockerCompose ps -q app)" ]]; then
-    composeUp
+    if ! composeUp; then
+        prompt "Failed to start the Docker stack." "Start the stack and retry project import." false
+    fi
 fi
 if [[ "${AUTO_TRUST_HTTPS:-true}" == "true" ]]; then
     trustCa || true
@@ -89,7 +97,9 @@ echo -e "\nProject files copied into $app_root."
 # ? Install composer deps if missing
 if [[ ! -f "$app_root/$escaped_project_name/vendor/autoload.php" ]]; then
     echo -e "\nInstalling Composer dependencies for the project..."
-    composeExecApp composer install --no-interaction --working-dir="/var/www/html/$escaped_project_name"
+    if ! composeExecApp composer install --no-interaction --working-dir="/var/www/html/$escaped_project_name"; then
+        prompt "App container is not running." "Start the stack and retry project import." false
+    fi
 fi
 
 # ? Wire project configuration
