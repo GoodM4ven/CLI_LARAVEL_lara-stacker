@@ -25,5 +25,5 @@ xdebugUp() {
     sed -i "s~\[projectName\]~$escaped_project_name~g" "$project_path/.vscode/launch.json"
     sed -i "s~\[appRoot\]~$app_root~g" "$project_path/.vscode/launch.json"
 
-    echo -e "\nConfigured VSC debug settings for Xdebug (Docker)." >&3
+    echo -e "\nConfigured VSC debug settings for Xdebug (Docker)."
 }

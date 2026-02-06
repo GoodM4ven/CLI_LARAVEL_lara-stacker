@@ -9,11 +9,11 @@ mysqlUp() {
     db_name=$(echo "$db_or_project_name" | sed 's/\([[:lower:]]\)\([[:upper:]]\)/\1_\2/g' | sed 's/\([[:upper:]]\)\([[:upper:]][[:lower:]]\)/\1_\2/g' | tr '-' '_' | tr '[:upper:]' '[:lower:]' | sed 's/__/_/g' | sed 's/^_//')
 
     if [[ -z "$(dockerCompose ps -q mysql)" ]]; then
-        echo -e "\nMySQL container is not running; skipped database creation." >&3
+        echo -e "\nMySQL container is not running; skipped database creation."
         return 0
     fi
 
     dockerCompose exec -T mysql mysql -u root -p"$DB_PASSWORD" -e "CREATE DATABASE IF NOT EXISTS $db_name;"
 
-    echo -e "\nCreated '$db_name' MySQL database (if missing)." >&3
+    echo -e "\nCreated '$db_name' MySQL database (if missing)."
 }

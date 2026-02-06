@@ -62,6 +62,7 @@ Access:
 Edit `.env`:
 
 - `APP_ROOT` (default `/var/www/html`): where projects live
+- Inside containers, projects are always mounted at `/var/www/html` (Caddy/PHP-FPM depend on this)
 - Domains are always `https://<app>.localhost`
 - `DOCKER_PROFILES` (default `redis,mailpit,minio`) — available: `redis`, `mailpit`, `minio` (MySQL is always on)
 - `CADDY_HTTP_PORT` and `CADDY_HTTPS_PORT` (default `8080/8443`, recommend `80/443` if free)

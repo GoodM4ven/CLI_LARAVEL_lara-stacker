@@ -22,21 +22,6 @@ fi
 lara_stacker_dir=$PWD
 source $lara_stacker_dir/.env
 
-# ? Set the echoing level
-conditional_quiet="--quiet"
-cancel_suppression=false
-case $LOGGING_LEVEL in
-2)
-    exec 3>&1
-    conditional_quiet=""
-    cancel_suppression=true
-    ;;
-*)
-    exec 3>&1
-    exec >/dev/null
-    ;;
-esac
-
 app_root="${APP_ROOT:-/var/www/html}"
 if [[ ! -d "$app_root" ]]; then
     mkdir -p "$app_root"
@@ -56,7 +41,7 @@ sourcer "opinionatedUp"
 sourcer "workspaceUp"
 
 # ? Get the project path from the user
-echo -ne "\nEnter the full project path (e.g., /home/$USERNAME/Code/some_laravel_app): " >&3
+echo -ne "\nEnter the full project path (e.g., /home/$USERNAME/Code/some_laravel_app): "
 read full_directory
 
 full_directory="${full_directory%/}"
@@ -65,10 +50,10 @@ source_project_name=$(basename "$full_directory")
 project_name="$source_project_name"
 
 if [ ! -d "$project_path/$source_project_name" ]; then
-    prompt "The project path doesn't exist!" "Project importing cancelled." $cancel_suppression
+    prompt "The project path doesn't exist!" "Project importing cancelled."
 fi
 
-echo -ne "Enter a custom project name (leave empty to use '$source_project_name'): " >&3
+echo -ne "Enter a custom project name (leave empty to use '$source_project_name'): "
 read custom_project_name
 
 if [[ -n "$custom_project_name" ]]; then
@@ -79,7 +64,7 @@ escaped_project_name=$(echo "$project_name" | tr ' ' '-' | tr '_' '-' | tr '[:up
 escaped_project_name=${escaped_project_name// /}
 
 if [ -d "$app_root/$escaped_project_name" ]; then
-    prompt "A project with the same name already exists!" "Project importing cancelled." $cancel_suppression
+    prompt "A project with the same name already exists!" "Project importing cancelled."
 fi
 
 # ? Ensure stack is up
@@ -94,12 +79,12 @@ fi
 sudo cp -r "$project_path/$source_project_name" "$app_root/$escaped_project_name"
 sudo chown -R "$USERNAME:$USERNAME" "$app_root/$escaped_project_name"
 
-echo -e "\nProject files copied into $app_root." >&3
+echo -e "\nProject files copied into $app_root."
 
 # ? Install composer deps if missing
 if [[ ! -f "$app_root/$escaped_project_name/vendor/autoload.php" ]]; then
-    echo -e "\nInstalling Composer dependencies for the project..." >&3
-    composeExecApp composer install --no-interaction $conditional_quiet --working-dir="/var/www/html/$escaped_project_name"
+    echo -e "\nInstalling Composer dependencies for the project..."
+    composeExecApp composer install --no-interaction --working-dir="/var/www/html/$escaped_project_name"
 fi
 
 # ? Wire project configuration
@@ -117,10 +102,10 @@ if [[ ! -f "$lara_stacker_dir/done-docker.flag" ]]; then
 fi
 
 # * Display a success message
-echo -e "\nProject imported successfully! You can access it at: [https://$escaped_project_name.localhost].\n" >&3
+echo -e "\nProject imported successfully! You can access it at: [https://$escaped_project_name.localhost].\n"
 
 # * Prompt to continue
-echo -n "Press any key to continue..." >&3
+echo -n "Press any key to continue..."
 read whatever
 
-clear >&3
+clear

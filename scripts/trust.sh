@@ -22,8 +22,15 @@ fi
 lara_stacker_dir=$PWD
 source $lara_stacker_dir/.env
 
+sourcer "dockerHost"
+resolveDockerHost || true
+
 if ! command -v docker >/dev/null 2>&1; then
     prompt "Docker was not found." "Install Docker first and try again." false
+fi
+
+if ! docker info >/dev/null 2>&1; then
+    prompt "Docker daemon is not reachable." "Start Docker (or fix your Docker Desktop socket) and try again." false
 fi
 
 if ! docker compose version >/dev/null 2>&1; then
@@ -43,9 +50,9 @@ if ! trustCa; then
     prompt "Caddy root certificate not found." "Start the stack and visit any https://*.localhost once, then retry." false
 fi
 
-echo -e "\nTrusted Caddy local CA successfully." >&3
+echo -e "\nTrusted Caddy local CA successfully."
 
-echo -n "Press any key to continue..." >&3
+echo -n "Press any key to continue..."
 read whatever
 
-clear >&3
+clear

@@ -6,6 +6,12 @@ dockerCompose() {
     local php_version="${PHP_VERSION:-8.3}"
     local node_version="${NODE_VERSION:-20}"
 
+    if [[ -f "$lara_stacker_dir/scripts/functions/docker_host.sh" ]]; then
+        # shellcheck source=/dev/null
+        source "$lara_stacker_dir/scripts/functions/docker_host.sh"
+        resolveDockerHost || true
+    fi
+
     local host_uid
     local host_gid
     if [[ -n "$USERNAME" ]] && id -u "$USERNAME" >/dev/null 2>&1; then

@@ -22,6 +22,9 @@ fi
 lara_stacker_dir=$PWD
 source $lara_stacker_dir/.env
 
+sourcer "dockerHost"
+resolveDockerHost || true
+
 if ! command -v docker >/dev/null 2>&1; then
     echo -e "\nDocker was not found.\n"
     echo -n "Press any key to continue..."

@@ -20,7 +20,7 @@ opinionatedUp() {
     if [ -f "$lara_stacker_dir/files/.opinionated/.prettierrc" ]; then
         if [ ! -f "$project_path/.prettierrc" ]; then
             cp "$lara_stacker_dir/files/.opinionated/.prettierrc" "$project_path/.prettierrc"
-            echo -e "\nCopied opinionated Prettier config." >&3
+            echo -e "\nCopied opinionated Prettier config."
         fi
     fi
 }

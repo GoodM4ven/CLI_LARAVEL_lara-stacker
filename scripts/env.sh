@@ -22,19 +22,6 @@ fi
 lara_stacker_dir=$PWD
 source $lara_stacker_dir/.env
 
-# ? Set the echoing level
-cancel_suppression=false
-case $LOGGING_LEVEL in
-2)
-    exec 3>&1
-    cancel_suppression=true
-    ;;
-*)
-    exec 3>&1
-    exec >/dev/null
-    ;;
-esac
-
 sourcer "envUp"
 sourcer "viteUp"
 sourcer "xdebugUp"
@@ -42,7 +29,7 @@ sourcer "opinionatedUp"
 sourcer "workspaceUp"
 
 # ? Get the project name from the user
-echo -ne "\nEnter the project name: " >&3
+echo -ne "\nEnter the project name: "
 read project_name
 
 envUp "$project_name"
@@ -52,7 +39,7 @@ opinionatedUp "$project_name"
 workspaceUp "$project_name"
 
 # * The End
-echo -n "\nPress any key to continue..." >&3
+echo -e "\nPress any key to continue..."
 read whatever
 
-clear >&3
+clear

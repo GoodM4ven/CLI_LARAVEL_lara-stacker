@@ -22,21 +22,6 @@ fi
 lara_stacker_dir=$PWD
 source $lara_stacker_dir/.env
 
-# ? Set the echoing level
-conditional_quiet="--quiet"
-cancel_suppression=false
-case $LOGGING_LEVEL in
-2)
-    exec 3>&1
-    conditional_quiet=""
-    cancel_suppression=true
-    ;;
-*)
-    exec 3>&1
-    exec >/dev/null
-    ;;
-esac
-
 app_root="${APP_ROOT:-/var/www/html}"
 
 sourcer "composeCmd"
@@ -45,7 +30,7 @@ sourcer "mysqlDown"
 sourcer "minioDown"
 
 # ? Get the project name from the user
-echo -ne "\nEnter the project name: " >&3
+echo -ne "\nEnter the project name: "
 read project_name
 
 escaped_project_name=$(echo "$project_name" | tr ' ' '-' | tr '_' '-' | tr '[:upper:]' '[:lower:]')
@@ -53,7 +38,7 @@ escaped_project_name=${escaped_project_name// /}
 
 project_path="$app_root/$escaped_project_name"
 if ! [ -d "$project_path" ]; then
-    prompt "Project \"$escaped_project_name\" doesn't exist." "" $cancel_suppression
+    prompt "Project \"$escaped_project_name\" doesn't exist."
 fi
 
 # ? Ensure stack is up (for DB/bucket cleanup)
@@ -66,13 +51,13 @@ minioDown "$escaped_project_name"
 
 sudo rm -rf "$project_path"
 
-echo -e "\nDeleted project files." >&3
+echo -e "\nDeleted project files."
 
 # * Display a success message
-echo -e "\nProject $project_name deleted successfully!\n" >&3
+echo -e "\nProject $project_name deleted successfully!\n"
 
 # * Prompt to continue
-echo -n "Press any key to continue..." >&3
+echo -n "Press any key to continue..."
 read whatever
 
-clear >&3
+clear

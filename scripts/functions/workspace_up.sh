@@ -26,6 +26,6 @@ workspaceUp() {
         cp "$lara_stacker_dir/files/.opinionated/project.code-workspace" "$workspace_file"
         sed -i "s~<projectsDirectory>~$app_root~g" "$workspace_file"
         sed -i "s~<projectName>~$escaped_project_name~g" "$workspace_file"
-        echo -e "\nCreated VSC workspace file." >&3
+        echo -e "\nCreated VSC workspace file."
     fi
 }

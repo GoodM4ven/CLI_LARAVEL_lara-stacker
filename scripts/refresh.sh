@@ -22,21 +22,6 @@ fi
 lara_stacker_dir=$PWD
 source $lara_stacker_dir/.env
 
-# ? Set the echoing level
-conditional_quiet="--quiet"
-cancel_suppression=false
-case $LOGGING_LEVEL in
-2)
-    exec 3>&1
-    conditional_quiet=""
-    cancel_suppression=true
-    ;;
-*)
-    exec 3>&1
-    exec >/dev/null
-    ;;
-esac
-
 app_root="${APP_ROOT:-/var/www/html}"
 
 sourcer "composeCmd"
@@ -52,7 +37,7 @@ sourcer "opinionatedUp"
 sourcer "workspaceUp"
 
 # ? Get the project name from the user
-echo -ne "\nEnter the project name: " >&3
+echo -ne "\nEnter the project name: "
 read project_name
 
 escaped_project_name=$(echo "$project_name" | tr ' ' '-' | tr '_' '-' | tr '[:upper:]' '[:lower:]')
@@ -60,7 +45,7 @@ escaped_project_name=${escaped_project_name// /}
 
 project_path="$app_root/$escaped_project_name"
 if ! [ -d "$project_path" ]; then
-    prompt "Project \"$escaped_project_name\" doesn't exist." "" $cancel_suppression
+    prompt "Project \"$escaped_project_name\" doesn't exist."
 fi
 
 # ? Ensure stack is up
@@ -75,7 +60,7 @@ fi
 composeExecApp bash -lc "cd /var/www/html/$escaped_project_name && rm -rf node_modules vendor composer.lock package-lock.json bun.lock bun.lockb"
 
 # ? Reinstall Composer dependencies
-composeExecApp composer install --no-interaction $conditional_quiet --working-dir="/var/www/html/$escaped_project_name"
+composeExecApp composer install --no-interaction --working-dir="/var/www/html/$escaped_project_name"
 
 # ? Reinstall JS dependencies (if package.json exists)
 if [[ -f "$project_path/package.json" ]]; then
@@ -95,7 +80,7 @@ mysqlUp "$escaped_project_name"
 minioUp "$escaped_project_name"
 
 # * Display a success indicator
-echo -e "\nDone refreshing the project successfully!\n" >&3
+echo -e "\nDone refreshing the project successfully!\n"
 
 # * Prompt to continue
 read -p "Press any key to continue..." whatever

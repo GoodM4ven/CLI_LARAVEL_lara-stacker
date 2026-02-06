@@ -20,7 +20,7 @@ viteUp() {
 
     if grep -q "server:" "$file"; then
         if grep -q "hmr:" "$file"; then
-            echo -e "\nDetected existing Vite HMR config; skipped auto-patch." >&3
+            echo -e "\nDetected existing Vite HMR config; skipped auto-patch."
             return 0
         fi
 
@@ -34,7 +34,7 @@ viteUp() {
             }
         }' "$file" > "$file.tmp" && mv "$file.tmp" "$file"
 
-        echo -e "\nPatched existing Vite server config for Docker HMR." >&3
+        echo -e "\nPatched existing Vite server config for Docker HMR."
         return 0
     fi
 
@@ -50,5 +50,5 @@ viteUp() {
         },\n\
     }," "$file"
 
-    echo -e "\nAdded Docker-friendly Vite dev server config." >&3
+    echo -e "\nAdded Docker-friendly Vite dev server config."
 }

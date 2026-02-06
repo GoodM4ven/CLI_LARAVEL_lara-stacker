@@ -23,7 +23,7 @@ lara_stacker_dir=$PWD
 source $lara_stacker_dir/.env
 
 # ? Get the project name from the user
-echo -ne "\nEnter the project name: " >&3
+echo -ne "\nEnter the project name: "
 read project_name
 
 escaped_project_name=$(echo "$project_name" | tr ' ' '-' | tr '_' '-' | tr '[:upper:]' '[:lower:]')
@@ -33,18 +33,18 @@ app_root="${APP_ROOT:-/var/www/html}"
 project_path="$app_root/$escaped_project_name"
 
 if ! [ -d "$project_path" ]; then
-    prompt "Project \"$escaped_project_name\" doesn't exist." "" true
+    prompt "Project \"$escaped_project_name\" doesn't exist."
 fi
 
 if [ -f "$project_path/.disabled" ]; then
-    echo -e "\nProject is already disabled." >&3
+    echo -e "\nProject is already disabled."
 else
     touch "$project_path/.disabled"
-    echo -e "\nDisabled the project." >&3
+    echo -e "\nDisabled the project."
 fi
 
 # * Prompt to continue
-echo -n "Press any key to continue..." >&3
+echo -n "Press any key to continue..."
 read whatever
 
-clear >&3
+clear

@@ -22,21 +22,6 @@ fi
 lara_stacker_dir=$PWD
 source $lara_stacker_dir/.env
 
-# ? Set the echoing level
-conditional_quiet="--quiet"
-cancel_suppression=false
-case $LOGGING_LEVEL in
-2)
-    exec 3>&1
-    conditional_quiet=""
-    cancel_suppression=true
-    ;;
-*)
-    exec 3>&1
-    exec >/dev/null
-    ;;
-esac
-
 app_root="${APP_ROOT:-/var/www/html}"
 if [[ ! -d "$app_root" ]]; then
     mkdir -p "$app_root"
@@ -56,14 +41,14 @@ sourcer "opinionatedUp"
 sourcer "workspaceUp"
 
 # ? Get the project name from the user
-echo -ne "\nEnter the project name: " >&3
+echo -ne "\nEnter the project name: "
 read project_name
 
 escaped_project_name=$(echo "$project_name" | tr ' ' '-' | tr '_' '-' | tr '[:upper:]' '[:lower:]')
 escaped_project_name=${escaped_project_name// /}
 
 if [ -d "$app_root/$escaped_project_name" ]; then
-    prompt "Project folder already exists!" "Project creation cancelled." $cancel_suppression
+    prompt "Project folder already exists!" "Project creation cancelled."
 fi
 
 # ? Ensure stack is up
@@ -75,8 +60,8 @@ if [[ "${AUTO_TRUST_HTTPS:-true}" == "true" ]]; then
 fi
 
 # ? Create the Laravel project
-echo -e "\nInstalling the project via Composer..." >&3
-composeExecApp composer create-project laravel/laravel "/var/www/html/$escaped_project_name" -n $conditional_quiet
+echo -e "\nInstalling the project via Composer..."
+composeExecApp composer create-project laravel/laravel "/var/www/html/$escaped_project_name" -n
 
 # ? Wire project configuration
 envUp "$escaped_project_name"
@@ -93,10 +78,10 @@ if [[ ! -f "$lara_stacker_dir/done-docker.flag" ]]; then
 fi
 
 # * Display a success message
-echo -e "\nProject created successfully! You can access it at: [https://$escaped_project_name.localhost].\n" >&3
+echo -e "\nProject created successfully! You can access it at: [https://$escaped_project_name.localhost].\n"
 
 # * Prompt to continue
-echo -n "Press any key to continue..." >&3
+echo -n "Press any key to continue..."
 read whatever
 
-clear >&3
+clear

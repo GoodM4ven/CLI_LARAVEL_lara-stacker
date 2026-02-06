@@ -31,8 +31,15 @@ fi
 lara_stacker_dir=$PWD
 source $lara_stacker_dir/.env
 
+sourcer "dockerHost"
+resolveDockerHost || true
+
 if ! command -v docker >/dev/null 2>&1; then
     prompt "Docker was not found." "Install Docker first and try again." false
+fi
+
+if ! docker info >/dev/null 2>&1; then
+    prompt "Docker daemon is not reachable." "Start Docker (or fix your Docker Desktop socket) and try again." false
 fi
 
 if ! docker compose version >/dev/null 2>&1; then
@@ -64,10 +71,13 @@ sourcer "composeUp"
 sourcer "trustCa"
 
 composeUp
+if [[ $? -ne 0 ]]; then
+    prompt "Failed to start Docker stack." "Check Docker daemon and socket permissions, then retry." false
+fi
 
 if [[ "${AUTO_TRUST_HTTPS:-true}" == "true" ]]; then
     if ! trustCa; then
-        echo -e "\nHTTPS trust was not installed yet. Use \"Trust HTTPS (Caddy CA)\" from the menu." >&3
+        echo -e "\nHTTPS trust was not installed yet. Use \"Trust HTTPS (Caddy CA)\" from the menu."
     fi
 fi
 

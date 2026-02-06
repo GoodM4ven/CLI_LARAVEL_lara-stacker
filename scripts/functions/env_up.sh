@@ -93,5 +93,5 @@ envUp() {
 
     set_env_var "VITE_DEV_SERVER_URL" "https://${vite_domain}${https_suffix}"
 
-    echo -e "\nWired Docker services into the project's .env file." >&3
+    echo -e "\nWired Docker services into the project's .env file."
 }
