@@ -4,19 +4,19 @@
 
 # App sites (https://<app>.localhost)
 *.localhost {
-    @vite host_regexp vite ^vite-([a-z0-9-]+)\.localhost$
+    @vite header_regexp vite Host ^vite-([a-z0-9-]+)\.localhost$
     handle @vite {
         reverse_proxy app:5173
     }
 
-    @app host_regexp app ^([a-z0-9-]+)\.localhost$
+    @app header_regexp app Host ^([a-z0-9-]+)\.localhost$
     handle @app {
-        @disabled file /var/www/html/{re.app.1}/.disabled
+        @disabled file /var/www/html/{http.regexp.app.1}/.disabled
         handle @disabled {
             respond "Project disabled" 503
         }
 
-        root * /var/www/html/{re.app.1}/public
+        root * /var/www/html/{http.regexp.app.1}/public
         php_fastcgi app:9000
         file_server
         encode zstd gzip

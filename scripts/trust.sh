@@ -56,7 +56,24 @@ if [[ -z "$(dockerCompose ps -q caddy)" ]]; then
 fi
 
 if ! trustCa; then
-    prompt "Caddy root certificate not found." "Start the stack and visit any https://*.localhost once, then retry." false
+    if command -v curl >/dev/null 2>&1; then
+        curl -ks "https://localhost:${CADDY_HTTPS_PORT:-8443}" >/dev/null 2>&1 || true
+        curl -ks "https://app.localhost:${CADDY_HTTPS_PORT:-8443}" >/dev/null 2>&1 || true
+        sleep 1
+    fi
+    if ! trustCa; then
+        echo -e "\nDebug: Caddy root certificate still not found."
+        echo "Docker host: ${DOCKER_HOST:-default}"
+        echo -e "\nStack containers:"
+        dockerCompose ps || true
+        echo -e "\nCaddy logs (tail 60):"
+        dockerCompose logs --tail 60 caddy 2>/dev/null || true
+        echo -e "\nCaddy cert path inside container:"
+        dockerCompose exec -T caddy sh -lc "ls -la /data/caddy/pki/authorities/local || true; ls -la /data/caddy/pki/authorities/local/root.crt || true" 2>/dev/null || true
+        echo -e "\nAttempting HTTPS probe:"
+        curl -k -s -o /dev/null -w "https://app.localhost:${CADDY_HTTPS_PORT:-8443} -> %{http_code}\n" "https://app.localhost:${CADDY_HTTPS_PORT:-8443}" || true
+        prompt "Caddy root certificate not found." "Start the stack and visit any https://*.localhost once, then retry." false
+    fi
 fi
 
 echo -e "\nTrusted Caddy local CA successfully."
