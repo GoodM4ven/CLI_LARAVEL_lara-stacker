@@ -1,3 +1,4 @@
 /.drafts
 .env
 done-setup.flag
+node_modules
