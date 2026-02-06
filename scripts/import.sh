@@ -117,7 +117,12 @@ if [[ ! -f "$lara_stacker_dir/done-docker.flag" ]]; then
 fi
 
 # * Display a success message
-echo -e "\nProject imported successfully! You can access it at: [https://$escaped_project_name.localhost].\n"
+https_port="${CADDY_HTTPS_PORT:-8443}"
+https_suffix=""
+if [[ "$https_port" != "443" ]]; then
+    https_suffix=":$https_port"
+fi
+echo -e "\nProject imported successfully! You can access it at: [https://$escaped_project_name.localhost${https_suffix}].\n"
 
 # * Prompt to continue
 echo -n "Press any key to continue..."

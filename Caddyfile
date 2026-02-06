@@ -4,12 +4,15 @@
 
 # App sites (https://<app>.localhost)
 *.localhost {
-    @vite header_regexp vite Host ^vite-([a-z0-9-]+)\.localhost$
+    @http protocol http
+    redir @http https://{host}:{$CADDY_HTTPS_PORT}{uri} 308
+
+    @vite header_regexp vite Host ^vite-([a-z0-9-]+)\.localhost(?::\d+)?$
     handle @vite {
         reverse_proxy app:5173
     }
 
-    @app header_regexp app Host ^([a-z0-9-]+)\.localhost$
+    @app header_regexp app Host ^([a-z0-9-]+)\.localhost(?::\d+)?$
     handle @app {
         @disabled file /var/www/html/{http.regexp.app.1}/.disabled
         handle @disabled {
@@ -25,13 +28,19 @@
 
 # Optional service UIs
 mailpit.localhost {
+    @http protocol http
+    redir @http https://{host}:{$CADDY_HTTPS_PORT}{uri} 308
     reverse_proxy mailpit:8025
 }
 
 minio.localhost {
+    @http protocol http
+    redir @http https://{host}:{$CADDY_HTTPS_PORT}{uri} 308
     reverse_proxy minio:9001
 }
 
 minio-api.localhost {
+    @http protocol http
+    redir @http https://{host}:{$CADDY_HTTPS_PORT}{uri} 308
     reverse_proxy minio:9000
 }
