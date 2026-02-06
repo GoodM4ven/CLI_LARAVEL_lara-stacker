@@ -1,7 +1,7 @@
 dockerCompose() {
     local lara_stacker_dir="$PWD"
     local compose_file="${DOCKER_COMPOSE_FILE:-$lara_stacker_dir/compose.yaml}"
-    local project_name="${DOCKER_PROJECT_NAME:-lara-stacker}"
+    local project_name="lara-stacker"
     local app_root="${APP_ROOT:-/var/www/html}"
     local php_version="${PHP_VERSION:-8.3}"
     local node_version="${NODE_VERSION:-20}"

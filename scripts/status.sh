@@ -22,6 +22,30 @@ fi
 lara_stacker_dir=$PWD
 source $lara_stacker_dir/.env
 
+if ! command -v docker >/dev/null 2>&1; then
+    echo -e "\nDocker was not found.\n"
+    echo -n "Press any key to continue..."
+    read whatever
+    clear
+    exit 0
+fi
+
+if ! docker info >/dev/null 2>&1; then
+    echo -e "\nDocker daemon is not reachable. Start Docker and try again.\n"
+    echo -n "Press any key to continue..."
+    read whatever
+    clear
+    exit 0
+fi
+
+if ! docker compose version >/dev/null 2>&1; then
+    echo -e "\nDocker Compose (v2) was not found.\n"
+    echo -n "Press any key to continue..."
+    read whatever
+    clear
+    exit 0
+fi
+
 sourcer "composeCmd"
 sourcer "composePs"
 
@@ -29,7 +53,7 @@ echo
 echo -e "Running services:\n"
 composePs
 
-echo -n "\nPress any key to continue..."
+echo -e "\nPress any key to continue..."
 read whatever
 
 clear

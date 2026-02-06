@@ -148,7 +148,7 @@ counter=0
 while true; do
     counter=$((counter + 1))
 
-    echo -e "-=|[ LARA-STACKER $current_version ]|=-\n"
+    # echo -e "-=|[ LARA-STACKER $current_version ]|=-\n"
 
     echo -e "Available Operations:\n"
 

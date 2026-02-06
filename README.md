@@ -55,17 +55,17 @@ Extra:
 - `Trust HTTPS (Caddy CA)` — installs the local CA for clean HTTPS
 
 Access:
-- Visit: `https://<app>.localhost:8443` (or the `CADDY_HTTPS_PORT` value)
+- Visit: `https://<app>.localhost:8443` (or `https://<app>.localhost` if `CADDY_HTTPS_PORT=443`)
 
 ### Configuration
 
 Edit `.env`:
 
 - `APP_ROOT` (default `/var/www/html`): where projects live
-- `APP_DOMAIN_SUFFIX` (default `localhost`)
-- `DOCKER_PROFILES` (default `redis,mailpit,minio`)
-- `CADDY_HTTP_PORT` and `CADDY_HTTPS_PORT` (default `8080/8443`)
-- `PHP_VERSION` and `NODE_VERSION`
+- Domains are always `https://<app>.localhost`
+- `DOCKER_PROFILES` (default `redis,mailpit,minio`) — available: `redis`, `mailpit`, `minio` (MySQL is always on)
+- `CADDY_HTTP_PORT` and `CADDY_HTTPS_PORT` (default `8080/8443`, recommend `80/443` if free)
+- `PHP_VERSION` and `NODE_VERSION` (changing these triggers a rebuild on next `Start Stack`)
 - `AUTO_TRUST_HTTPS=true` to install Caddy’s local CA automatically
 - `USE_VSC=true` to generate Xdebug `launch.json` files
 - `VSC_WORKSPACES_DIR` to auto-create `.code-workspace` files (leave empty to disable)
@@ -86,12 +86,13 @@ The CLI will create `APP_ROOT` if missing and make it owned by `USERNAME`.
 - Vite HMR is exposed via `https://vite-<app>.localhost:8443`. Run: `docker compose -f ./compose.yaml --project-name lara-stacker exec app bash -lc "cd /var/www/html/<app> && npm run dev"`
 - Optional UIs: `https://mailpit.localhost:8443` and `https://minio.localhost:8443` (or use the host ports below)
 - If `certutil` is available, the CLI also adds the CA to the NSS store for browsers that use it.
+- If you change `DOCKER_PROFILES`, the next `Start Stack` will restart the stack to apply additions/removals.
 
 ### Ports
 
 This stack is isolated from host installs (v3-style). It only conflicts if a host service already uses these same ports:
 
-- [Caddy](https://caddyserver.com/): `8080/8443`
+- [Caddy](https://caddyserver.com/): `8080/8443` (use `80/443` if free to remove port from URLs)
 - [MySQL](https://www.mysql.com/): `3307` (container `3306`)
 - [Redis](https://redis.io/): `6380` (container `6379`)
 - [Mailpit](https://mailpit.axllent.org/) SMTP/UI: `1026` / `8026`

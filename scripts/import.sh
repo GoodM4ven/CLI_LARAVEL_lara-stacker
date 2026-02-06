@@ -117,7 +117,7 @@ if [[ ! -f "$lara_stacker_dir/done-docker.flag" ]]; then
 fi
 
 # * Display a success message
-echo -e "\nProject imported successfully! You can access it at: [https://$escaped_project_name.${APP_DOMAIN_SUFFIX:-localhost}].\n" >&3
+echo -e "\nProject imported successfully! You can access it at: [https://$escaped_project_name.localhost].\n" >&3
 
 # * Prompt to continue
 echo -n "Press any key to continue..." >&3

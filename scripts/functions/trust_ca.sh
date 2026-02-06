@@ -1,5 +1,5 @@
 trustCa() {
-    local project_name="${DOCKER_PROJECT_NAME:-lara-stacker}"
+    local project_name="lara-stacker"
     local volume_name
     local mount_point
     local cert_path

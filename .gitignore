@@ -1,4 +1,7 @@
-/.drafts
-.env
-done-docker.flag
 node_modules
+.env
+.stacker-build.env
+done-docker.flag
+
+# Custom
+/.drafts
