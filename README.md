@@ -2,7 +2,7 @@
 <div align="left">
 
 
-# Lara-Stacker v4
+# Lara-Stacker v5
 
 Now **Docker-only**! It runs a single containerized stack that serves **all** Laravel projects from one root directory, with automatic HTTPS and per-project wiring.
 
@@ -31,7 +31,7 @@ Now **Docker-only**! It runs a single containerized stack that serves **all** La
    ```
 3. Run the CLI:
    ```bash
-   chmod +x ./lara-stacker.sh && sudo ./lara-stacker.sh
+   chmod +x ./lara-stacker.sh && ./lara-stacker.sh
    ```
 
 ### Available Commands
@@ -53,6 +53,7 @@ Projects:
 
 Extra:
 - `Trust HTTPS (Caddy CA)` — installs the local CA for clean HTTPS
+  - Requires sudo once to write to system trust store
 
 Access:
 - Visit: `https://<app>.localhost:8443` (or `https://<app>.localhost` if `CADDY_HTTPS_PORT=443`)
@@ -91,7 +92,7 @@ The CLI will create `APP_ROOT` if missing and make it owned by `USERNAME`.
 
 ### Ports
 
-This stack is isolated from host installs (v3-style). It only conflicts if a host service already uses these same ports:
+This stack is isolated from host installs (v4-style). It only conflicts if a host service already uses these same ports:
 
 - [Caddy](https://caddyserver.com/): `8080/8443` (use `80/443` if free to remove port from URLs)
 - [MySQL](https://www.mysql.com/): `3307` (container `3306`)

@@ -27,8 +27,16 @@ trustCa() {
     fi
 
     install_path="/usr/local/share/ca-certificates/caddy-local.crt"
-    cp "$cert_path" "$install_path"
-    update-ca-certificates >/dev/null 2>&1
+    if [[ "$EUID" -ne 0 ]]; then
+        if ! command -v sudo >/dev/null 2>&1; then
+            return 1
+        fi
+        sudo cp "$cert_path" "$install_path"
+        sudo update-ca-certificates >/dev/null 2>&1
+    else
+        cp "$cert_path" "$install_path"
+        update-ca-certificates >/dev/null 2>&1
+    fi
 
     if command -v certutil >/dev/null 2>&1; then
         sudo -u "$USERNAME" bash -lc "mkdir -p ~/.pki/nssdb && certutil -d sql:\$HOME/.pki/nssdb -A -t 'C,,' -n 'Caddy Local CA' -i '$install_path' >/dev/null 2>&1 || true"

@@ -9,7 +9,7 @@ functions=(
     "./scripts/functions/helpers/sourcer.sh"
 )
 for script in "${functions[@]}"; do
-    if [[ ! -f "$script" ]] || ! chmod +x "$script" || ! source "$script"; then
+    if [[ ! -f "$script" ]] || ! chmod +x "$script" 2>/dev/null || ! source "$script"; then
         echo -e "Error: The essential script '$script' was not found. Exiting..."
         exit 1
     fi

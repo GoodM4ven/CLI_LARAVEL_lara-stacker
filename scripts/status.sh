@@ -9,7 +9,7 @@ functions=(
     "./scripts/functions/helpers/sourcer.sh"
 )
 for script in "${functions[@]}"; do
-    if [[ ! -f "$script" ]] || ! chmod +x "$script" || ! source "$script"; then
+    if [[ ! -f "$script" ]] || ! chmod +x "$script" 2>/dev/null || ! source "$script"; then
         echo -e "Error: The essential script '$script' was not found. Exiting..."
         exit 1
     fi
@@ -34,7 +34,12 @@ if ! command -v docker >/dev/null 2>&1; then
 fi
 
 if ! docker info >/dev/null 2>&1; then
-    echo -e "\nDocker daemon is not reachable. Start Docker and try again.\n"
+    if [[ "$EUID" -eq 0 ]]; then
+        echo -e "\nDocker Desktop is running under your user session."
+        echo -e "Run without sudo: ./lara-stacker.sh\n"
+    else
+        echo -e "\nDocker daemon is not reachable. Start Docker and try again.\n"
+    fi
     echo -n "Press any key to continue..."
     read whatever
     clear

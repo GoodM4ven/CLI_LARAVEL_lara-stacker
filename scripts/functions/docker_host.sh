@@ -1,6 +1,14 @@
 resolveDockerHost() {
     if [[ -n "$DOCKER_HOST" ]]; then
-        return 0
+        if [[ "$DOCKER_HOST" == unix://* ]]; then
+            local sock_path="${DOCKER_HOST#unix://}"
+            if [[ -S "$sock_path" ]]; then
+                return 0
+            fi
+            unset DOCKER_HOST
+        else
+            return 0
+        fi
     fi
 
     local sock="/var/run/docker.sock"
@@ -15,6 +23,12 @@ resolveDockerHost() {
     local user_sock="/run/user/$uid/docker.sock"
     if [[ -S "$user_sock" ]]; then
         export DOCKER_HOST="unix://$user_sock"
+        return 0
+    fi
+
+    local desktop_cli_sock="/home/$user/.docker/desktop/docker-cli.sock"
+    if [[ -S "$desktop_cli_sock" ]]; then
+        export DOCKER_HOST="unix://$desktop_cli_sock"
         return 0
     fi
 

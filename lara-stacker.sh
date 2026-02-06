@@ -85,13 +85,10 @@ if [[ ! -f $prompt_function_dir ]]; then
     exit 1
 fi
 
-chmod +x $prompt_function_dir
+chmod +x $prompt_function_dir 2>/dev/null || true
 source $prompt_function_dir
 
-# ? Abort if the script isn't run with sudo
-if [ "$EUID" -ne 0 ]; then
-    prompt "Aborted for missing super-user (sudo) permission." "Run the script using [sudo ./lara-stacker.sh] command."
-fi
+# ? Allow non-sudo runs (Docker Desktop uses user sockets)
 
 # ? Ensure that the environment file exists
 if [ ! -f "./.env" ]; then
@@ -129,7 +126,7 @@ if [ $? -ne 0 ]; then
 fi
 
 # ? Ensure all side scripts are executable
-find ./scripts -type f -not -path "*/functions/*" ! -perm -111 -exec chmod +x {} +
+find ./scripts -type f -not -path "*/functions/*" ! -perm -111 -exec chmod +x {} + 2>/dev/null || true
 
 # * ============
 # * Preparation
@@ -177,10 +174,10 @@ while true; do
     # ? Options logic
     case $choice in
     1)
-        sudo RAN_MAIN_SCRIPT="true" ./scripts/up.sh
+        RAN_MAIN_SCRIPT="true" ./scripts/up.sh
         ;;
     2)
-        sudo RAN_MAIN_SCRIPT="true" ./scripts/down.sh
+        RAN_MAIN_SCRIPT="true" ./scripts/down.sh
         ;;
     3)
         RAN_MAIN_SCRIPT="true" ./scripts/status.sh
@@ -189,28 +186,28 @@ while true; do
         RAN_MAIN_SCRIPT="true" ./scripts/list.sh
         ;;
     5)
-        sudo RAN_MAIN_SCRIPT="true" ./scripts/create.sh
+        RAN_MAIN_SCRIPT="true" ./scripts/create.sh
         ;;
     6)
-        sudo RAN_MAIN_SCRIPT="true" ./scripts/import.sh
+        RAN_MAIN_SCRIPT="true" ./scripts/import.sh
         ;;
     7)
-        sudo RAN_MAIN_SCRIPT="true" ./scripts/refresh.sh
+        RAN_MAIN_SCRIPT="true" ./scripts/refresh.sh
         ;;
     8)
-        sudo RAN_MAIN_SCRIPT="true" ./scripts/delete.sh
+        RAN_MAIN_SCRIPT="true" ./scripts/delete.sh
         ;;
     9)
-        sudo RAN_MAIN_SCRIPT="true" ./scripts/env.sh
+        RAN_MAIN_SCRIPT="true" ./scripts/env.sh
         ;;
     10)
-        sudo RAN_MAIN_SCRIPT="true" ./scripts/enable.sh
+        RAN_MAIN_SCRIPT="true" ./scripts/enable.sh
         ;;
     11)
-        sudo RAN_MAIN_SCRIPT="true" ./scripts/disable.sh
+        RAN_MAIN_SCRIPT="true" ./scripts/disable.sh
         ;;
     12)
-        sudo RAN_MAIN_SCRIPT="true" ./scripts/trust.sh
+        RAN_MAIN_SCRIPT="true" ./scripts/trust.sh
         ;;
     13)
         echo -e "\nExiting Lara-Stacker...\n"

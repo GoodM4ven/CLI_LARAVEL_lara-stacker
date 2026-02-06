@@ -14,7 +14,7 @@ functions=(
     "./scripts/functions/helpers/sourcer.sh"
 )
 for script in "${functions[@]}"; do
-    if [[ ! -f "$script" ]] || ! chmod +x "$script" || ! source "$script"; then
+    if [[ ! -f "$script" ]] || ! chmod +x "$script" 2>/dev/null || ! source "$script"; then
         echo -e "Error: The essential script '$script' was not found. Exiting..."
         exit 1
     fi
@@ -39,7 +39,11 @@ if ! command -v docker >/dev/null 2>&1; then
 fi
 
 if ! docker info >/dev/null 2>&1; then
-    prompt "Docker daemon is not reachable." "Start Docker (or fix your Docker Desktop socket) and try again." false
+    if [[ "$EUID" -eq 0 ]]; then
+        prompt "Docker Desktop is running under your user session." "Run without sudo: [./lara-stacker.sh]" false
+    else
+        prompt "Docker daemon is not reachable." "Start Docker (or fix your Docker Desktop socket) and try again." false
+    fi
 fi
 
 if ! docker compose version >/dev/null 2>&1; then
@@ -55,11 +59,6 @@ fi
 app_root="${APP_ROOT:-/var/www/html}"
 if [[ ! -d "$app_root" ]]; then
     mkdir -p "$app_root"
-fi
-
-owner="$(stat -c %U "$app_root" 2>/dev/null || echo "")"
-if [[ "$owner" != "$USERNAME" ]]; then
-    chown -R "$USERNAME:$USERNAME" "$app_root"
 fi
 
 # * ========
