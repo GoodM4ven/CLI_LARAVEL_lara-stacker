@@ -30,6 +30,9 @@ services:
     environment:
       HOME: /tmp
       COMPOSER_HOME: /tmp/composer
+    sysctls:
+      fs.inotify.max_user_watches: 524288
+      fs.inotify.max_user_instances: 1024
 
   mysql:
     image: mariadb:11

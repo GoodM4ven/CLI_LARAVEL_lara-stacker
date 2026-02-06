@@ -1,6 +1,6 @@
-<div align="center">
-    بسم الله الرحمن الرحيم
-</div>
+<div align="center">بسم الله الرحمن الرحيم</div>
+<div align="left">
+
 
 # Lara-Stacker v4
 
@@ -15,16 +15,16 @@ Now **Docker-only**! It runs a single containerized stack that serves **all** La
 - Enable/disable projects without deleting them.
 
 
-## Usage
+## Setup
 
 ### Requirements
 
-- Docker Engine
-- Docker Compose v2
+- [Docker Engine](https://docs.docker.com/engine/install)
+- [Docker Compose](https://docs.docker.com/compose/install)
 
 ### Installation
 
-1. Clone the repo.
+1. Clone this repo, the `docker` branch of course.
 2. Create `.env` from `.env.example` and fill the values.
    ```bash
    cp .env.example .env
@@ -34,11 +34,14 @@ Now **Docker-only**! It runs a single containerized stack that serves **all** La
    chmod +x ./lara-stacker.sh && sudo ./lara-stacker.sh
    ```
 
-### Commands Available
+### Available Commands
 
+Container:
 - `Start Stack` — boots the Docker stack and prepares HTTPS (auto-trusts if enabled)
 - `Stop Stack` — shuts down all stack services
 - `Stack Status` — shows running containers in the stack
+
+Projects:
 - `List Projects` — lists folders under `APP_ROOT` and whether they’re enabled
 - `Create A Project` — new Laravel app under `APP_ROOT`, wired to Docker services
 - `Import A Project` — copy an existing app into `APP_ROOT` and wire it
@@ -47,8 +50,9 @@ Now **Docker-only**! It runs a single containerized stack that serves **all** La
 - `Wire Project .env` — updates a project’s `.env` to match the stack
 - `Enable A Project` — removes `.disabled` marker and serves it
 - `Disable A Project` — adds `.disabled` marker and returns 503
+
+Extra:
 - `Trust HTTPS (Caddy CA)` — installs the local CA for clean HTTPS
-- `Exit` — closes the CLI
 
 ### Configuration
 
@@ -69,12 +73,30 @@ The CLI will create `APP_ROOT` if missing and make it owned by `USERNAME`.
 ### Xdebug (On-Demand)
 
 - Configured for **trigger-only** debugging.
-- Use the VS Code config in `.vscode/launch.json` (auto-copied per project).
-- Trigger with a browser extension or `XDEBUG_TRIGGER=1`.
+- Use the [VSCodium](https://vscodium.com) config in `.vscode/launch.json` (auto-copied per project).
+- Trigger with a [browser extension](https://chromewebstore.google.com/detail/xdebug-chrome-extension/oiofkammbajfehgpleginfomeppgnglk?hl=en&pli=1) or `XDEBUG_TRIGGER=1`.
 
 ### Notes
 
 - Projects can be **disabled** via the CLI. This creates a `.disabled` file, and Caddy responds with 503 while keeping files intact.
 - Vite HMR is exposed via `https://vite-<app>.localhost`. Run: `docker compose -f ./compose.yaml --project-name lara-stacker exec app bash -lc "cd /var/www/html/<app> && npm run dev"`
-- Optional UIs: Mailpit at `http://mailpit.localhost`, MinIO Console at `http://minio.localhost`
+- Optional UIs: Mailpit at `http://mailpit.localhost`, MinIO Console at `http://minio.localhost`, etc.
 - If `certutil` is available, the CLI also adds the CA to the NSS store for browsers that use it.
+
+
+## Support
+
+Support ongoing package maintenance as well as the development of other projects through [sponsorship](https://github.com/sponsors/GoodM4ven) or one-time [donations](https://github.com/sponsors/GoodM4ven?frequency=one-time&sponsor=GoodM4ven).
+
+
+## Credits
+
+- [ChatGPT](https://chatgpt.com) and [Codex CLI](https://developers.openai.com/codex/cli/)
+- [Laravel](https://laravel.com/)
+- [Spatie](https://spatie.be/open-source/packages)
+- [Active Contributors](https://github.com/GoodM4ven/CLI_LARAVEL_lara-stacker/graphs/contributors?from=1%2F3%2F2026)
+- All the technologies used to set up this whole development environment, and eventually the apps... Perhaps the browsers too?! -Please help!
+
+
+</div>
+<div align="center"><br>والحمد لله رب العالمين</div>
