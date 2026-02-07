@@ -106,6 +106,8 @@ if ! composeUp; then
     prompt "Failed to start the Docker stack." "Start the stack and retry deletion. Project files were not removed." false
 fi
 
+echo
+
 if [[ -z "$(dockerCompose ps -q mysql)" ]]; then
     prompt "MySQL container is not running." "Start the stack and retry deletion. Project files were not removed." false
 fi

@@ -1,4 +1,6 @@
 mysqlUp() {
+    echo
+
     local db_or_project_name="$1"
 
     # Format name

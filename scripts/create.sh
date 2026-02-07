@@ -66,6 +66,22 @@ waitForProjectInContainer() {
     return 1
 }
 
+waitForAutoloadInContainer() {
+    local project_name="$1"
+    local retries="${2:-30}"
+    local sleep_seconds="${3:-2}"
+    local autoload_file="/var/www/html/$project_name/vendor/autoload.php"
+
+    for _ in $(seq 1 "$retries"); do
+        if composeExecApp php -r "require '$autoload_file';" >/dev/null 2>&1; then
+            return 0
+        fi
+        sleep "$sleep_seconds"
+    done
+
+    return 1
+}
+
 resolveDockerHost || true
 if ! ensureDockerAccess; then
     prompt "Docker daemon is not reachable." "Start Docker and retry project creation." false
@@ -105,13 +121,24 @@ fi
 
 # ? Ensure the container can see the new project files (Docker Desktop sync or stale mounts)
 if ! waitForProjectInContainer "$escaped_project_name"; then
-    echo -e "\nApp container couldn't see the new project yet. Recreating the stack..."
+    echo -e "\nApp container couldn't see the new project yet. Recreating the stack...\n"
     composeDown || true
     if ! composeUp; then
         prompt "Failed to start the Docker stack." "Start the stack and retry project creation." false
     fi
     if ! waitForProjectInContainer "$escaped_project_name"; then
         prompt "App container can't see the project files." "Check APP_ROOT in [.env] and Docker file sharing, then retry." false
+    fi
+fi
+
+if ! waitForAutoloadInContainer "$escaped_project_name"; then
+    echo -e "\nAutoload files are not fully visible inside the app container yet. Recreating the stack...\n"
+    composeDown || true
+    if ! composeUp; then
+        prompt "Failed to start the Docker stack." "Start the stack and retry project creation." false
+    fi
+    if ! waitForAutoloadInContainer "$escaped_project_name"; then
+        prompt "App container can't load vendor/autoload.php." "Check APP_ROOT and Docker file sharing (or run Composer inside the app container) and retry." false
     fi
 fi
 
