@@ -88,10 +88,31 @@ composeUp() {
     fi
 
     local up_status=0
+    # Ensure the external default network exists
+    if ! docker network inspect lara-stacker_default >/dev/null 2>&1; then
+        docker network create \
+            --label com.docker.compose.project=lara-stacker \
+            --label com.docker.compose.network=default \
+            lara-stacker_default >/dev/null 2>&1 || true
+    fi
+
     if [[ "$need_rebuild" == "true" ]]; then
         dockerCompose "${profiles[@]}" up -d --remove-orphans --build || up_status=$?
     else
         dockerCompose "${profiles[@]}" up -d --remove-orphans || up_status=$?
+    fi
+
+    if [[ "$up_status" -ne 0 ]]; then
+        local err_out
+        err_out=$(dockerCompose "${profiles[@]}" up -d --remove-orphans 2>&1 || true)
+        if echo "$err_out" | grep -qi "network .* not found"; then
+            dockerCompose down --remove-orphans >/dev/null 2>&1 || true
+            if [[ "$need_rebuild" == "true" ]]; then
+                dockerCompose "${profiles[@]}" up -d --remove-orphans --build || up_status=$?
+            else
+                dockerCompose "${profiles[@]}" up -d --remove-orphans || up_status=$?
+            fi
+        fi
     fi
 
     if [[ "$up_status" -ne 0 ]]; then

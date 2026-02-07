@@ -35,7 +35,7 @@ fi
 
 sourcer "composeCmd"
 
-echo -e "\nThis will REMOVE containers, images, volumes, networks, and build caches for lara-stacker."
+echo -e "\nThis will REMOVE containers, images, volumes, networks, and build caches for lara-stacker...\n"
 read -p "Type 'purge' to continue: " confirm
 if [[ "$confirm" != "purge" ]]; then
     echo -e "\nCancelled.\n"

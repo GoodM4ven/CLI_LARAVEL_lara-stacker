@@ -92,6 +92,11 @@ services:
       - minio
     entrypoint: ["sh", "-c", "sleep infinity"]
 
+networks:
+  default:
+    name: lara-stacker_default
+    external: true
+
 volumes:
   caddy_data:
   caddy_config:

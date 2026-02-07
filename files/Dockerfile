@@ -4,7 +4,6 @@ FROM php:${PHP_VERSION}-fpm-bookworm
 # System dependencies
 ARG APT_MIRROR=deb.debian.org
 ARG APT_SECURITY_MIRROR=security.debian.org
-ARG INSTALL_MEDIA_TOOLS=true
 RUN mirror="$APT_MIRROR"; \
     security="$APT_SECURITY_MIRROR"; \
     case "$mirror" in \
@@ -72,8 +71,6 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     && docker-php-ext-enable redis opcache \
     && rm -f /usr/local/etc/php/conf.d/*xdebug*.ini \
     && rm -rf /var/lib/apt/lists/*
-
-# Host-only tools (watchman, java) are intentionally not installed here.
 
 COPY ./xdebug.ini /usr/local/etc/php/conf.d/99-xdebug.ini
 COPY ./opcache.ini /usr/local/etc/php/conf.d/10-opcache.ini
