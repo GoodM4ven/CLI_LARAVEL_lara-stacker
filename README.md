@@ -14,7 +14,7 @@ Now **Docker-only**! It runs a single containerized stack that serves **all** La
 - Xdebug is **trigger-only** (no idling slow cost).
 - Enable/disable applications without deleting them.
 
-### Laravel Sail vs Lara-Stacker (Short and Critical)
+### Laravel Sail vs Lara-Stacker
 
 - **Sail is per-application**: each app ships its own `compose.yaml` and containers. That means duplicated services and **rebuild time per application**.
 - **Shared container here**: one runtime container group serves **all apps**, so no duplicate services per application.
