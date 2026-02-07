@@ -35,6 +35,7 @@ fi
 
 sourcer "composeCmd"
 sourcer "composeUp"
+sourcer "composeDown"
 sourcer "composeExecApp"
 sourcer "envUp"
 sourcer "mysqlUp"
@@ -48,6 +49,22 @@ sourcer "sessionTable"
 sourcer "cliWrappers"
 sourcer "dockerHost"
 sourcer "hostTools"
+
+waitForProjectInContainer() {
+    local project_name="$1"
+    local retries="${2:-20}"
+    local sleep_seconds="${3:-1}"
+    local vendor_file="/var/www/html/$project_name/vendor/autoload.php"
+
+    for _ in $(seq 1 "$retries"); do
+        if composeExecApp test -f "$vendor_file" >/dev/null 2>&1; then
+            return 0
+        fi
+        sleep "$sleep_seconds"
+    done
+
+    return 1
+}
 
 resolveDockerHost || true
 if ! ensureDockerAccess; then
@@ -86,6 +103,18 @@ if ! runAsHostUser composer create-project laravel/laravel "$project_path" --no-
     prompt "Failed to create the project via Composer." "Ensure Composer is working on the host and retry." false
 fi
 
+# ? Ensure the container can see the new project files (Docker Desktop sync or stale mounts)
+if ! waitForProjectInContainer "$escaped_project_name"; then
+    echo -e "\nApp container couldn't see the new project yet. Recreating the stack..."
+    composeDown || true
+    if ! composeUp; then
+        prompt "Failed to start the Docker stack." "Start the stack and retry project creation." false
+    fi
+    if ! waitForProjectInContainer "$escaped_project_name"; then
+        prompt "App container can't see the project files." "Check APP_ROOT in [.env] and Docker file sharing, then retry." false
+    fi
+fi
+
 # ? Wire project configuration
 envUp "$escaped_project_name"
 mysqlUp "$escaped_project_name"
@@ -115,8 +144,6 @@ if [[ "$https_port" != "443" ]]; then
 fi
 echo -e "\nProject created successfully! You can access it at: [https://$escaped_project_name.localhost${https_suffix}].\n"
 
-# * Prompt to continue
-echo
 echo -n "Press any key to continue..."
 read whatever
 

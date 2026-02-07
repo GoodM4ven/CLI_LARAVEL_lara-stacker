@@ -50,9 +50,54 @@ if ! ensureDockerAccess; then
     prompt "Docker daemon is not reachable." "Start Docker and retry refresh." false
 fi
 
-# ? Get the project name from the user
-echo -ne "\nEnter the project name: "
-read project_name
+# ? List projects and get the project name/number from the user
+project_names=()
+project_statuses=()
+for dir in "$app_root"/*/; do
+    if [ ! -d "$dir" ]; then
+        continue
+    fi
+    name=$(basename "$dir")
+    status="enabled"
+    if [ -f "$dir/.disabled" ]; then
+        status="disabled"
+    fi
+    project_names+=("$name")
+    project_statuses+=("$status")
+done
+
+project_count=${#project_names[@]}
+if [ "$project_count" -eq 0 ]; then
+    prompt "No projects found." "Create a project first."
+fi
+
+echo -e "\nAvailable projects:"
+digits=${#project_count}
+if [ "$digits" -lt 2 ]; then
+    digits=2
+fi
+for i in "${!project_names[@]}"; do
+    idx=$((i + 1))
+    printf "%0*d. %s (%s)\n" "$digits" "$idx" "${project_names[$i]}" "${project_statuses[$i]}"
+done
+
+echo -ne "\nEnter project number or name: "
+read -r project_input
+if [[ -z "$project_input" ]]; then
+    prompt "Project selection cannot be empty."
+fi
+
+if [[ "$project_input" =~ ^[0-9]+$ ]]; then
+    selected_index=$((10#$project_input - 1))
+    if [ "$selected_index" -lt 0 ] || [ "$selected_index" -ge "$project_count" ]; then
+        prompt "Invalid project selection."
+    fi
+    project_name="${project_names[$selected_index]}"
+else
+    project_name="$project_input"
+fi
+
+echo
 
 escaped_project_name=$(echo "$project_name" | tr ' ' '-' | tr '_' '-' | tr '[:upper:]' '[:lower:]')
 escaped_project_name=${escaped_project_name// /}
@@ -110,8 +155,6 @@ fi
 # * Display a success indicator
 echo -e "\nDone refreshing the project successfully!\n"
 
-# * Prompt to continue
-echo
 read -p "Press any key to continue..." whatever
 
 clear
