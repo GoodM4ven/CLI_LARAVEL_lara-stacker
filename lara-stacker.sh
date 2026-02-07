@@ -105,6 +105,65 @@ fi
 chmod +x $prompt_function_dir 2>/dev/null || true
 source $prompt_function_dir
 
+# * =====================
+# * Update mechanism
+# * =====================
+
+check_for_updates() {
+    if [[ "$is_updateable" != true ]]; then
+        return
+    fi
+    if [[ -z "$git_remote_url" || "$release_version" == "unknown" || "$current_version" == "???" ]]; then
+        return
+    fi
+    if [[ ${#git_runner[@]} -eq 0 ]]; then
+        return
+    fi
+
+    # Refresh tags to make comparison reliable
+    "${git_runner[@]}" fetch --tags --quiet >/dev/null 2>&1 || true
+
+    local update_needed=false
+    if "${git_runner[@]}" rev-parse -q --verify "refs/tags/$release_version" >/dev/null 2>&1; then
+        if ! "${git_runner[@]}" merge-base --is-ancestor "$release_version" HEAD >/dev/null 2>&1; then
+            update_needed=true
+        fi
+    else
+        if [[ "$release_version" != "$current_version" ]]; then
+            update_needed=true
+        fi
+    fi
+
+    if [[ "$update_needed" != true ]]; then
+        return
+    fi
+
+    if [[ -n "$("${git_runner[@]}" status --porcelain 2>/dev/null)" ]]; then
+        echo -e "\nWarning: Update available ($release_version), but local changes are present."
+        echo -e "Please commit or stash your changes, then re-run to update.\n"
+        read -r -n 1 -s -p "Press any key to continue..." </dev/tty
+        echo
+        return
+    fi
+
+    echo -e "\nUpdate available: $current_version -> $release_version"
+    read -r -p "Update now? [y/N] " reply </dev/tty
+    echo
+    if [[ "$reply" =~ ^[Yy]$ ]]; then
+        if "${git_runner[@]}" pull --ff-only >/dev/null 2>&1; then
+            echo "Update complete. Restarting..."
+            sleep 1
+            exec "$0" "$@"
+        else
+            echo -e "\nUpdate failed. Please run 'git pull --ff-only' manually.\n"
+            read -r -n 1 -s -p "Press any key to continue..." </dev/tty
+            echo
+        fi
+    fi
+}
+
+check_for_updates "$@"
+
 # ? Allow non-sudo runs (Docker Desktop uses user sockets)
 
 # ? Ensure that the environment file exists
