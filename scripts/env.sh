@@ -2,7 +2,7 @@
 
 clear
 
-echo -e "-=|[ Lara-Stacker |> Docker Stack |> WIRE ENV ]|=-"
+echo -e "-=|[ Lara-Stacker |> Docker Stack |> REWIRE PROJECT ]|=-"
 
 functions=(
     "./scripts/functions/helpers/prompt.sh"

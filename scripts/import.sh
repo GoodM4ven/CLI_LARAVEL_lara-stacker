@@ -156,7 +156,7 @@ if ! waitForAutoloadInContainer "$escaped_project_name"; then
     fi
 fi
 
-# ? Wire project configuration
+# ? Rewire project configuration
 envUp "$escaped_project_name"
 viteUp "$escaped_project_name"
 xdebugUp "$escaped_project_name"
@@ -180,7 +180,7 @@ https_suffix=""
 if [[ "$https_port" != "443" ]]; then
     https_suffix=":$https_port"
 fi
-domain_suffix="${DOMAIN_SUFFIX:-localhost}"
+domain_suffix="dev.localhost"
 echo -e "\nProject imported successfully! You can access it at: [https://$escaped_project_name.${domain_suffix}${https_suffix}].\n"
 
 # * Prompt to continue

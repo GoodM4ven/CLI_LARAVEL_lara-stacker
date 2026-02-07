@@ -27,7 +27,6 @@ fi
 
 lara_stacker_dir=$PWD
 source $lara_stacker_dir/.env
-domain_suffix="${DOMAIN_SUFFIX:-localhost}"
 
 sourcer "dockerHost"
 resolveDockerHost || true
@@ -58,36 +57,12 @@ if [[ $? -ne 0 ]]; then
     prompt "Failed to start Docker stack." "Check Docker daemon/compose output, then retry." false
 fi
 
-if [[ "${HTTPS_TRUST_MODE:-caddy}" == "mkcert" ]]; then
-    if ! trustHttps; then
-        prompt "mkcert trust failed." "Install mkcert on the host and retry (or set HTTPS_TRUST_MODE=caddy)." false
-    fi
-    dockerCompose up -d --force-recreate caddy >/dev/null 2>&1 || true
-    echo -e "\nTrusted HTTPS via mkcert successfully."
-else
-    if ! trustHttps; then
-        if command -v curl >/dev/null 2>&1; then
-            curl -ks "https://localhost:${CADDY_HTTPS_PORT:-8443}" >/dev/null 2>&1 || true
-            curl -ks "https://app.${domain_suffix}:${CADDY_HTTPS_PORT:-8443}" >/dev/null 2>&1 || true
-            sleep 1
-        fi
-        if ! trustHttps; then
-            echo -e "\nDebug: Caddy root certificate still not found."
-            echo "Docker host: ${DOCKER_HOST:-default}"
-            echo -e "\nStack containers:"
-            dockerCompose ps || true
-            echo -e "\nCaddy logs (tail 60):"
-            dockerCompose logs --tail 60 caddy 2>/dev/null || true
-            echo -e "\nCaddy cert path inside container:"
-            dockerCompose exec -T caddy sh -lc "ls -la /data/caddy/pki/authorities/local || true; ls -la /data/caddy/pki/authorities/local/root.crt || true" 2>/dev/null || true
-            echo -e "\nAttempting HTTPS probe:"
-            curl -k -s -o /dev/null -w "https://app.${domain_suffix}:${CADDY_HTTPS_PORT:-8443} -> %{http_code}\n" "https://app.${domain_suffix}:${CADDY_HTTPS_PORT:-8443}" || true
-            prompt "Caddy root certificate not found." "Start the stack and visit any https://*.${domain_suffix} once, then retry." false
-        fi
-    fi
-
-    echo -e "\nTrusted Caddy local CA successfully."
+if ! trustHttps; then
+    prompt "mkcert trust failed." "Install mkcert on the host and retry." false
 fi
+
+dockerCompose up -d --force-recreate caddy >/dev/null 2>&1 || true
+echo -e "\nTrusted HTTPS via mkcert successfully."
 
 echo
 echo -n "Press any key to continue..."

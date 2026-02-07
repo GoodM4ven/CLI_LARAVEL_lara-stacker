@@ -3,15 +3,14 @@ services:
     image: caddy:2
     environment:
       CADDY_HTTPS_PORT: ${CADDY_HTTPS_PORT:-8443}
-      DOMAIN_SUFFIX: ${DOMAIN_SUFFIX:-localhost}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:
       - "${CADDY_HTTP_PORT:-8080}:80"
       - "${CADDY_HTTPS_PORT:-8443}:443"
     volumes:
-      - ./Caddyfile.${HTTPS_TRUST_MODE:-caddy}:/etc/caddy/Caddyfile:ro
-      - ./certs:/etc/caddy/certs:ro
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./.certs:/etc/caddy/certs:ro
       - caddy_data:/data
       - caddy_config:/config
       - ${APP_ROOT}:/var/www/html:ro
@@ -49,34 +48,17 @@ services:
 
   redis:
     image: redis:7-alpine
-    profiles:
-      - redis
     ports:
       - "6380:6379"
 
-  postgres:
-    image: postgres:16
-    profiles:
-      - postgres
-    environment:
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5433:5432"
-
   mailpit:
     image: axllent/mailpit:latest
-    profiles:
-      - mailpit
     ports:
       - "1026:1025"
       - "8026:8025"
 
   minio:
     image: minio/minio:latest
-    profiles:
-      - minio
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: minioadmin
@@ -89,8 +71,6 @@ services:
 
   minio-client:
     image: minio/mc
-    profiles:
-      - minio
     entrypoint: ["sh", "-c", "sleep infinity"]
 
 networks:
@@ -103,4 +83,3 @@ volumes:
   caddy_config:
   mysql_data:
   minio_data:
-  postgres_data:

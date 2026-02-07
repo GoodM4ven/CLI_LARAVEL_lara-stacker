@@ -75,9 +75,9 @@ sourcer "composeCmd"
 sourcer "composeUp"
 sourcer "trustHttps"
 
-if [[ "${AUTO_TRUST_HTTPS:-true}" == "true" ]] && [[ "${HTTPS_TRUST_MODE:-caddy}" == "mkcert" ]]; then
+if [[ "${AUTO_TRUST_HTTPS:-true}" == "true" ]]; then
     if ! trustHttps; then
-        prompt "mkcert trust failed." "Install mkcert on the host and retry (or set HTTPS_TRUST_MODE=caddy)." false
+        prompt "mkcert trust failed." "Install mkcert on the host and retry." false
     fi
 fi
 
@@ -87,11 +87,7 @@ if [[ $? -ne 0 ]]; then
 fi
 
 if [[ "${AUTO_TRUST_HTTPS:-true}" == "true" ]]; then
-    if [[ "${HTTPS_TRUST_MODE:-caddy}" != "mkcert" ]]; then
-        if ! trustHttps; then
-            echo -e "\nHTTPS trust was not installed yet. Use \"Trust HTTPS\" from the menu."
-        fi
-    fi
+    dockerCompose up -d --force-recreate caddy >/dev/null 2>&1 || true
 fi
 
 # ? Mark docker setup as done

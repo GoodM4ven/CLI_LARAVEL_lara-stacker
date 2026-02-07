@@ -116,17 +116,8 @@ if ! mysqlDown "$escaped_project_name"; then
     prompt "Failed to delete MySQL database." "Project files were not removed." false
 fi
 
-minio_enabled="false"
-if [[ -n "$DOCKER_PROFILES" ]]; then
-    if echo ",$DOCKER_PROFILES," | tr '[:upper:]' '[:lower:]' | grep -q ",minio,"; then
-        minio_enabled="true"
-    fi
-fi
-
-if [[ "$minio_enabled" == "true" ]]; then
-    if ! minioDown "$escaped_project_name"; then
-        prompt "Failed to delete MinIO bucket." "Project files were not removed." false
-    fi
+if ! minioDown "$escaped_project_name"; then
+    prompt "Failed to delete MinIO bucket." "Project files were not removed." false
 fi
 
 if rm -rf "$project_path" 2>/dev/null; then

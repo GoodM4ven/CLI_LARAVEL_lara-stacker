@@ -2,7 +2,7 @@ envUp() {
     local project_name="$1"
 
     local app_root="${APP_ROOT:-/var/www/html}"
-    local domain_suffix="${DOMAIN_SUFFIX:-localhost}"
+    local domain_suffix="dev.localhost"
 
     local escaped_project_name
     escaped_project_name=$(echo "$project_name" | tr ' ' '-' | tr '_' '-' | tr '[:upper:]' '[:lower:]')
@@ -37,14 +37,6 @@ envUp() {
         fi
     }
 
-    profile_enabled() {
-        local profile="$1"
-        if [[ -z "$DOCKER_PROFILES" ]]; then
-            return 1
-        fi
-        echo ",$DOCKER_PROFILES," | tr '[:upper:]' '[:lower:]' | grep -q ",$profile,"
-    }
-
     local app_domain="${escaped_project_name}.${domain_suffix}"
     local vite_domain="vite-${escaped_project_name}.${domain_suffix}"
 
@@ -60,53 +52,32 @@ envUp() {
     set_env_var "APP_NAME" "$escaped_project_name"
     set_env_var "APP_URL" "https://${app_domain}${https_suffix}"
 
-    local db_connection="mysql"
-    local db_host="mysql"
-    local db_port="3306"
-
-    if profile_enabled "postgres"; then
-        db_connection="pgsql"
-        db_host="postgres"
-        db_port="5432"
-    fi
-
-    set_env_var "DB_CONNECTION" "$db_connection"
-    set_env_var "DB_HOST" "$db_host"
-    set_env_var "DB_PORT" "$db_port"
+    set_env_var "DB_CONNECTION" "mysql"
+    set_env_var "DB_HOST" "mysql"
+    set_env_var "DB_PORT" "3306"
     set_env_var "DB_DATABASE" "$db_name"
-    if [[ "$db_connection" == "pgsql" ]]; then
-        set_env_var "DB_USERNAME" "postgres"
-        set_env_var "DB_PASSWORD" "$DB_PASSWORD"
-    else
-        set_env_var "DB_USERNAME" "root"
-        set_env_var "DB_PASSWORD" "$DB_PASSWORD"
-    fi
+    set_env_var "DB_USERNAME" "root"
+    set_env_var "DB_PASSWORD" "$DB_PASSWORD"
 
-    if profile_enabled "redis"; then
-        set_env_var "CACHE_STORE" "redis"
-        set_env_var "REDIS_HOST" "redis"
-        set_env_var "REDIS_PORT" "6379"
-        set_env_var "REDIS_PASSWORD" "null"
-    fi
+    set_env_var "CACHE_STORE" "redis"
+    set_env_var "REDIS_HOST" "redis"
+    set_env_var "REDIS_PORT" "6379"
+    set_env_var "REDIS_PASSWORD" "null"
 
-    if profile_enabled "mailpit"; then
-        set_env_var "MAIL_MAILER" "smtp"
-        set_env_var "MAIL_HOST" "mailpit"
-        set_env_var "MAIL_PORT" "1025"
-    fi
+    set_env_var "MAIL_MAILER" "smtp"
+    set_env_var "MAIL_HOST" "mailpit"
+    set_env_var "MAIL_PORT" "1025"
 
-    if profile_enabled "minio"; then
-        set_env_var "FILESYSTEM_DISK" "s3"
-        set_env_var "AWS_ACCESS_KEY_ID" "minioadmin"
-        set_env_var "AWS_SECRET_ACCESS_KEY" "minioadmin"
-        set_env_var "AWS_DEFAULT_REGION" "us-east-1"
-        set_env_var "AWS_BUCKET" "$escaped_project_name"
-        set_env_var "AWS_ENDPOINT" "http://minio:9000"
-        set_env_var "AWS_URL" "http://minio:9000/$escaped_project_name"
-        set_env_var "AWS_USE_PATH_STYLE_ENDPOINT" "true"
-    fi
+    set_env_var "FILESYSTEM_DISK" "s3"
+    set_env_var "AWS_ACCESS_KEY_ID" "minioadmin"
+    set_env_var "AWS_SECRET_ACCESS_KEY" "minioadmin"
+    set_env_var "AWS_DEFAULT_REGION" "us-east-1"
+    set_env_var "AWS_BUCKET" "$escaped_project_name"
+    set_env_var "AWS_ENDPOINT" "http://minio:9000"
+    set_env_var "AWS_URL" "http://minio:9000/$escaped_project_name"
+    set_env_var "AWS_USE_PATH_STYLE_ENDPOINT" "true"
 
     set_env_var "VITE_DEV_SERVER_URL" "https://${vite_domain}${https_suffix}"
 
-    echo -e "\nWired Docker services into the project's .env file."
+    echo -e "\nRewired the project's .env file to match the stack."
 }

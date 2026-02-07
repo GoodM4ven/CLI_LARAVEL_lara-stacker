@@ -1,10 +1,10 @@
 trustMkcert() {
     local repo_dir="${lara_stacker_dir:-$PWD}"
-    local cert_dir="$repo_dir/certs"
-    local cert_file="$cert_dir/localhost.pem"
-    local key_file="$cert_dir/localhost-key.pem"
+    local cert_dir="$repo_dir/.certs"
+    local cert_file="$cert_dir/dev.localhost.pem"
+    local key_file="$cert_dir/dev.localhost-key.pem"
     local mkcert_user="${USERNAME:-$USER}"
-    local domain_suffix="${DOMAIN_SUFFIX:-localhost}"
+    local domain_suffix="dev.localhost"
     local app_root="${APP_ROOT:-/var/www/html}"
     local -A seen_hosts
     local -a hosts

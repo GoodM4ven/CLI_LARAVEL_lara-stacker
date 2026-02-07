@@ -9,8 +9,8 @@ Now **Docker-only**! It runs a single containerized stack that serves **all** La
 ### Highlights
 
 - One Docker stack, many projects.
-- `https://<app>.localhost` for every project (no `/etc/hosts`).
-- Optional services via profiles: Redis, Mailpit, MinIO, PostgreSQL.
+- `https://<app>.dev.localhost` for every project (no `/etc/hosts`).
+- Includes Redis, Mailpit, and MinIO out of the box.
 - Xdebug is **trigger-only** (no idle cost).
 - Enable/disable projects without deleting them.
 
@@ -32,7 +32,9 @@ Now **Docker-only**! It runs a single containerized stack that serves **all** La
 - Host tools (required for create/import/refresh workflows): Composer (requires PHP), Node.js, npm
 - `ca-certificates` (Linux trust store updates)
 - `certutil` (NSS trust store; `libnss3-tools` on Debian/Ubuntu)
-- [mkcert](https://github.com/FiloSottile/mkcert) (optional, only for `HTTPS_TRUST_MODE=mkcert`)
+- [mkcert](https://github.com/FiloSottile/mkcert) (required for HTTPS trust)
+
+HTTPS trust is always handled by mkcert (no Caddy CA mode).
 
 ### Installation
 
@@ -52,11 +54,13 @@ Projects:
 - `List Projects` — lists folders under `APP_ROOT` and whether they’re enabled
 - `Create A Project` — new Laravel app under `APP_ROOT`, wired to Docker services
 - `Import A Project` — copy an existing app into `APP_ROOT` and wire it
-- `Refresh A Project` — reinstall deps, clear caches, rewire env
+- `Refresh A Project` — reinstall deps, clear caches, rewire env (full consistency pass)
 - `Delete A Project` — removes project files and its DB/bucket
-- `Wire Project .env` — updates a project’s `.env` to match the stack
+- `Rewire Project` — updates a project’s `.env` + Vite config to match the stack (no reinstall)
 - `Enable A Project` — removes `.disabled` marker and serves it
 - `Disable A Project` — adds `.disabled` marker and returns 503
+
+Rewire updates config only. Refresh does a full dependency reinstall on the host, clears caches, and then rewires.
 
 Service Control:
 - `List MySQL Databases` — shows all databases in the stack MySQL
@@ -67,12 +71,12 @@ Container:
 - `Start Stack` — boots the Docker stack and prepares HTTPS (auto-trusts if enabled)
 - `Stop Stack` — shuts down all stack services
 - `Stack Status` — shows running container in the stack
-- `Trust HTTPS (Caddy/mkcert)` — installs local trust for clean HTTPS
+- `Trust HTTPS` — installs local trust for clean HTTPS (mkcert)
   - Requires sudo once to write to system trust store
 - `Purge Stack` — removes all stack containers, images, volumes, networks, and build cache
 
 Access:
-- Visit: `https://<app>.localhost:8443` (or `https://<app>.localhost` if `CADDY_HTTPS_PORT=443`)
+- Visit: `https://<app>.dev.localhost:8443` (or `https://<app>.dev.localhost` if `CADDY_HTTPS_PORT=443`)
 
 ### Project CLI Wrappers
 
@@ -86,7 +90,7 @@ Each created/imported project gets a `php` helper in its root. Use it from the p
 ### Responsibilities
 
 **What the container does for you (main services + runtime stack):**
-- Runs the **main services** and exposes them on ports (Caddy + PHP-FPM, MySQL, and optional Redis/Mailpit/MinIO/PostgreSQL via profiles).
+- Runs the **main services** and exposes them on ports (Caddy + PHP-FPM, MySQL, Redis, Mailpit, MinIO).
 - Installs the **runtime stack** needed to serve apps **inside the container** (PHP + extensions).
 - Includes **media tooling** (ImageMagick/Ghostscript/FFmpeg) for local dev needs.
 
@@ -102,19 +106,16 @@ Edit `.env` (same order as the file):
 
 Host
 - `USERNAME` — system user that owns project files
-- `DB_PASSWORD` — root password for MySQL/PostgreSQL container images
+- `DB_PASSWORD` — root password for the MySQL container image
 - `APP_ROOT` (default `/var/www/html`) — host directory where projects live
-- `DOMAIN_SUFFIX` (default `localhost`) — base domain for project URLs
 - `OPINIONATED` — copy opinionated project files (Prettier config)
 - `USE_VSC` — generate Xdebug `launch.json` files
 - `VSC_WORKSPACES_DIR` — auto-create `.code-workspace` files (leave empty to disable)
 
 Container
 - `DOCKER_COMPOSE_FILE` — override the compose file path
-- `DOCKER_PROFILES` (default `redis,mailpit,minio`) — available: `redis`, `mailpit`, `minio`, `postgres` (MySQL always on)
 - `PHP_VERSION` — changing triggers a rebuild on next `Start Stack`
-- `AUTO_TRUST_HTTPS` — auto-install HTTPS trust based on `HTTPS_TRUST_MODE`
-- `HTTPS_TRUST_MODE` — `caddy` (default) or `mkcert`
+- `AUTO_TRUST_HTTPS` — auto-install HTTPS trust (mkcert)
 - `APT_MIRROR` — Debian main mirror (HTTPS)
 - `APT_SECURITY_MIRROR` — Debian security mirror (HTTPS)
 - `CADDY_HTTP_PORT` / `CADDY_HTTPS_PORT` — host ports for Caddy (use `80/443` if free)
@@ -122,6 +123,7 @@ Container
 Notes:
 - When `USE_VSC=true`, the CLI also copies `files/.vscode/launch.json` into each project.
 - The CLI will create `APP_ROOT` if missing and make it owned by `USERNAME`.
+- The base domain is fixed to `dev.localhost`.
 
 ### Xdebug (On-Demand)
 
@@ -133,13 +135,11 @@ Notes:
 
 - Inside the container, projects are always mounted at `/var/www/html` (Caddy/PHP-FPM depend on this).
 - Projects can be **disabled** via the CLI. This creates a `.disabled` file, and Caddy responds with 503 while keeping files intact.
-- Vite HMR is exposed via `https://vite-<app>.localhost:8443`. Run on host: `cd <app> && npm run dev`
-- Optional UIs: `https://mailpit.localhost:8443` and `https://minio.localhost:8443` (or use the host ports below)
-- If `certutil` is available, the CLI also adds the CA to the NSS store for browsers that use it.
-- If `HTTPS_TRUST_MODE=mkcert`, certs are generated into `./certs` and Caddy is restarted to use them.
-- If you see `NET::ERR_CERT_COMMON_NAME_INVALID` on `.localhost`, it’s usually the wildcard rule. Keep `DOMAIN_SUFFIX=localhost` and re-run **Trust HTTPS**, or switch to a multi-dot suffix like `lvh.me` for wildcard-friendly certs.
-- After changing `DOMAIN_SUFFIX` or `CADDY_HTTPS_PORT`, run **Wire Project .env** (or **Refresh Project**) to update each project's `APP_URL` and Vite HMR URL.
-- If you change `DOCKER_PROFILES`, the next `Start Stack` will restart the stack to apply additions/removals.
+- Vite HMR is exposed via `https://vite-<app>.dev.localhost:8443`. Run on host: `cd <app> && npm run dev`
+- Service UIs: `https://mailpit.dev.localhost:8443` and `https://minio.dev.localhost:8443` (or use the host ports below)
+- mkcert installs trust into the system store (and NSS if `certutil` is available).
+- Certs are generated into `./.certs` and Caddy is restarted to use them.
+- After changing `CADDY_HTTPS_PORT`, run **Rewire Project** (or **Refresh Project**) to update each project's `APP_URL` and Vite HMR URL.
 
 ### Ports
 
@@ -150,7 +150,6 @@ This stack is isolated from host installs (v4-style). It only conflicts if a hos
 - [Redis](https://redis.io/): `6380` (container `6379`)
 - [Mailpit](https://mailpit.axllent.org/) SMTP/UI: `1026` / `8026`
 - [MinIO](https://www.min.io/) API/Console: `9100` / `9101`
-- [PostgreSQL](https://www.postgresql.org/): `5433` (container `5432`) [Optional]
 
 ### Linux Host Tool Install (Ubuntu/Debian)
 

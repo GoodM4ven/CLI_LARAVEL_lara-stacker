@@ -156,7 +156,7 @@ while true; do
     echo "03. Import Project"
     echo "04. Refresh Project"
     echo "05. Delete Project"
-    echo "06. Wire Project Environment File"
+    echo "06. Rewire Project"
     echo "07. Enable Project"
     echo -e "08. Disable Project\n"
 
@@ -171,7 +171,7 @@ while true; do
     echo "12. Start Stack"
     echo "13. Stop Stack"
     echo "14. Stack Status"
-    echo "15. Trust HTTPS (Caddy/mkcert)"
+    echo "15. Trust HTTPS"
     echo "16. Purge Stack (containers/images/volumes/cache)"
     echo -e "17. Exit\n"
 
