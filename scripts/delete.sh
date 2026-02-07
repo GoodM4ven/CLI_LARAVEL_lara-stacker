@@ -33,6 +33,7 @@ sourcer "composeCmd"
 sourcer "composeUp"
 sourcer "mysqlDown"
 sourcer "minioDown"
+sourcer "workspaceDown"
 sourcer "dockerHost"
 
 resolveDockerHost || true
@@ -133,6 +134,8 @@ else
 fi
 
 echo -e "\nDeleted project files."
+
+workspaceDown "$escaped_project_name"
 
 # * Display a success message
 echo -e "\nProject $project_name deleted successfully!\n"
