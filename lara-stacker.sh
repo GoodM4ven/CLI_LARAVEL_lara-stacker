@@ -29,20 +29,6 @@ if command -v git &> /dev/null && [ -d ".git" ]; then
     fi
 fi
 
-cat <<'EOF'
-╔══════════════════════════════════════════════════════════════════════════════╗
-║ ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ ║
- _              _____                ____ _______       ____ _  __ ____ _____  
-| |       /\   |  __ \     /\       / ___|__   __|/\   / ___| |/ /  ___|  __ \ 
-| |      /  \  | |__) |   /  \ ____| (__    | |  /  \ | |   | ' /| |_  | |__) |
-| |     / /\ \ |  _  /   / /\ \_____\__ \   | | / /\ \| |   |  < |  _| |  _  / 
-| |___ / ____ \| | \ \  / ____ \    ___) |  | |/ ____ \ |___| . \| |___| | \ \ 
-|_____/_/    \_\_|  \_\/_/    \_\  |____/   |_/_/    \_\____|_|\_\_____|_|  \_\
-║                                                                              ║
-║                                                                  ~ GoodM4ven ║
-╚══════════════════════════════════════════════════════════════════════════════╝
-EOF
-
 release_version="unknown"
 if command -v curl >/dev/null 2>&1 && [[ -n "$git_remote_url" ]]; then
     if [[ "$git_remote_url" =~ github.com[:/]+([^/]+)/([^/]+)(\\.git)?$ ]]; then
@@ -66,8 +52,34 @@ if command -v curl >/dev/null 2>&1 && [[ -n "$git_remote_url" ]]; then
     fi
 fi
 
-echo -e "\nLocal:   $current_version"
-echo -e "Release: $release_version\n"
+cat <<'EOF'
+╔══════════════════════════════════════════════════════════════════════════════╗
+║ ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ ║
+ _              _____                ____ _______       ____ _  __ ____ _____  
+| |       /\   |  __ \     /\       / ___|__   __|/\   / ___| |/ /  ___|  __ \ 
+| |      /  \  | |__) |   /  \ ____| (__    | |  /  \ | |   | ' /| |_  | |__) |
+| |     / /\ \ |  _  /   / /\ \_____\__ \   | | / /\ \| |   |  < |  _| |  _  / 
+| |___ / ____ \| | \ \  / ____ \    ___) |  | |/ ____ \ |___| . \| |___| | \ \ 
+|_____/_/    \_\_|  \_\/_/    \_\  |____/   |_/_/    \_\____|_|\_\_____|_|  \_\\
+║                                                                              ║
+EOF
+
+inner_width=76
+right_text="~ GoodM4ven.dev"
+left_text="Current: $current_version | Release: $release_version"
+max_left=$((inner_width - ${#right_text} - 1))
+if ((max_left < 0)); then
+    max_left=0
+fi
+if ((${#left_text} > max_left)); then
+    left_text="${left_text:0:max_left}"
+fi
+spaces=$((inner_width - ${#left_text} - ${#right_text}))
+if ((spaces < 1)); then
+    spaces=1
+fi
+printf "║ %s%*s%s ║\n" "$left_text" "$spaces" "" "$right_text"
+echo "╚══════════════════════════════════════════════════════════════════════════════╝"
 
 # * ===========
 # * Validation
@@ -152,45 +164,135 @@ while true; do
 
     # echo -e "-=|[ LARA-STACKER $current_version ]|=-\n"
 
-    echo -e "Available Operations:\n"
+    repeat_char() {
+        local char=$1
+        local count=$2
+        printf -v _tmp '%*s' "$count" ''
+        printf '%s' "${_tmp// /$char}"
+    }
 
-    echo "    Applications"
-    echo "    ============"
-    echo "01. List"
-    echo "02. Create"
-    echo "03. Import"
-    echo "04. Refresh"
-    echo "05. Rewire"
-    echo "06. Delete"
-    echo "07. Enable"
-    echo -e "08. Disable\n"
+    center_text() {
+        local text=$1
+        local width=$2
+        local len=${#text}
+        if ((len >= width)); then
+            printf "%-*s" "$width" "$text"
+            return
+        fi
+        local pad=$((width - len))
+        local left=$((pad / 2))
+        local right=$((pad - left))
+        printf "%*s%s%*s" "$left" "" "$text" "$right" ""
+    }
 
-    echo "    Services"
-    echo "    ========"
-    echo "09. List MySQL Databases"
-    echo "10. Create MySQL Database"
-    echo "11. Delete MySQL Database"
-    echo "12. List MinIO Buckets"
-    echo "13. Create MinIO Bucket"
-    echo "14. Delete MinIO Bucket"
-    echo "15. List Redis Keys"
-    echo -e "16. Delete Redis Keys\n"
+    col1_title="Container"
+    col2_title="Services"
+    col3_title="Applications"
 
-    echo "    Container"
-    echo "    ========="
-    echo "17. Start"
-    echo "18. Check"
-    echo "19. Stop"
-    echo "20. Install HTTPS Certificates"
-    echo "21. Purge Stack (containers/images/volumes/cache)"
-    echo -e "22. Exit\n"
+    col1_options=(
+        "17|Start"
+        "18|Check"
+        "19|Stop"
+        "20|Certify"
+        "21|Purge"
+    )
+
+    col2_options=(
+        "09|MySQL > List"
+        "10|MySQL > Create"
+        "11|MySQL > Delete"
+        "12|MinIO > List"
+        "13|MinIO > Create"
+        "14|MinIO > Delete"
+        "15|Redis > List"
+        "16|Redis > Delete"
+    )
+
+    col3_options=(
+        "01|List"
+        "02|Create"
+        "03|Import"
+        "04|Refresh"
+        "05|Rewire"
+        "06|Delete"
+        "07|Enable"
+        "08|Disable"
+    )
+
+    col1_width=22
+    col2_width=26
+    col3_width=22
+    max_lines=$((2 + ${#col1_options[@]}))
+    if [ $((2 + ${#col2_options[@]})) -gt $max_lines ]; then
+        max_lines=$((2 + ${#col2_options[@]}))
+    fi
+    if [ $((2 + ${#col3_options[@]})) -gt $max_lines ]; then
+        max_lines=$((2 + ${#col3_options[@]}))
+    fi
+
+    top_border="⌜$(repeat_char "─" "$((col1_width + 2))")┬$(repeat_char "─" "$((col2_width + 2))")┬$(repeat_char "─" "$((col3_width + 2))")⌝"
+    bottom_border="⌞$(repeat_char "─" "$((col1_width + 2))")┴$(repeat_char "─" "$((col2_width + 2))")┴$(repeat_char "─" "$((col3_width + 2))")⌟"
+
+    echo "$top_border"
+    for ((i = 0; i < max_lines; i++)); do
+        if [ $i -eq 0 ]; then
+            col1_line=$(center_text "$col1_title" "$col1_width")
+            col2_line=$(center_text "$col2_title" "$col2_width")
+            col3_line=$(center_text "$col3_title" "$col3_width")
+        elif [ $i -eq 1 ]; then
+            col1_line=$(repeat_char "=" "$col1_width")
+            col2_line=$(repeat_char "=" "$col2_width")
+            col3_line=$(repeat_char "=" "$col3_width")
+        else
+            idx=$((i - 2))
+
+            if [ $idx -lt ${#col1_options[@]} ]; then
+                IFS='|' read -r num label <<< "${col1_options[$idx]}"
+                col1_line=$(printf "%-*s" "$col1_width" "${num}. ${label}")
+            else
+                col1_line=$(printf "%-*s" "$col1_width" "")
+            fi
+
+            if [ $idx -lt ${#col2_options[@]} ]; then
+                IFS='|' read -r num label <<< "${col2_options[$idx]}"
+                left="${num}."
+                right=".${num}"
+                inner_width=$((col2_width - ${#left} - ${#right} - 6))
+                if [ $inner_width -lt 1 ]; then
+                    col2_line=$(printf "%-*s" "$col2_width" "${num}. ${label}")
+                else
+                    centered_label=$(center_text "$label" "$inner_width")
+                    col2_line="${left}   ${centered_label}   ${right}"
+                fi
+            else
+                col2_line=$(printf "%-*s" "$col2_width" "")
+            fi
+
+            if [ $idx -lt ${#col3_options[@]} ]; then
+                IFS='|' read -r num label <<< "${col3_options[$idx]}"
+                col3_line=$(printf "%*s" "$col3_width" "${label} .${num}")
+            else
+                col3_line=$(printf "%-*s" "$col3_width" "")
+            fi
+        fi
+
+        printf "│ %-*s │ %-*s │ %-*s │\n" \
+            "$col1_width" "$col1_line" \
+            "$col2_width" "$col2_line" \
+            "$col3_width" "$col3_line"
+    done
+    echo "$bottom_border"
 
     if [[ $counter -eq 1 && "$1" ]]; then
         choice="$1"
     else
-        read -p "Choose an operation (1-22): " choice
+        read -r -p "Choose an operation (1-21, or Q to quit): " choice
     fi
     choice=$(echo "$choice" | tr -d '[:space:]')
+    if [[ "$choice" == "q" || "$choice" == "Q" ]]; then
+        echo -e "\nExiting Lara-Stacker...\n"
+        exit 0
+    fi
     if [[ "$choice" =~ ^0+[0-9]+$ ]]; then
         choice="$(echo "$choice" | sed 's/^0\+//')"
         if [[ -z "$choice" ]]; then
@@ -215,10 +317,10 @@ while true; do
         RAN_MAIN_SCRIPT="true" ./scripts/refresh.sh
         ;;
     5)
-        RAN_MAIN_SCRIPT="true" ./scripts/delete.sh
+        RAN_MAIN_SCRIPT="true" ./scripts/env.sh
         ;;
     6)
-        RAN_MAIN_SCRIPT="true" ./scripts/env.sh
+        RAN_MAIN_SCRIPT="true" ./scripts/delete.sh
         ;;
     7)
         RAN_MAIN_SCRIPT="true" ./scripts/enable.sh
@@ -254,20 +356,16 @@ while true; do
         RAN_MAIN_SCRIPT="true" ./scripts/up.sh
         ;;
     18)
-        RAN_MAIN_SCRIPT="true" ./scripts/down.sh
+        RAN_MAIN_SCRIPT="true" ./scripts/status.sh
         ;;
     19)
-        RAN_MAIN_SCRIPT="true" ./scripts/status.sh
+        RAN_MAIN_SCRIPT="true" ./scripts/down.sh
         ;;
     20)
         RAN_MAIN_SCRIPT="true" ./scripts/trust.sh
         ;;
     21)
         RAN_MAIN_SCRIPT="true" ./scripts/purge.sh
-        ;;
-    22)
-        echo -e "\nExiting Lara-Stacker...\n"
-        exit 0
         ;;
     *)
         prompt "-=|[ LARA-STACKER [$current_version] ]|=-" "Invalid option! Please type one the of digits in the list..." false true
