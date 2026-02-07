@@ -8,7 +8,15 @@ sessionTableUp() {
     fi
 
     local migration_glob="$project_path/database/migrations/*create_sessions_table*.php"
-    if ! ls $migration_glob >/dev/null 2>&1; then
+    local sessions_declared="false"
+
+    if ls $migration_glob >/dev/null 2>&1; then
+        sessions_declared="true"
+    elif grep -R -E "Schema::create\\(['\"]sessions['\"]" "$project_path/database/migrations" >/dev/null 2>&1; then
+        sessions_declared="true"
+    fi
+
+    if [[ "$sessions_declared" != "true" ]]; then
         if ! composeExecApp bash -lc "cd /var/www/html/$project_name && php artisan make:session-table"; then
             if ! ls $migration_glob >/dev/null 2>&1; then
                 return 1
