@@ -3,6 +3,7 @@
 clear
 
 echo -e "-=|[ Lara-Stacker |> Docker Stack |> TRUST HTTPS ]|=-"
+echo
 
 functions=(
     "./scripts/functions/helpers/prompt.sh"

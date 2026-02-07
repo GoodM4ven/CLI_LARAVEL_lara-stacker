@@ -14,6 +14,14 @@ Now **Docker-only**! It runs a single containerized stack that serves **all** La
 - Xdebug is **trigger-only** (no idle cost).
 - Enable/disable projects without deleting them.
 
+### Sail vs Lara-Stacker (Short + Critical)
+
+- **Sail is per-project**: each app ships its own `compose.yaml` and containers. That means duplicated services and **rebuild time per project**.
+- **Shared stack here**: one runtime stack serves **all apps**, so no duplicate MySQL/Redis/Mailpit/MinIO per project.
+- **Sail CLI depends on containers**: if a project’s containers fail, Sail commands for that project are blocked.
+- **Host tools here**: Composer + Node/npm run on the host (tools most devs install anyway). The container is only for runtime PHP + services.
+- Net: **faster iteration, fewer moving parts**, and no per-project Docker overhead.
+
 
 ## Setup
 
@@ -64,12 +72,21 @@ Container:
 Access:
 - Visit: `https://<app>.localhost:8443` (or `https://<app>.localhost` if `CADDY_HTTPS_PORT=443`)
 
+### Project CLI Wrappers
+
+Each created/imported project gets a `php` helper in its root. Use it from the project directory:
+
+```bash
+./php -v
+./php artisan migrate
+```
+
 ### Responsibilities
 
 **What the container does for you (main services + runtime stack):**
 - Runs the **main services** and exposes them on ports (Caddy + PHP-FPM, MySQL, and optional Redis/Mailpit/MinIO/PostgreSQL via profiles).
 - Installs the **runtime stack** needed to serve apps **inside the container** (PHP + extensions).
-- Optionally installs **media tooling** (ImageMagick/Ghostscript/FFmpeg) when `INSTALL_MEDIA_TOOLS=true`.
+- Includes **media tooling** (ImageMagick/Ghostscript/FFmpeg) for local dev needs.
 
 **What the container does NOT do for you (and you must install it yourself):**
 - The **shared build tools** in order to run them locally (Composer, Node.js + npm).
@@ -129,6 +146,25 @@ This stack is isolated from host installs (v4-style). It only conflicts if a hos
 - [Mailpit](https://mailpit.axllent.org/) SMTP/UI: `1026` / `8026`
 - [MinIO](https://www.min.io/) API/Console: `9100` / `9101`
 - [PostgreSQL](https://www.postgresql.org/): `5433` (container `5432`) [Optional]
+
+### Linux Host Tool Install (Ubuntu/Debian)
+
+Composer:
+
+```bash
+sudo apt update
+sudo apt install -y php-cli unzip
+php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
+php composer-setup.php --install-dir=/usr/local/bin --filename=composer
+rm composer-setup.php
+```
+
+Node.js + npm (Node 20 LTS):
+
+```bash
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt install -y nodejs
+```
 
 
 ## Support

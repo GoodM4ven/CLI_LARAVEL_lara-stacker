@@ -3,6 +3,7 @@
 clear
 
 echo -e "-=|[ Lara-Stacker |> Docker Stack |> PROJECTS LIST ]|=-"
+echo
 
 functions=(
     "./scripts/functions/helpers/prompt.sh"
@@ -48,7 +49,6 @@ fi
 
 echo -e "Total projects: $count\n"
 
-echo
 read -p "Press any key to continue..." whatever
 
 clear
