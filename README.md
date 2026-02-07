@@ -2,7 +2,7 @@
 <div align="left">
 
 
-# Lara-Stacker v5
+# LARA-STACKER v5
 
 Now **Docker-only**! It runs a single containerized stack that serves **all** Laravel applications from one root directory, with automatic HTTPS and per-application wiring.
 
