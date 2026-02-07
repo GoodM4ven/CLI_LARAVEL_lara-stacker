@@ -50,30 +50,36 @@ HTTPS trust is always handled by mkcert (no Caddy CA mode).
 
 ### Available Commands
 
-Projects:
-- `List Projects` — lists folders under `APP_ROOT` and whether they’re enabled
-- `Create A Project` — new Laravel app under `APP_ROOT`, wired to Docker services
-- `Import A Project` — copy an existing app into `APP_ROOT` and wire it
-- `Refresh A Project` — reinstall deps, clear caches, rewire env (full consistency pass)
-- `Delete A Project` — removes project files and its DB/bucket
-- `Rewire Project` — updates a project’s `.env` + Vite config to match the stack (no reinstall)
-- `Enable A Project` — removes `.disabled` marker and serves it
-- `Disable A Project` — adds `.disabled` marker and returns 503
+Applications:
+- `List` — lists folders under `APP_ROOT` and whether they’re enabled
+- `Create` — new Laravel app under `APP_ROOT`, wired to Docker services
+- `Import` — copy an existing app into `APP_ROOT` and wire it
+- `Refresh` — reinstall deps, clear caches, rewire env (full consistency pass)
+- `Rewire` — updates a project’s `.env` + Vite config to match the stack (no reinstall)
+- `Delete` — removes project files and its DB/bucket
+- `Enable` — removes `.disabled` marker and serves it
+- `Disable` — adds `.disabled` marker and returns 503
 
 Rewire updates config only. Refresh does a full dependency reinstall on the host, clears caches, and then rewires.
 
-Service Control:
-- `List MySQL Databases` — shows all databases in the stack MySQL
-- `Create MySQL Database` — creates a new database by name
-- `Delete MySQL Database` — deletes a database by name (with confirmation)
+Services:
+- `MySQL > List` — shows all databases in the stack MySQL
+- `MySQL > Create` — creates a new database by name
+- `MySQL > Delete` — deletes a database by name (with confirmation)
+- `MinIO > List` — lists MinIO buckets
+- `MinIO > Create` — creates a MinIO bucket
+- `MinIO > Delete` — deletes a MinIO bucket
+- `Redis > List` — lists Redis keys
+- `Redis > Delete` — deletes Redis keys by pattern
 
 Container:
-- `Start Stack` — boots the Docker stack and prepares HTTPS (auto-trusts if enabled)
-- `Stop Stack` — shuts down all stack services
-- `Stack Status` — shows running container in the stack
-- `Trust HTTPS` — installs local trust for clean HTTPS (mkcert)
+- `Start` — boots the Docker stack and prepares HTTPS (auto-trusts if enabled)
+- `Check` — shows running containers in the stack
+- `Stop` — shuts down all stack services
+- `Certify` — installs local HTTPS certs/trust (mkcert)
   - Requires sudo once to write to system trust store
-- `Purge Stack` — removes all stack containers, images, volumes, networks, and build cache
+  - Restart your browser after running this to pick up the new trust
+- `Purge` — removes all stack containers, images, volumes, networks, and build cache
 
 Access:
 - Visit: `https://<app>.dev.localhost:8443` (or `https://<app>.dev.localhost` if `CADDY_HTTPS_PORT=443`)
@@ -115,7 +121,6 @@ Host
 Container
 - `DOCKER_COMPOSE_FILE` — override the compose file path
 - `PHP_VERSION` — changing triggers a rebuild on next `Start Stack`
-- `AUTO_TRUST_HTTPS` — auto-install HTTPS trust (mkcert)
 - `APT_MIRROR` — Debian main mirror (HTTPS)
 - `APT_SECURITY_MIRROR` — Debian security mirror (HTTPS)
 - `CADDY_HTTP_PORT` / `CADDY_HTTPS_PORT` — host ports for Caddy (use `80/443` if free)
@@ -124,6 +129,7 @@ Notes:
 - When `USE_VSC=true`, the CLI also copies `files/.vscode/launch.json` into each project.
 - The CLI will create `APP_ROOT` if missing and make it owned by `USERNAME`.
 - The base domain is fixed to `dev.localhost`.
+- HTTPS trust via `mkcert` is always attempted when bringing the stack up or preparing projects.
 
 ### Xdebug (On-Demand)
 

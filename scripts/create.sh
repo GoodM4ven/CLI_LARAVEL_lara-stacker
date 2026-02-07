@@ -109,9 +109,7 @@ if [[ -z "$(dockerCompose ps -q app)" ]]; then
         prompt "Failed to start the Docker stack." "Start the stack and retry project creation." false
     fi
 fi
-if [[ "${AUTO_TRUST_HTTPS:-true}" == "true" ]]; then
-    trustHttps || true
-fi
+trustHttps || true
 
 # ? Create the Laravel project (host composer)
 echo -e "\nInstalling the project via Composer..."

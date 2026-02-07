@@ -62,7 +62,7 @@ if ! trustHttps; then
 fi
 
 dockerCompose up -d --force-recreate caddy >/dev/null 2>&1 || true
-echo -e "\nTrusted HTTPS via mkcert successfully.\n"
+echo -e "\nTrusted HTTPS via mkcert successfully."
 echo -e "\n(RESTARTING THE BROWSER IS REQUIRED)"
 
 echo

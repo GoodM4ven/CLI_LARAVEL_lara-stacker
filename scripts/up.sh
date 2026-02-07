@@ -75,10 +75,8 @@ sourcer "composeCmd"
 sourcer "composeUp"
 sourcer "trustHttps"
 
-if [[ "${AUTO_TRUST_HTTPS:-true}" == "true" ]]; then
-    if ! trustHttps; then
-        prompt "mkcert trust failed." "Install mkcert on the host and retry." false
-    fi
+if ! trustHttps; then
+    prompt "mkcert trust failed." "Install mkcert on the host and retry." false
 fi
 
 composeUp
@@ -86,9 +84,7 @@ if [[ $? -ne 0 ]]; then
     prompt "Failed to start Docker stack." "Check the Docker build output above (apt mirror speed or package errors), then retry." false
 fi
 
-if [[ "${AUTO_TRUST_HTTPS:-true}" == "true" ]]; then
-    dockerCompose up -d --force-recreate caddy >/dev/null 2>&1 || true
-fi
+dockerCompose up -d --force-recreate caddy >/dev/null 2>&1 || true
 
 # ? Mark docker setup as done
 if [[ ! -f "$lara_stacker_dir/done-docker.flag" ]]; then

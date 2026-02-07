@@ -145,9 +145,7 @@ if [[ -z "$(dockerCompose ps -q app)" ]]; then
         prompt "Failed to start the Docker stack." "Start the stack and retry refresh." false
     fi
 fi
-if [[ "${AUTO_TRUST_HTTPS:-true}" == "true" ]]; then
-    trustHttps || true
-fi
+trustHttps || true
 
 # ? Ensure the container can see the project files (Docker Desktop sync or stale mounts)
 if ! waitForProjectInContainer "$escaped_project_name"; then
