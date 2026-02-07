@@ -25,10 +25,10 @@ Now **Docker-only**! It runs a single containerized stack that serves **all** La
 
 ## Setup
 
-### Requirements
+### Prerequisites
 
 - <details>
-  <summary>Docker Desktop (which contains <a href="https://docs.docker.com/engine/install">Engine</a> and <a href="https://docs.docker.com/compose/install">Compose</a>)</summary>
+  <summary>Docker Desktop (which contains <a href="https://docs.docker.com/engine/install">Engine</a> and <a href="https://docs.docker.com/compose/install">Compose</a> for containerization)</summary>
 
   - Linux (Ubuntu tested)
     ```bash
@@ -163,65 +163,53 @@ Container:
 
 ### Responsibilities
 
-What the container does for you (main services + runtime stack):
-- Runs the **main services** and exposes them on ports (Caddy + PHP-FPM, MySQL, Redis, Mailpit, MinIO).
-- Installs the **runtime stack** needed to serve apps **inside the container** (PHP + extensions).
-- Includes **media tooling** (ImageMagick/Ghostscript/FFmpeg) for local dev needs.
+- The container does install and expose the main services (Caddy, MySQL, Redis, MinIO, etc.) ports for you, does runtime stuff in place (PHP, PHP Extensions, PHP-FPM, etc.) too, and finally includes whatever extra tooling the local server may need, such as the media's (ImageMagick, Ghostscript, FFmpeg, etc.).
+- **The container does NOT contain the [development tools](#prerequisites) need to exist locally.** This includes Java and Android tooling, etc.
 
-**What the container does NOT do for you (and you must install it yourself):**
-- The **building tools** in order to run them locally (Composer, Node.js + npm).
-- Java and Android tooling, pywatchman, etc (for NativePHP development).
-
-In short: **Docker provides the runtime stack**, but there are **essential tools that must be installed on the host** for ever so many reasons really. All and all, the CLI will DISFUNCTION if these tools are missing.
+TLDR: **Docker provides the runtime stack**, but there are **essential [prerequisites](#prerequisites) that must be installed on the host** for ever so many reasons really... All in all, the CLI will DISFUNCTION if those tools are missing.
 
 ### Configuration
 
 Edit `.env` (same order as the file):
 
-Host
-- `USERNAME` — system user that owns project files
-- `DB_PASSWORD` — root password for the MySQL container image
-- `APPS_ROOT` (default `/var/www/html`) — host directory where projects live
-- `OPINIONATED` — copy opinionated project files (Prettier config)
-- `USE_VSC` — generate Xdebug `launch.json` files
-- `VSC_WORKSPACES_DIR` — auto-create `.code-workspace` files (leave empty to disable)
+- Host
+  - `USERNAME` — system user that owns project files
+  - `DB_PASSWORD` — root password for the MySQL container image
+  - `APPS_ROOT` (default `/var/www/html`) — host directory where projects live
+  - `OPINIONATED` — copy opinionated project files (Prettier config)
+  - `USE_VSC` — generate Xdebug `launch.json` files
+  - `VSC_WORKSPACES_DIR` — auto-create `.code-workspace` files (leave empty to disable)
 
-Container
-- `DOCKER_COMPOSE_FILE` — override the compose file path
-- `PHP_VERSION` — changing triggers a rebuild on next `Start Stack`
-- `APT_MIRROR` — Debian main mirror (HTTPS)
-- `APT_SECURITY_MIRROR` — Debian security mirror (HTTPS)
-- `CADDY_HTTP_PORT` / `CADDY_HTTPS_PORT` — host ports for Caddy (use `80/443` if free)
+- Container
+  - `DOCKER_COMPOSE_FILE` — override the compose file path
+  - `PHP_VERSION` — changing triggers a rebuild on next `Start Stack`
+  - `APT_MIRROR` — Debian main mirror (HTTPS)
+  - `APT_SECURITY_MIRROR` — Debian security mirror (HTTPS)
+  - `CADDY_HTTP_PORT` / `CADDY_HTTPS_PORT` — host ports for Caddy (**it's recommended to use `80/443` if free**)
 
 Notes:
-- When `USE_VSC=true`, the CLI also copies `files/.vscode/launch.json` into each project.
+- When `USE_VSC=true`, the CLI also copies `files/.vscode/launch.json` into each project, that runs [xdebug](https://xdebug.org) in the proper way for [VSCodium](https://vscodium.com).
+  - Xdebug is run in "trigger-only" mode.
+  - Use the [browser extension](https://chromewebstore.google.com/detail/xdebug-chrome-extension/oiofkammbajfehgpleginfomeppgnglk?hl=en&pli=1) and make sure it's on **only when needed**.
 - The CLI will create `APPS_ROOT` if missing and make it owned by `USERNAME`.
-- The base domain is fixed to `dev.localhost`.
-- HTTPS trust via `mkcert` is always attempted when bringing the stack up or preparing projects.
-
-### Xdebug (On-Demand)
-
-- Configured for **trigger-only** debugging.
-- Use the [VSCodium](https://vscodium.com) config in `.vscode/launch.json` (auto-copied per project).
-- Trigger with a [browser extension](https://chromewebstore.google.com/detail/xdebug-chrome-extension/oiofkammbajfehgpleginfomeppgnglk?hl=en&pli=1) or `XDEBUG_TRIGGER=1`.
 
 ### Notes
 
 - Inside the container, projects are always mounted at `/var/www/html` (Caddy/PHP-FPM depend on this).
-- Projects can be **disabled** via the CLI. This creates a `.disabled` file, and Caddy responds with 503 while keeping files intact.
+- Projects can be **disabled** via the CLI. This creates a `.disabled` file, and Caddy responds with **503** while keeping files intact.
 - You can access an application using: `https://<app>.dev.localhost:8443` (or `https://<app>.dev.localhost` if `CADDY_HTTPS_PORT=443`)
 - Vite HMR is exposed via `https://vite-<app>.dev.localhost:8443`. Run on host: `cd <app> && npm run dev`
-- Service UIs: `https://mailpit.dev.localhost:8443` and `https://minio.dev.localhost:8443` (or use the host ports below)
-- mkcert installs trust into the system store (and NSS if `certutil` is available).
-- Certs are generated into `./.certs` and Caddy is restarted to use them.
-- After changing `CADDY_HTTPS_PORT`, run **Rewire Project** (or **Refresh Project**) to update each project's `APP_URL` and Vite HMR URL.
+- Service UIs: `https://mailpit.dev.localhost:8443` and `https://minio.dev.localhost:8443` (the hosts [ports](#ports) are defined below).
+- mkcert installs trust into the system store, so make sure it's installed back in [prerequisites](#prerequisites) section.
+- Certs are generated into `./.certs` (which isn't version controlled) and Caddy is restarted to use them from there. **DO NOT REMOVE THEM.**
+- After changing `CADDY_HTTPS_PORT`, run **Rewire Project** (or **Refresh Project**) to update each project's `APP_URL`, Vite HMR URL, and whatever is necessary.
 
 ### Ports
 
 This stack is isolated from host installs (v4-style). It only conflicts if a host service already uses these same ports:
 
-- [Caddy](https://caddyserver.com/): `8080/8443` (use `80/443` if free to remove port from URLs)
-- [MySQL](https://www.mysql.com/): `3307` (container `3306`) [Required]
+- [Caddy](https://caddyserver.com/): `8080/8443` (use `80/443` if free to remove port from URLs; check the [.env](./.env) file)
+- [MySQL](https://www.mysql.com/): `3307` (container `3306`)
 - [Redis](https://redis.io/): `6380` (container `6379`)
 - [Mailpit](https://mailpit.axllent.org/) SMTP/UI: `1026` / `8026`
 - [MinIO](https://www.min.io/) API/Console: `9100` / `9101`

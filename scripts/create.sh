@@ -46,7 +46,6 @@ sourcer "trustHttps"
 sourcer "opinionatedUp"
 sourcer "workspaceUp"
 sourcer "sessionTable"
-sourcer "cliWrappers"
 sourcer "dockerHost"
 sourcer "hostTools"
 
@@ -136,7 +135,6 @@ viteUp "$escaped_project_name"
 xdebugUp "$escaped_project_name"
 opinionatedUp "$escaped_project_name"
 workspaceUp "$escaped_project_name"
-cliWrappersUp "$escaped_project_name"
 
 # ? Mark docker setup as done
 if [[ ! -f "$lara_stacker_dir/done-docker.flag" ]]; then
