@@ -83,6 +83,23 @@ if [ ! -d "$project_path/$source_project_name" ]; then
     prompt "The project path doesn't exist!" "Project importing cancelled."
 fi
 
+resolveDir() {
+    local dir="$1"
+    if [ -d "$dir" ]; then
+        (cd "$dir" 2>/dev/null && pwd -P)
+    fi
+}
+
+apps_root_real=$(resolveDir "$apps_root")
+source_project_real=$(resolveDir "$project_path/$source_project_name")
+if [[ -n "$apps_root_real" && -n "$source_project_real" ]]; then
+    apps_root_real="${apps_root_real%/}"
+    source_project_real="${source_project_real%/}"
+    if [[ "$source_project_real" == "$apps_root_real" || "$source_project_real" == "$apps_root_real/"* ]]; then
+        prompt "The project is already inside APPS_ROOT!" "Choose a project outside $apps_root_real to import."
+    fi
+fi
+
 echo -ne "Enter a custom project name (leave empty to use '$source_project_name'): "
 read custom_project_name
 

@@ -7,6 +7,35 @@ sessionTableUp() {
         return 1
     fi
 
+    read_env_value() {
+        local key="$1"
+        local file="$2"
+        local value=""
+
+        if [[ -f "$file" ]]; then
+            value=$(sed -n -E "s/^[#[:space:]]*${key}=//p" "$file" | tail -n 1)
+            value="${value%%\r}"
+            value="${value%%#*}"
+            value=$(echo "$value" | sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//')
+            value="${value%\"}"
+            value="${value#\"}"
+            value="${value%\'}"
+            value="${value#\'}"
+        fi
+
+        echo "$value"
+    }
+
+    local env_file="$project_path/.env"
+    if [[ -f "$env_file" ]]; then
+        local db_connection
+        db_connection=$(read_env_value "DB_CONNECTION" "$env_file")
+        if [[ -n "$db_connection" && "$db_connection" != "mysql" && "$db_connection" != "mariadb" && "$db_connection" != "sqlite" ]]; then
+            echo -e "\nDB_CONNECTION is '$db_connection'; skipped session table migration."
+            return 0
+        fi
+    fi
+
     local migration_glob="$project_path/database/migrations/*create_sessions_table*.php"
     local sessions_declared="false"
 
