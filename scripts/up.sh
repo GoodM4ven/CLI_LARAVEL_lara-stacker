@@ -72,7 +72,13 @@ fi
 
 sourcer "composeCmd"
 sourcer "composeUp"
-sourcer "trustCa"
+sourcer "trustHttps"
+
+if [[ "${AUTO_TRUST_HTTPS:-true}" == "true" ]] && [[ "${HTTPS_TRUST_MODE:-caddy}" == "mkcert" ]]; then
+    if ! trustHttps; then
+        prompt "mkcert trust failed." "Install mkcert on the host and retry (or set HTTPS_TRUST_MODE=caddy)." false
+    fi
+fi
 
 composeUp
 if [[ $? -ne 0 ]]; then
@@ -80,8 +86,10 @@ if [[ $? -ne 0 ]]; then
 fi
 
 if [[ "${AUTO_TRUST_HTTPS:-true}" == "true" ]]; then
-    if ! trustCa; then
-        echo -e "\nHTTPS trust was not installed yet. Use \"Trust HTTPS (Caddy CA)\" from the menu."
+    if [[ "${HTTPS_TRUST_MODE:-caddy}" != "mkcert" ]]; then
+        if ! trustHttps; then
+            echo -e "\nHTTPS trust was not installed yet. Use \"Trust HTTPS\" from the menu."
+        fi
     fi
 fi
 

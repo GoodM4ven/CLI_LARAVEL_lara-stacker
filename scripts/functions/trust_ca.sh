@@ -45,8 +45,18 @@ trustCa() {
         update-ca-certificates >/dev/null 2>&1
     fi
 
+    local cert_user="${USERNAME:-${SUDO_USER:-$USER}}"
     if command -v certutil >/dev/null 2>&1; then
-        sudo -u "$USERNAME" bash -lc "mkdir -p ~/.pki/nssdb && certutil -d sql:\$HOME/.pki/nssdb -A -t 'C,,' -n 'Caddy Local CA' -i '$install_path' >/dev/null 2>&1 || true"
+        if [[ -n "$cert_user" ]]; then
+            sudo -u "$cert_user" bash -lc "mkdir -p ~/.pki/nssdb && certutil -d sql:\$HOME/.pki/nssdb -A -t 'C,,' -n 'Caddy Local CA' -i '$install_path' >/dev/null 2>&1 || true"
+            if ! sudo -u "$cert_user" bash -lc "certutil -d sql:\$HOME/.pki/nssdb -L 2>/dev/null | grep -q 'Caddy Local CA'"; then
+                echo -e "\nWarning: NSS trust store did not register the Caddy CA. Chrome/Brave may still show 'Not secure'."
+            fi
+        else
+            echo -e "\nWarning: NSS trust store did not register the Caddy CA. Chrome/Brave may still show 'Not secure'."
+        fi
+    else
+        echo -e "\nWarning: certutil not found; NSS trust store not updated."
     fi
 
     [[ -n "$temp_cert" ]] && rm -f "$temp_cert"

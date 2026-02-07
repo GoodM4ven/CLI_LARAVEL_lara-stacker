@@ -25,6 +25,7 @@ composeUp() {
     local last_php_version=""
     local last_node_version=""
     local last_profiles=""
+    local last_trust_mode=""
 
     if [[ -f "$state_file" ]]; then
         # shellcheck source=/dev/null
@@ -32,10 +33,12 @@ composeUp() {
         last_php_version="${STACKER_PHP_VERSION:-}"
         last_node_version="${STACKER_NODE_VERSION:-}"
         last_profiles="${STACKER_PROFILES:-}"
+        last_trust_mode="${STACKER_TRUST_MODE:-}"
     fi
 
     local current_php="${PHP_VERSION:-8.3}"
     local current_node="${NODE_VERSION:-20}"
+    local current_trust_mode="${HTTPS_TRUST_MODE:-caddy}"
 
     local need_rebuild="false"
     if [[ "$current_php" != "$last_php_version" ]] || [[ "$current_node" != "$last_node_version" ]]; then
@@ -44,6 +47,10 @@ composeUp() {
 
     local profiles_changed="false"
     if [[ "$normalized_profiles" != "$last_profiles" ]]; then
+        profiles_changed="true"
+    fi
+
+    if [[ "$current_trust_mode" != "$last_trust_mode" ]]; then
         profiles_changed="true"
     fi
 
@@ -80,5 +87,6 @@ composeUp() {
 STACKER_PHP_VERSION="$current_php"
 STACKER_NODE_VERSION="$current_node"
 STACKER_PROFILES="$normalized_profiles"
+STACKER_TRUST_MODE="$current_trust_mode"
 EOF
 }

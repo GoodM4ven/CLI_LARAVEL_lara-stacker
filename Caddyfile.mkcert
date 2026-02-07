@@ -1,0 +1,46 @@
+# App sites (https://<app>.localhost)
+*.localhost {
+    @http protocol http
+    redir @http https://{host}:{$CADDY_HTTPS_PORT}{uri} 308
+    tls /etc/caddy/certs/localhost.pem /etc/caddy/certs/localhost-key.pem
+
+    @vite header_regexp vite Host ^vite-([a-z0-9-]+)\.localhost(?::\d+)?$
+    handle @vite {
+        reverse_proxy app:5173
+    }
+
+    @app header_regexp app Host ^([a-z0-9-]+)\.localhost(?::\d+)?$
+    handle @app {
+        @disabled file /var/www/html/{http.regexp.app.1}/.disabled
+        handle @disabled {
+            respond "Project disabled" 503
+        }
+
+        root * /var/www/html/{http.regexp.app.1}/public
+        php_fastcgi app:9000
+        file_server
+        encode zstd gzip
+    }
+}
+
+# Optional service UIs
+mailpit.localhost {
+    @http protocol http
+    redir @http https://{host}:{$CADDY_HTTPS_PORT}{uri} 308
+    tls /etc/caddy/certs/localhost.pem /etc/caddy/certs/localhost-key.pem
+    reverse_proxy mailpit:8025
+}
+
+minio.localhost {
+    @http protocol http
+    redir @http https://{host}:{$CADDY_HTTPS_PORT}{uri} 308
+    tls /etc/caddy/certs/localhost.pem /etc/caddy/certs/localhost-key.pem
+    reverse_proxy minio:9001
+}
+
+minio-api.localhost {
+    @http protocol http
+    redir @http https://{host}:{$CADDY_HTTPS_PORT}{uri} 308
+    tls /etc/caddy/certs/localhost.pem /etc/caddy/certs/localhost-key.pem
+    reverse_proxy minio:9000
+}

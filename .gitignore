@@ -2,6 +2,9 @@ node_modules
 .env
 .stacker-build.env
 done-docker.flag
+certs/*.pem
+certs/*.crt
+certs/*.key
 
 # Custom
 /.drafts

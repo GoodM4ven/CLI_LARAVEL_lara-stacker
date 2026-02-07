@@ -165,7 +165,7 @@ while true; do
     echo "09. Start Stack"
     echo "10. Stop Stack"
     echo "11. Stack Status"
-    echo "12. Trust HTTPS (Caddy CA)"
+    echo "12. Trust HTTPS (Caddy/mkcert)"
     echo "13. Purge Stack (containers/images/volumes/cache)"
     echo -e "14. Exit\n"
 

@@ -21,6 +21,7 @@ Now **Docker-only**! It runs a single containerized stack that serves **all** La
 
 - [Docker Engine](https://docs.docker.com/engine/install)
 - [Docker Compose](https://docs.docker.com/compose/install)
+- [mkcert](https://github.com/FiloSottile/mkcert) (optional, only for `HTTPS_TRUST_MODE=mkcert`)
 
 ### Installation
 
@@ -52,7 +53,7 @@ Projects:
 - `Disable A Project` — adds `.disabled` marker and returns 503
 
 Extra:
-- `Trust HTTPS (Caddy CA)` — installs the local CA for clean HTTPS
+- `Trust HTTPS (Caddy/mkcert)` — installs local trust for clean HTTPS
   - Requires sudo once to write to system trust store
 - `Purge Stack` — removes all stack containers, images, volumes, networks, and build cache
 
@@ -89,7 +90,8 @@ Container
 - `DOCKER_COMPOSE_FILE` — override the compose file path
 - `DOCKER_PROFILES` (default `redis,mailpit,minio`) — available: `redis`, `mailpit`, `minio`, `postgres` (MySQL always on)
 - `PHP_VERSION` / `NODE_VERSION` — changing triggers a rebuild on next `Start Stack`
-- `AUTO_TRUST_HTTPS` — auto-install Caddy’s local CA
+- `AUTO_TRUST_HTTPS` — auto-install HTTPS trust based on `HTTPS_TRUST_MODE`
+- `HTTPS_TRUST_MODE` — `caddy` (default) or `mkcert`
 - `APT_MIRROR` — Debian main mirror (HTTPS)
 - `APT_SECURITY_MIRROR` — Debian security mirror (HTTPS)
 - `APT_PROXY` — apt proxy (e.g., `http://host.docker.internal:3142`)
@@ -113,6 +115,7 @@ Notes:
 - Vite HMR is exposed via `https://vite-<app>.localhost:8443`. Run: `docker compose -f ./compose.yaml --project-name lara-stacker exec app bash -lc "cd /var/www/html/<app> && npm run dev"`
 - Optional UIs: `https://mailpit.localhost:8443` and `https://minio.localhost:8443` (or use the host ports below)
 - If `certutil` is available, the CLI also adds the CA to the NSS store for browsers that use it.
+- If `HTTPS_TRUST_MODE=mkcert`, certs are generated into `./certs` and Caddy is restarted to use them.
 - If you change `DOCKER_PROFILES`, the next `Start Stack` will restart the stack to apply additions/removals.
 
 ### Ports
@@ -120,11 +123,11 @@ Notes:
 This stack is isolated from host installs (v4-style). It only conflicts if a host service already uses these same ports:
 
 - [Caddy](https://caddyserver.com/): `8080/8443` (use `80/443` if free to remove port from URLs)
-- [MySQL](https://www.mysql.com/): `3307` (container `3306`)
+- [MySQL](https://www.mysql.com/): `3307` (container `3306`) [Required]
 - [Redis](https://redis.io/): `6380` (container `6379`)
 - [Mailpit](https://mailpit.axllent.org/) SMTP/UI: `1026` / `8026`
 - [MinIO](https://www.min.io/) API/Console: `9100` / `9101`
-- [PostgreSQL](https://www.postgresql.org/): `5433` (container `5432`)
+- [PostgreSQL](https://www.postgresql.org/): `5433` (container `5432`) [Optional]
 
 
 ## Support

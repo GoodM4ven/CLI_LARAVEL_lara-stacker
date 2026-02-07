@@ -44,6 +44,7 @@ sourcer "xdebugUp"
 sourcer "trustCa"
 sourcer "opinionatedUp"
 sourcer "workspaceUp"
+sourcer "sessionTable"
 sourcer "dockerHost"
 
 resolveDockerHost || true
@@ -110,6 +111,9 @@ opinionatedUp "$escaped_project_name"
 workspaceUp "$escaped_project_name"
 mysqlUp "$escaped_project_name"
 minioUp "$escaped_project_name"
+if ! sessionTableUp "$escaped_project_name"; then
+    prompt "Failed to create session table or run migrations." "Check database connectivity and retry." false
+fi
 
 # ? Mark docker setup as done
 if [[ ! -f "$lara_stacker_dir/done-docker.flag" ]]; then
