@@ -219,9 +219,9 @@ while true; do
         "08|Disable"
     )
 
-    col1_width=22
-    col2_width=26
-    col3_width=22
+    col1_width=18
+    col2_width=34
+    col3_width=18
     max_lines=$((2 + ${#col1_options[@]}))
     if [ $((2 + ${#col2_options[@]})) -gt $max_lines ]; then
         max_lines=$((2 + ${#col2_options[@]}))
