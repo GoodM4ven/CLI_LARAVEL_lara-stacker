@@ -1,18 +1,18 @@
 envUp() {
-    local project_name="$1"
+    local application_name="$1"
 
     local apps_root="${APPS_ROOT:-/var/www/html}"
     local domain_suffix="dev.localhost"
 
-    local escaped_project_name
-    escaped_project_name=$(echo "$project_name" | tr ' ' '-' | tr '_' '-' | tr '[:upper:]' '[:lower:]')
-    escaped_project_name=${escaped_project_name// /}
+    local escaped_application_name
+    escaped_application_name=$(echo "$application_name" | tr ' ' '-' | tr '_' '-' | tr '[:upper:]' '[:lower:]')
+    escaped_application_name=${escaped_application_name// /}
 
-    local project_path="$apps_root/$escaped_project_name"
-    local env_file="$project_path/.env"
+    local application_path="$apps_root/$escaped_application_name"
+    local env_file="$application_path/.env"
 
-    if [[ ! -d "$project_path" ]]; then
-        prompt "The expected '$project_path' directory was not found." "" false true
+    if [[ ! -d "$application_path" ]]; then
+        prompt "The expected '$application_path' directory was not found." "" false true
         return 1
     fi
 
@@ -20,8 +20,8 @@ envUp() {
     if [[ -f "$env_file" ]]; then
         env_preexists="true"
     else
-        if [[ -f "$project_path/.env.example" ]]; then
-            cp "$project_path/.env.example" "$env_file"
+        if [[ -f "$application_path/.env.example" ]]; then
+            cp "$application_path/.env.example" "$env_file"
         else
             touch "$env_file"
         fi
@@ -88,7 +88,7 @@ envUp() {
         if [[ -n "$existing_aws_endpoint" && "$existing_aws_endpoint" != "http://minio:9000" ]]; then
             use_minio="false"
         fi
-        if [[ -z "$existing_aws_endpoint" && -n "$existing_aws_url" && "$existing_aws_url" != "http://minio:9000/$escaped_project_name" && "$existing_aws_url" != "https://minio:9000/$escaped_project_name" ]]; then
+        if [[ -z "$existing_aws_endpoint" && -n "$existing_aws_url" && "$existing_aws_url" != "http://minio:9000/$escaped_application_name" && "$existing_aws_url" != "https://minio:9000/$escaped_application_name" ]]; then
             use_minio="false"
         fi
     fi
@@ -106,8 +106,8 @@ envUp() {
         fi
     }
 
-    local app_domain="${escaped_project_name}.${domain_suffix}"
-    local vite_domain="vite-${escaped_project_name}.${domain_suffix}"
+    local app_domain="${escaped_application_name}.${domain_suffix}"
+    local vite_domain="vite-${escaped_application_name}.${domain_suffix}"
 
     local https_port="${CADDY_HTTPS_PORT:-8443}"
     local https_suffix=""
@@ -116,9 +116,9 @@ envUp() {
     fi
 
     local db_name
-    db_name=$(echo "$escaped_project_name" | sed 's/\([[:lower:]]\)\([[:upper:]]\)/\1_\2/g' | sed 's/\([[:upper:]]\)\([[:upper:]][[:lower:]]\)/\1_\2/g' | tr '-' '_' | tr '[:upper:]' '[:lower:]' | sed 's/__/_/g' | sed 's/^_//')
+    db_name=$(echo "$escaped_application_name" | sed 's/\([[:lower:]]\)\([[:upper:]]\)/\1_\2/g' | sed 's/\([[:upper:]]\)\([[:upper:]][[:lower:]]\)/\1_\2/g' | tr '-' '_' | tr '[:upper:]' '[:lower:]' | sed 's/__/_/g' | sed 's/^_//')
 
-    set_env_var "APP_NAME" "$escaped_project_name"
+    set_env_var "APP_NAME" "$escaped_application_name"
     set_env_var "APP_URL" "https://${app_domain}${https_suffix}"
 
     if [[ "$use_mysql" == "true" ]]; then
@@ -135,8 +135,8 @@ envUp() {
         set_env_var "REDIS_HOST" "redis"
         set_env_var "REDIS_PORT" "6379"
         set_env_var "REDIS_PASSWORD" "null"
-        set_env_var "REDIS_PREFIX" "${escaped_project_name}_"
-        set_env_var "CACHE_PREFIX" "${escaped_project_name}_"
+        set_env_var "REDIS_PREFIX" "${escaped_application_name}_"
+        set_env_var "CACHE_PREFIX" "${escaped_application_name}_"
     fi
 
     set_env_var "MAIL_MAILER" "smtp"
@@ -148,13 +148,13 @@ envUp() {
         set_env_var "AWS_ACCESS_KEY_ID" "minioadmin"
         set_env_var "AWS_SECRET_ACCESS_KEY" "minioadmin"
         set_env_var "AWS_DEFAULT_REGION" "us-east-1"
-        set_env_var "AWS_BUCKET" "$escaped_project_name"
+        set_env_var "AWS_BUCKET" "$escaped_application_name"
         set_env_var "AWS_ENDPOINT" "http://minio:9000"
-        set_env_var "AWS_URL" "http://minio:9000/$escaped_project_name"
+        set_env_var "AWS_URL" "http://minio:9000/$escaped_application_name"
         set_env_var "AWS_USE_PATH_STYLE_ENDPOINT" "true"
     fi
 
     set_env_var "VITE_DEV_SERVER_URL" "https://${vite_domain}${https_suffix}"
 
-    echo -e "\nRewired the project's .env file to match the stack."
+    echo -e "\nRewired the application's .env file to match the container."
 }

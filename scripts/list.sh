@@ -2,7 +2,7 @@
 
 clear
 
-echo -e "-=|[ Lara-Stacker |> Docker Stack |> PROJECTS LIST ]|=-"
+echo -e "-=|[ Lara-Stacker |> Applications |> LIST ]|=-"
 echo
 
 functions=(
@@ -35,34 +35,34 @@ https_suffix=""
 if [[ "$https_port" != "443" ]]; then
     https_suffix=":$https_port"
 fi
-sourcer "helpers.projectRegistry"
+sourcer "helpers.applicationRegistry"
 
 count=0
 for dir in $(ls -d $apps_root/*/ 2>/dev/null); do
     if [ ! -d "$dir" ]; then
         continue
     fi
-    if ! isRegisteredProjectDir "$dir"; then
+    if ! isRegisteredApplicationDir "$dir"; then
         continue
     fi
-    project_name=$(basename "$dir")
+    application_name=$(basename "$dir")
     ((count++))
     status="enabled"
     if [ -f "$dir/.disabled" ]; then
         status="disabled"
     fi
-    project_url="https://${project_name}.${domain_suffix}${https_suffix}"
-    echo "${project_url} -> ${dir%/} ($status)"
+    application_url="https://${application_name}.${domain_suffix}${https_suffix}"
+    echo "${application_url} -> ${dir%/} ($status)"
 done
 
 if [ $count -gt 0 ]; then
     echo ""
 else
-    echo "No registered projects found. Use Import to register an existing project."
+    echo "No registered applications found. Use Import to register an existing application."
     echo ""
 fi
 
-echo -e "Total projects: $count\n"
+echo -e "Total applications: $count\n"
 
 read -p "Press any key to continue..." whatever
 

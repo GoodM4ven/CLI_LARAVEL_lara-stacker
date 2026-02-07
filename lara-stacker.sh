@@ -191,7 +191,7 @@ while true; do
 
     col1_options=(
         "17|Start"
-        "18|Check"
+        "18|Status"
         "19|Stop"
         "20|Certify"
         "21|Purge"
@@ -317,7 +317,7 @@ while true; do
         RAN_MAIN_SCRIPT="true" ./scripts/refresh.sh
         ;;
     5)
-        RAN_MAIN_SCRIPT="true" ./scripts/env.sh
+        RAN_MAIN_SCRIPT="true" ./scripts/rewire.sh
         ;;
     6)
         RAN_MAIN_SCRIPT="true" ./scripts/delete.sh
@@ -353,16 +353,16 @@ while true; do
         RAN_MAIN_SCRIPT="true" ./scripts/redis_delete.sh
         ;;
     17)
-        RAN_MAIN_SCRIPT="true" ./scripts/up.sh
+        RAN_MAIN_SCRIPT="true" ./scripts/start.sh
         ;;
     18)
         RAN_MAIN_SCRIPT="true" ./scripts/status.sh
         ;;
     19)
-        RAN_MAIN_SCRIPT="true" ./scripts/down.sh
+        RAN_MAIN_SCRIPT="true" ./scripts/stop.sh
         ;;
     20)
-        RAN_MAIN_SCRIPT="true" ./scripts/trust.sh
+        RAN_MAIN_SCRIPT="true" ./scripts/certify.sh
         ;;
     21)
         RAN_MAIN_SCRIPT="true" ./scripts/purge.sh

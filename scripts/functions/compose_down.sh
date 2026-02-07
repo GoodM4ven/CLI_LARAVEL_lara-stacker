@@ -2,7 +2,7 @@ composeDown() {
     local status=0
     dockerCompose down --remove-orphans || status=$?
 
-    # Fallback: force-stop any remaining stack containers
+    # Fallback: force-stop any remaining container services
     local remaining
     remaining=$(docker ps -q --filter label=com.docker.compose.project=lara-stacker)
     if [[ -n "$remaining" ]]; then

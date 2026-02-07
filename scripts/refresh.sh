@@ -2,7 +2,7 @@
 
 clear
 
-echo -e "-=|[ Lara-Stacker |> Docker Stack |> REFRESH ]|=-"
+echo -e "-=|[ Lara-Stacker |> Applications |> REFRESH ]|=-"
 
 functions=(
     "./scripts/functions/helpers/prompt.sh"
@@ -44,16 +44,16 @@ sourcer "workspaceUp"
 sourcer "sessionTable"
 sourcer "dockerHost"
 sourcer "hostTools"
-sourcer "helpers.projectRegistry"
+sourcer "helpers.applicationRegistry"
 
-waitForProjectInContainer() {
-    local project_name="$1"
+waitForApplicationInContainer() {
+    local application_name="$1"
     local retries="${2:-20}"
     local sleep_seconds="${3:-1}"
-    local project_dir="/var/www/html/$project_name"
+    local application_dir="/var/www/html/$application_name"
 
     for _ in $(seq 1 "$retries"); do
-        if composeExecApp test -d "$project_dir" >/dev/null 2>&1; then
+        if composeExecApp test -d "$application_dir" >/dev/null 2>&1; then
             return 0
         fi
         sleep "$sleep_seconds"
@@ -67,14 +67,14 @@ if ! ensureDockerAccess; then
     prompt "Docker daemon is not reachable." "Start Docker and retry refresh." false
 fi
 
-# ? List projects and get the project name/number from the user
-project_names=()
-project_statuses=()
+# ? List applications and get the application name/number from the user
+application_names=()
+application_statuses=()
 for dir in "$apps_root"/*/; do
     if [ ! -d "$dir" ]; then
         continue
     fi
-    if ! isRegisteredProjectDir "$dir"; then
+    if ! isRegisteredApplicationDir "$dir"; then
         continue
     fi
     name=$(basename "$dir")
@@ -82,120 +82,120 @@ for dir in "$apps_root"/*/; do
     if [ -f "$dir/.disabled" ]; then
         status="disabled"
     fi
-    project_names+=("$name")
-    project_statuses+=("$status")
+    application_names+=("$name")
+    application_statuses+=("$status")
 done
 
-project_count=${#project_names[@]}
-if [ "$project_count" -eq 0 ]; then
-    prompt "No registered projects found." "Use Import to register an existing project or Create a new one."
+application_count=${#application_names[@]}
+if [ "$application_count" -eq 0 ]; then
+    prompt "No registered applications found." "Use Import to register an existing application or Create a new one."
 fi
 
-echo -e "\nAvailable projects:\n"
-digits=${#project_count}
+echo -e "\nAvailable applications:\n"
+digits=${#application_count}
 if [ "$digits" -lt 2 ]; then
     digits=2
 fi
-for i in "${!project_names[@]}"; do
+for i in "${!application_names[@]}"; do
     idx=$((i + 1))
-    printf "%0*d. %s (%s)\n" "$digits" "$idx" "${project_names[$i]}" "${project_statuses[$i]}"
+    printf "%0*d. %s (%s)\n" "$digits" "$idx" "${application_names[$i]}" "${application_statuses[$i]}"
 done
 
-echo -ne "\nEnter project number or name: "
-read -r project_input
-if [[ -z "$project_input" ]]; then
-    prompt "Project selection cannot be empty."
+echo -ne "\nEnter application number or name: "
+read -r application_input
+if [[ -z "$application_input" ]]; then
+    prompt "Application selection cannot be empty."
 fi
 
-if [[ "$project_input" =~ ^[0-9]+$ ]]; then
-    selected_index=$((10#$project_input - 1))
-    if [ "$selected_index" -lt 0 ] || [ "$selected_index" -ge "$project_count" ]; then
-        prompt "Invalid project selection."
+if [[ "$application_input" =~ ^[0-9]+$ ]]; then
+    selected_index=$((10#$application_input - 1))
+    if [ "$selected_index" -lt 0 ] || [ "$selected_index" -ge "$application_count" ]; then
+        prompt "Invalid application selection."
     fi
-    project_name="${project_names[$selected_index]}"
+    application_name="${application_names[$selected_index]}"
 else
-    project_name="$project_input"
+    application_name="$application_input"
 fi
 
 echo
 
-escaped_project_name=$(echo "$project_name" | tr ' ' '-' | tr '_' '-' | tr '[:upper:]' '[:lower:]')
-escaped_project_name=${escaped_project_name// /}
+escaped_application_name=$(echo "$application_name" | tr ' ' '-' | tr '_' '-' | tr '[:upper:]' '[:lower:]')
+escaped_application_name=${escaped_application_name// /}
 
-project_path="$apps_root/$escaped_project_name"
-if ! [ -d "$project_path" ]; then
-    prompt "Project \"$escaped_project_name\" doesn't exist."
+application_path="$apps_root/$escaped_application_name"
+if ! [ -d "$application_path" ]; then
+    prompt "Application \"$escaped_application_name\" doesn't exist."
 fi
-if ! isRegisteredProjectDir "$project_path"; then
-    prompt "Project \"$escaped_project_name\" is not registered." "Run the Import command first."
+if ! isRegisteredApplicationDir "$application_path"; then
+    prompt "Application \"$escaped_application_name\" is not registered." "Run the Import command first."
 fi
 
-# ? Ensure stack is up
+# ? Ensure container is up
 if [[ -z "$(dockerCompose ps -q app)" ]]; then
     if ! composeUp; then
-        prompt "Failed to start the Docker stack." "Start the stack and retry refresh." false
+        prompt "Failed to start the Docker container." "Start the container and retry refresh." false
     fi
 fi
 trustHttps || true
 
-# ? Ensure the container can see the project files (Docker Desktop sync or stale mounts)
-if ! waitForProjectInContainer "$escaped_project_name"; then
-    echo -e "\nApp container couldn't see the project yet. Restarting the stack...\n"
+# ? Ensure the container can see the application files (Docker Desktop sync or stale mounts)
+if ! waitForApplicationInContainer "$escaped_application_name"; then
+    echo -e "\nApp container couldn't see the application yet. Restarting the container...\n"
     composeDown || true
     if ! composeUp; then
-        prompt "Failed to start the Docker stack." "Start the stack and retry refresh." false
+        prompt "Failed to start the Docker container." "Start the container and retry refresh." false
     fi
-    if ! waitForProjectInContainer "$escaped_project_name"; then
-        prompt "App container can't see the project files." "Check APPS_ROOT in [.env] and Docker file sharing, then retry." false
+    if ! waitForApplicationInContainer "$escaped_application_name"; then
+        prompt "App container can't see the application files." "Check APPS_ROOT in [.env] and Docker file sharing, then retry." false
     fi
 fi
 
 # ? Clear dependencies (host)
-rm -rf "$project_path/node_modules" "$project_path/vendor" "$project_path/composer.lock" "$project_path/package-lock.json" "$project_path/bun.lock" "$project_path/bun.lockb" 2>/dev/null || true
+rm -rf "$application_path/node_modules" "$application_path/vendor" "$application_path/composer.lock" "$application_path/package-lock.json" "$application_path/bun.lock" "$application_path/bun.lockb" 2>/dev/null || true
 
 # ? Reinstall Composer dependencies
 requireHostComposer
-if ! runAsHostUser composer install --no-interaction --no-scripts --working-dir="$project_path"; then
+if ! runAsHostUser composer install --no-interaction --no-scripts --working-dir="$application_path"; then
     prompt "Failed to install Composer dependencies." "Ensure Composer is working on the host and retry." false
 fi
 
 # ? Reinstall JS dependencies (if package.json exists)
-if [[ -f "$project_path/package.json" ]]; then
+if [[ -f "$application_path/package.json" ]]; then
     requireHostNode
-    if ! runAsHostUser npm install --silent --prefix "$project_path"; then
+    if ! runAsHostUser npm install --silent --prefix "$application_path"; then
         prompt "Failed to install npm dependencies." "Ensure Node.js/npm are working on the host and retry." false
     fi
 fi
 
-# ? Restart the stack to refresh autoload visibility
-echo -e "\nRestarting the stack to refresh autoload visibility...\n"
+# ? Restart the container to refresh autoload visibility
+echo -e "\nRestarting the container to refresh autoload visibility...\n"
 composeDown || true
 if ! composeUp; then
-    prompt "Failed to start the Docker stack." "Start the stack and retry refresh." false
+    prompt "Failed to start the Docker container." "Start the container and retry refresh." false
 fi
-if ! composeExecApp php -r "require '/var/www/html/$escaped_project_name/vendor/autoload.php';" >/dev/null 2>&1; then
+if ! composeExecApp php -r "require '/var/www/html/$escaped_application_name/vendor/autoload.php';" >/dev/null 2>&1; then
     prompt "App container can't load vendor/autoload.php." "Check APPS_ROOT and Docker file sharing (or run Composer inside the app container) and retry." false
 fi
 
 # ? Clear Laravel caches
-if ! composeExecApp php /var/www/html/$escaped_project_name/artisan optimize:clear --quiet; then
+if ! composeExecApp php /var/www/html/$escaped_application_name/artisan optimize:clear --quiet; then
     prompt "Failed to run Artisan inside the container." "Ensure the app container is running and can access vendor/autoload.php, then retry." false
 fi
 
-# ? Re-wire project configuration
-envUp "$escaped_project_name"
-viteUp "$escaped_project_name"
-xdebugUp "$escaped_project_name"
-opinionatedUp "$escaped_project_name"
-workspaceUp "$escaped_project_name"
-mysqlUp "$escaped_project_name"
-minioUp "$escaped_project_name"
-if ! sessionTableUp "$escaped_project_name"; then
+# ? Re-wire application configuration
+envUp "$escaped_application_name"
+viteUp "$escaped_application_name"
+xdebugUp "$escaped_application_name"
+opinionatedUp "$escaped_application_name"
+workspaceUp "$escaped_application_name"
+mysqlUp "$escaped_application_name"
+minioUp "$escaped_application_name"
+if ! sessionTableUp "$escaped_application_name"; then
     prompt "Failed to create session table or run migrations." "Check database connectivity and retry." false
 fi
 
 # * Display a success indicator
-echo -e "\nDone refreshing the project successfully!\n"
+echo -e "\nDone refreshing the application successfully!\n"
 
 read -p "Press any key to continue..." whatever
 

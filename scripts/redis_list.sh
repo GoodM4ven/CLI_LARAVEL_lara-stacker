@@ -2,7 +2,7 @@
 
 clear
 
-echo -e "-=|[ Lara-Stacker |> Service Control |> Redis |> LIST ]|=-"
+echo -e "-=|[ Lara-Stacker |> Services |> Redis |> LIST ]|=-"
 
 functions=(
     "./scripts/functions/helpers/prompt.sh"
@@ -32,7 +32,7 @@ apps_root="${APPS_ROOT:-/var/www/html}"
 sourcer "dockerHost"
 sourcer "composeCmd"
 sourcer "composeUp"
-sourcer "helpers.projectRegistry"
+sourcer "helpers.applicationRegistry"
 
 read_env_value() {
     local key="$1"
@@ -57,17 +57,17 @@ fi
 
 if [[ -z "$(dockerCompose ps -q redis)" ]]; then
     if ! composeUp; then
-        prompt "Failed to start the Docker stack." "Start the stack and retry." false
+        prompt "Failed to start the Docker container." "Start the container and retry." false
     fi
 fi
 
-project_names=()
-project_statuses=()
+application_names=()
+application_statuses=()
 for dir in "$apps_root"/*/; do
     if [ ! -d "$dir" ]; then
         continue
     fi
-    if ! isRegisteredProjectDir "$dir"; then
+    if ! isRegisteredApplicationDir "$dir"; then
         continue
     fi
     name=$(basename "$dir")
@@ -75,55 +75,55 @@ for dir in "$apps_root"/*/; do
     if [ -f "$dir/.disabled" ]; then
         status="disabled"
     fi
-    project_names+=("$name")
-    project_statuses+=("$status")
+    application_names+=("$name")
+    application_statuses+=("$status")
 done
 
-project_count=${#project_names[@]}
-if [ "$project_count" -eq 0 ]; then
-    prompt "No registered projects found." "Use Import to register an existing project or Create a new one."
+application_count=${#application_names[@]}
+if [ "$application_count" -eq 0 ]; then
+    prompt "No registered applications found." "Use Import to register an existing application or Create a new one."
 fi
 
-echo -e "\nAvailable projects:\n"
-digits=${#project_count}
+echo -e "\nAvailable applications:\n"
+digits=${#application_count}
 if [ "$digits" -lt 2 ]; then
     digits=2
 fi
-for i in "${!project_names[@]}"; do
+for i in "${!application_names[@]}"; do
     idx=$((i + 1))
-    printf "%0*d. %s (%s)\n" "$digits" "$idx" "${project_names[$i]}" "${project_statuses[$i]}"
+    printf "%0*d. %s (%s)\n" "$digits" "$idx" "${application_names[$i]}" "${application_statuses[$i]}"
 done
 
-echo -ne "\nEnter project number or name: "
-read -r project_input
-if [[ -z "$project_input" ]]; then
-    prompt "Project selection cannot be empty."
+echo -ne "\nEnter application number or name: "
+read -r application_input
+if [[ -z "$application_input" ]]; then
+    prompt "Application selection cannot be empty."
 fi
 
-if [[ "$project_input" =~ ^[0-9]+$ ]]; then
-    selected_index=$((10#$project_input - 1))
-    if [ "$selected_index" -lt 0 ] || [ "$selected_index" -ge "$project_count" ]; then
-        prompt "Invalid project selection."
+if [[ "$application_input" =~ ^[0-9]+$ ]]; then
+    selected_index=$((10#$application_input - 1))
+    if [ "$selected_index" -lt 0 ] || [ "$selected_index" -ge "$application_count" ]; then
+        prompt "Invalid application selection."
     fi
-    project_name="${project_names[$selected_index]}"
+    application_name="${application_names[$selected_index]}"
 else
-    project_name="$project_input"
+    application_name="$application_input"
 fi
 
 echo
 
-escaped_project_name=$(echo "$project_name" | tr ' ' '-' | tr '_' '-' | tr '[:upper:]' '[:lower:]')
-escaped_project_name=${escaped_project_name// /}
+escaped_application_name=$(echo "$application_name" | tr ' ' '-' | tr '_' '-' | tr '[:upper:]' '[:lower:]')
+escaped_application_name=${escaped_application_name// /}
 
-project_path="$apps_root/$escaped_project_name"
-if ! [ -d "$project_path" ]; then
-    prompt "Project \"$escaped_project_name\" doesn't exist."
+application_path="$apps_root/$escaped_application_name"
+if ! [ -d "$application_path" ]; then
+    prompt "Application \"$escaped_application_name\" doesn't exist."
 fi
-if ! isRegisteredProjectDir "$project_path"; then
-    prompt "Project \"$escaped_project_name\" is not registered." "Run the Import command first."
+if ! isRegisteredApplicationDir "$application_path"; then
+    prompt "Application \"$escaped_application_name\" is not registered." "Run the Import command first."
 fi
 
-env_file="$project_path/.env"
+env_file="$application_path/.env"
 prefix=""
 if [[ -f "$env_file" ]]; then
     prefix=$(read_env_value "REDIS_PREFIX" "$env_file")
@@ -132,7 +132,7 @@ if [[ -f "$env_file" ]]; then
     fi
 fi
 if [[ -z "$prefix" ]]; then
-    fallback_prefix=$(echo "$escaped_project_name" | tr '-' '_' | tr '[:upper:]' '[:lower:]')
+    fallback_prefix=$(echo "$escaped_application_name" | tr '-' '_' | tr '[:upper:]' '[:lower:]')
     prefix="${fallback_prefix}_"
 fi
 

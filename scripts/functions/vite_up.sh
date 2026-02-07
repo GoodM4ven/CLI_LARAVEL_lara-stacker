@@ -1,21 +1,21 @@
 viteUp() {
-    local project_name="$1"
+    local application_name="$1"
 
     local apps_root="${APPS_ROOT:-/var/www/html}"
     local domain_suffix="dev.localhost"
 
-    local escaped_project_name
-    escaped_project_name=$(echo "$project_name" | tr ' ' '-' | tr '_' '-' | tr '[:upper:]' '[:lower:]')
-    escaped_project_name=${escaped_project_name// /}
+    local escaped_application_name
+    escaped_application_name=$(echo "$application_name" | tr ' ' '-' | tr '_' '-' | tr '[:upper:]' '[:lower:]')
+    escaped_application_name=${escaped_application_name// /}
 
-    local project_path="$apps_root/$escaped_project_name"
-    local file="$project_path/vite.config.js"
+    local application_path="$apps_root/$escaped_application_name"
+    local file="$application_path/vite.config.js"
 
     if [[ ! -f "$file" ]]; then
         return 0
     fi
 
-    local vite_host="vite-${escaped_project_name}.${domain_suffix}"
+    local vite_host="vite-${escaped_application_name}.${domain_suffix}"
     local https_port="${CADDY_HTTPS_PORT:-8443}"
 
     if grep -q "server:" "$file"; then

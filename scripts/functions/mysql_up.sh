@@ -1,15 +1,15 @@
 mysqlUp() {
     echo
 
-    local db_or_project_name="$1"
+    local db_or_application_name="$1"
     local apps_root="${APPS_ROOT:-/var/www/html}"
 
     # Format name
-    db_or_project_name=$(echo "$db_or_project_name" | tr ' ' '-' | tr '_' '-' | tr '[:upper:]' '[:lower:]')
-    db_or_project_name=${db_or_project_name// /}
+    db_or_application_name=$(echo "$db_or_application_name" | tr ' ' '-' | tr '_' '-' | tr '[:upper:]' '[:lower:]')
+    db_or_application_name=${db_or_application_name// /}
 
-    local project_path="$apps_root/$db_or_project_name"
-    local env_file="$project_path/.env"
+    local application_path="$apps_root/$db_or_application_name"
+    local env_file="$application_path/.env"
 
     read_env_value() {
         local key="$1"
@@ -40,7 +40,7 @@ mysqlUp() {
     fi
 
     local db_name
-    db_name=$(echo "$db_or_project_name" | sed 's/\([[:lower:]]\)\([[:upper:]]\)/\1_\2/g' | sed 's/\([[:upper:]]\)\([[:upper:]][[:lower:]]\)/\1_\2/g' | tr '-' '_' | tr '[:upper:]' '[:lower:]' | sed 's/__/_/g' | sed 's/^_//')
+    db_name=$(echo "$db_or_application_name" | sed 's/\([[:lower:]]\)\([[:upper:]]\)/\1_\2/g' | sed 's/\([[:upper:]]\)\([[:upper:]][[:lower:]]\)/\1_\2/g' | tr '-' '_' | tr '[:upper:]' '[:lower:]' | sed 's/__/_/g' | sed 's/^_//')
 
     if [[ -z "$(dockerCompose ps -q mysql)" ]]; then
         echo -e "\nMySQL container is not running; skipped database creation."

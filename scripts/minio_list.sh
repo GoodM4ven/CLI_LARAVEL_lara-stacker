@@ -2,7 +2,7 @@
 
 clear
 
-echo -e "-=|[ Lara-Stacker |> Service Control |> MinIO |> LIST ]|=-"
+echo -e "-=|[ Lara-Stacker |> Services |> MinIO |> LIST ]|=-"
 
 functions=(
     "./scripts/functions/helpers/prompt.sh"
@@ -42,7 +42,7 @@ fi
 
 if [[ -z "$(dockerCompose ps -q minio)" ]] || [[ -z "$(dockerCompose ps -q minio-client)" ]]; then
     if ! composeUp; then
-        prompt "Failed to start the Docker stack." "Start the stack and retry." false
+        prompt "Failed to start the Docker container." "Start the container and retry." false
     fi
 fi
 

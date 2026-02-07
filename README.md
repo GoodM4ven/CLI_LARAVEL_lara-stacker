@@ -4,23 +4,23 @@
 
 # Lara-Stacker v5
 
-Now **Docker-only**! It runs a single containerized stack that serves **all** Laravel projects from one root directory, with automatic HTTPS and per-project wiring.
+Now **Docker-only**! It runs a single containerized stack that serves **all** Laravel applications from one root directory, with automatic HTTPS and per-application wiring.
 
 ### Highlights
 
-- One Docker stack, many projects.
-- `https://<app>.dev.localhost` for every project (no `/etc/hosts`).
-- Includes Redis, Mailpit, and MinIO out of the box.
-- Xdebug is **trigger-only** (no idle cost).
-- Enable/disable projects without deleting them.
+- One Docker container, many applications.
+- `https://<app>.dev.localhost` for every application (no more `/etc/hosts`).
+- Includes MySQL, Redis, MinIO, and Mailpit out of the box.
+- Xdebug is **trigger-only** (no idling slow cost).
+- Enable/disable applications without deleting them.
 
-### Sail vs Lara-Stacker (Short + Critical)
+### Laravel Sail vs Lara-Stacker (Short and Critical)
 
-- **Sail is per-project**: each app ships its own `compose.yaml` and containers. That means duplicated services and **rebuild time per project**.
-- **Shared stack here**: one runtime stack serves **all apps**, so no duplicate MySQL/Redis/Mailpit/MinIO per project.
-- **Sail CLI depends on containers**: if a project’s containers fail, Sail commands for that project are blocked.
-- **Host tools here**: Composer + Node/npm run on the host (tools most devs install anyway). The container is only for runtime PHP + services.
-- Net: **faster iteration, fewer moving parts**, and no per-project Docker overhead.
+- **Sail is per-application**: each app ships its own `compose.yaml` and containers. That means duplicated services and **rebuild time per application**.
+- **Shared container here**: one runtime container group serves **all apps**, so no duplicate services per application.
+- **Sail CLI depends on containers**: if an application’s container fail, Sail commands for that application is blocked, since the devEnvironment is inaccessible.
+- **Host tools here**: Composer and NPM run on the host (tools most devs install anyway). The container is only for runtime electricity and services!
+- Net: **faster iteration, fewer moving parts**, and no per-application Docker overhead.
 
 
 ## Setup
@@ -130,10 +130,10 @@ Applications:
 - `Create` — new Laravel app under `APPS_ROOT`, wired to Docker services
 - `Import` — copy an existing app into `APPS_ROOT` and wire it
 - `Refresh` — reinstall deps, clear caches, rewire env (full consistency pass)
-- `Rewire` — updates a project’s `.env` + Vite config to match the stack (no reinstall)
-- `Delete` — removes project files and its DB/bucket
-- `Enable` — removes `.disabled` marker and serves it
-- `Disable` — adds `.disabled` marker and returns 503
+- `Rewire` — updates an application’s `.env` + Vite config to match the container (no reinstall)
+- `Delete` — removes application files and its database, bucket, etc.
+- `Enable` — removes `.disabled` marker and serves the app
+- `Disable` — adds `.disabled` marker and returns 503 blocked response
 
 </div>
 
@@ -143,7 +143,7 @@ Applications:
 <div align="left">
 
 Services:
-- `MySQL > Browse` — shows all databases in the stack MySQL
+- `MySQL > Browse` — shows all databases in the container MySQL service
 - `MySQL > Create` — creates a new database by name
 - `MySQL > Delete` — deletes a database by name (with confirmation)
 - `MinIO > Browse` — lists MinIO buckets
@@ -153,67 +153,75 @@ Services:
 - `Redis > Delete` — deletes Redis keys by pattern
 
 Container:
-- `Start` — boots the Docker stack and prepares HTTPS (auto-trusts if enabled)
-- `Check` — shows running containers in the stack
-- `Stop` — shuts down all stack services
-- `Certify` — installs local HTTPS certs/trust (mkcert)
+- `Start` — boots the Docker container and prepares HTTPS certification
+- `Check` — shows running containers in the container group (the stack)
+- `Stop` — shuts down all container services
+- `Certify` — installs local HTTPS certs/trust (via mkcert)
   - Requires `sudo` access once, in order to write to the system trust store
   - Requires restarting the browser, in order to pick up the new trust
-- `Purge` — removes all stack containers, images, volumes, networks, and build cache
+- `Purge` — removes the container and all of its resources (containers, images, volumes, networks, build cache; everything!)
 
 ### Responsibilities
 
-- The container does install and expose the main services (Caddy, MySQL, Redis, MinIO, etc.) ports for you, does runtime stuff in place (PHP, PHP Extensions, PHP-FPM, etc.) too, and finally includes whatever extra tooling the local server may need, such as the media's (ImageMagick, Ghostscript, FFmpeg, etc.).
-- **The container does NOT contain the [development tools](#prerequisites) need to exist locally.** This includes Java and Android tooling, etc.
+- The container does install and expose the main services (Caddy, MySQL, Redis, MinIO, etc.) ports for you, does runtime stuff in place (PHP, PHP Extensions, PHP-FPM, etc.) too, and finally includes whatever extra packages the local server may need, such as the media's (ImageMagick, Ghostscript, FFmpeg, etc.).
+- **The container does NOT contain the [development tools](#prerequisites) themselves that need to exist locally.** This includes Java and Android tooling, etc.
 
-TLDR: **Docker provides the runtime stack**, but there are **essential [prerequisites](#prerequisites) that must be installed on the host** for ever so many reasons really... All in all, the CLI will DISFUNCTION if those tools are missing.
+TLDR: **Docker provides the runtime container group**, but there are **essential [prerequisites](#prerequisites) that must be installed on the host** for ever so many reasons really... All in all, the CLI will DISFUNCTION if those tools are missing.
 
 ### Configuration
 
 Edit `.env` (same order as the file):
 
 - Host
-  - `USERNAME` — system user that owns project files
+  - `USERNAME` — system user that owns application files
   - `DB_PASSWORD` — root password for the MySQL container image
-  - `APPS_ROOT` (default `/var/www/html`) — host directory where projects live
-  - `OPINIONATED` — copy opinionated project files (Prettier config)
-  - `USE_VSC` — generate Xdebug `launch.json` files
+  - `APPS_ROOT` (default `/var/www/html`) — host directory where applications live and coded from, locally!
+  - `OPINIONATED` — copy opinionated application files (Prettier config)
+  - `USE_VSC` — generate Xdebug `launch.json` files, for example...
   - `VSC_WORKSPACES_DIR` — auto-create `.code-workspace` files (leave empty to disable)
 
 - Container
   - `DOCKER_COMPOSE_FILE` — override the compose file path
-  - `PHP_VERSION` — changing triggers a rebuild on next `Start Stack`
+  - `PHP_VERSION` — changing this triggers a rebuild on next `Start Container`
   - `APT_MIRROR` — Debian main mirror (HTTPS)
   - `APT_SECURITY_MIRROR` — Debian security mirror (HTTPS)
   - `CADDY_HTTP_PORT` / `CADDY_HTTPS_PORT` — host ports for Caddy (**it's recommended to use `80/443` if free**)
 
 Notes:
-- When `USE_VSC=true`, the CLI also copies `files/.vscode/launch.json` into each project, that runs [xdebug](https://xdebug.org) in the proper way for [VSCodium](https://vscodium.com).
+- When `USE_VSC=true`, the CLI also copies `files/.vscode/launch.json` into each application, that runs [xdebug](https://xdebug.org) in the proper way for [VSCodium](https://vscodium.com).
   - Xdebug is run in "trigger-only" mode.
   - Use the [browser extension](https://chromewebstore.google.com/detail/xdebug-chrome-extension/oiofkammbajfehgpleginfomeppgnglk?hl=en&pli=1) and make sure it's on **only when needed**.
 - The CLI will create `APPS_ROOT` if missing and make it owned by `USERNAME`.
+- After changing `CADDY_HTTPS_PORT`, run **Rewire Application** (or **Refresh Application**) to update each application's `APP_URL`, Vite HMR URL, and whatever is necessary.
 
 ### Notes
 
-- Inside the container, projects are always mounted at `/var/www/html` (Caddy/PHP-FPM depend on this).
-- Projects can be **disabled** via the CLI. This creates a `.disabled` file, and Caddy responds with **503** while keeping files intact.
-- You can access an application using: `https://<app>.dev.localhost:8443` (or `https://<app>.dev.localhost` if `CADDY_HTTPS_PORT=443`)
+- Inside the container, applications are always mounted at `/var/www/html` (Caddy/PHP-FPM depend on this).
+- Applications can be **disabled** via the CLI. This creates a `.disabled` file, and Caddy responds with **503** while keeping files intact.
+- **You can access an application using: `https://<app>.dev.localhost:8443` (or `https://<app>.dev.localhost` if `CADDY_HTTPS_PORT=443`)**
 - Vite HMR is exposed via `https://vite-<app>.dev.localhost:8443`. Run on host: `cd <app> && npm run dev`
-- Service UIs: `https://mailpit.dev.localhost:8443` and `https://minio.dev.localhost:8443` (the hosts [ports](#ports) are defined below).
-- mkcert installs trust into the system store, so make sure it's installed back in [prerequisites](#prerequisites) section.
+- Service UIs include (the host [ports](#ports) are defined below):
+  - `https://minio.dev.localhost:8443`
+  - `https://mailpit.dev.localhost:8443`
+- mkcert installs the "trust" into the system store, so make sure it's installed back in [prerequisites](#prerequisites) section, of course.
 - Certs are generated into `./.certs` (which isn't version controlled) and Caddy is restarted to use them from there. **DO NOT REMOVE THEM.**
-- After changing `CADDY_HTTPS_PORT`, run **Rewire Project** (or **Refresh Project**) to update each project's `APP_URL`, Vite HMR URL, and whatever is necessary.
 
 ### Ports
 
-This stack is isolated from host installs (v4-style). It only conflicts if a host service already uses these same ports:
+This container is isolated from host installs (v4-style). It only conflicts if a host service already uses these same ports:
 
-- [Caddy](https://caddyserver.com/): `8080/8443` (use `80/443` if free to remove port from URLs; check the [.env](./.env) file)
+- [Caddy](https://caddyserver.com/): `8080/8443` (container `80/443`)
 - [MySQL](https://www.mysql.com/): `3307` (container `3306`)
 - [Redis](https://redis.io/): `6380` (container `6379`)
 - [Mailpit](https://mailpit.axllent.org/) SMTP/UI: `1026` / `8026`
 - [MinIO](https://www.min.io/) API/Console: `9100` / `9101`
 
+</div>
+
+> [!NOTE]
+> It's extremely recommended to use `80/443` ports with Caddy. I only made them different by default in order not to conflict with lara-stacker v4. Check the [.env](./.env) file.
+
+<div align="left">
 
 ## Support
 

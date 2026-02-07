@@ -2,7 +2,7 @@
 
 clear
 
-echo -e "-=|[ Lara-Stacker |> Applications |> DELETE ]|=-"
+echo -e "-=|[ Lara-Stacker |> Applications |> REWIRE ]|=-"
 
 functions=(
     "./scripts/functions/helpers/prompt.sh"
@@ -29,22 +29,17 @@ source $lara_stacker_dir/.env
 
 apps_root="${APPS_ROOT:-/var/www/html}"
 
+sourcer "envUp"
+sourcer "viteUp"
+sourcer "xdebugUp"
+sourcer "opinionatedUp"
+sourcer "workspaceUp"
 sourcer "composeCmd"
-sourcer "composeUp"
-sourcer "mysqlDown"
-sourcer "minioDown"
-sourcer "workspaceDown"
-sourcer "dockerHost"
+sourcer "composeExecApp"
+sourcer "mysqlUp"
+sourcer "minioUp"
+sourcer "sessionTable"
 sourcer "helpers.applicationRegistry"
-
-resolveDockerHost || true
-if ! ensureDockerAccess; then
-    prompt "Docker daemon is not reachable." "Start Docker and retry deletion. Application files were not removed." false
-fi
-
-if ! docker compose version >/dev/null 2>&1; then
-    prompt "Docker Compose was not found." "Install Docker Compose (v2) first and try again." false
-fi
 
 # ? List applications and get the application name/number from the user
 application_names=()
@@ -109,44 +104,25 @@ if ! isRegisteredApplicationDir "$application_path"; then
     prompt "Application \"$escaped_application_name\" is not registered." "Run the Import command first."
 fi
 
-# ? Ensure container is up (for DB/bucket cleanup)
-if ! composeUp; then
-    prompt "Failed to start the Docker container." "Start the container and retry deletion. Application files were not removed." false
-fi
+envUp "$escaped_application_name"
+viteUp "$escaped_application_name"
+xdebugUp "$escaped_application_name"
+opinionatedUp "$escaped_application_name"
+workspaceUp "$escaped_application_name"
 
-echo
+mysqlUp "$escaped_application_name"
+minioUp "$escaped_application_name"
 
-if [[ -z "$(dockerCompose ps -q mysql)" ]]; then
-    prompt "MySQL container is not running." "Start the container and retry deletion. Application files were not removed." false
-fi
-
-if ! mysqlDown "$escaped_application_name"; then
-    prompt "Failed to delete MySQL database." "Application files were not removed." false
-fi
-
-if ! minioDown "$escaped_application_name"; then
-    prompt "Failed to delete MinIO bucket." "Application files were not removed." false
-fi
-
-if rm -rf "$application_path" 2>/dev/null; then
-    :
-else
-    if command -v sudo >/dev/null 2>&1; then
-        if ! sudo rm -rf "$application_path"; then
-            prompt "Failed to delete application files." "Check permissions and retry." false
-        fi
-    else
-        prompt "Failed to delete application files." "Install sudo or fix permissions and retry." false
+if [[ -n "$(dockerCompose ps -q app)" ]]; then
+    if ! sessionTableUp "$escaped_application_name"; then
+        prompt "Failed to create session table or run migrations." "Check database connectivity and retry." false
     fi
+else
+    echo -e "\nApp container is not running; skipped session table migration."
 fi
 
-echo -e "\nDeleted application files."
-
-workspaceDown "$escaped_application_name"
-
-# * Display a success message
-echo -e "\nApplication $application_name deleted successfully!\n"
-
+# * The End
+echo
 echo -n "Press any key to continue..."
 read whatever
 

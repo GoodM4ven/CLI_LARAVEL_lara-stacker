@@ -2,7 +2,7 @@
 
 clear
 
-echo -e "-=|[ Lara-Stacker |> Docker Stack |> PURGE ]|=-"
+echo -e "-=|[ Lara-Stacker |> Container |> PURGE ]|=-"
 
 functions=(
     "./scripts/functions/helpers/prompt.sh"

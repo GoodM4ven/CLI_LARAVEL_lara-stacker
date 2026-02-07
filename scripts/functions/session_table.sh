@@ -1,9 +1,9 @@
 sessionTableUp() {
-    local project_name="$1"
+    local application_name="$1"
     local apps_root="${APPS_ROOT:-/var/www/html}"
-    local project_path="$apps_root/$project_name"
+    local application_path="$apps_root/$application_name"
 
-    if [[ ! -d "$project_path" ]]; then
+    if [[ ! -d "$application_path" ]]; then
         return 1
     fi
 
@@ -26,7 +26,7 @@ sessionTableUp() {
         echo "$value"
     }
 
-    local env_file="$project_path/.env"
+    local env_file="$application_path/.env"
     if [[ -f "$env_file" ]]; then
         local db_connection
         db_connection=$(read_env_value "DB_CONNECTION" "$env_file")
@@ -36,22 +36,22 @@ sessionTableUp() {
         fi
     fi
 
-    local migration_glob="$project_path/database/migrations/*create_sessions_table*.php"
+    local migration_glob="$application_path/database/migrations/*create_sessions_table*.php"
     local sessions_declared="false"
 
     if ls $migration_glob >/dev/null 2>&1; then
         sessions_declared="true"
-    elif grep -R -E "Schema::create\\(['\"]sessions['\"]" "$project_path/database/migrations" >/dev/null 2>&1; then
+    elif grep -R -E "Schema::create\\(['\"]sessions['\"]" "$application_path/database/migrations" >/dev/null 2>&1; then
         sessions_declared="true"
     fi
 
     if [[ "$sessions_declared" != "true" ]]; then
-        if ! composeExecApp bash -lc "cd /var/www/html/$project_name && php artisan make:session-table"; then
+        if ! composeExecApp bash -lc "cd /var/www/html/$application_name && php artisan make:session-table"; then
             if ! ls $migration_glob >/dev/null 2>&1; then
                 return 1
             fi
         fi
     fi
 
-    composeExecApp bash -lc "cd /var/www/html/$project_name && php artisan migrate --graceful --ansi" || return 1
+    composeExecApp bash -lc "cd /var/www/html/$application_name && php artisan migrate --graceful --ansi" || return 1
 }

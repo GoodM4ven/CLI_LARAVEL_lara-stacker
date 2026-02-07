@@ -9,7 +9,7 @@ trustMkcert() {
     local -A seen_hosts
     local -a hosts
 
-    sourcer "helpers.projectRegistry"
+    sourcer "helpers.applicationRegistry"
 
     if ! command -v mkcert >/dev/null 2>&1; then
         return 1
@@ -33,14 +33,14 @@ trustMkcert() {
 
     if [[ -d "$apps_root" ]]; then
         while IFS= read -r -d '' dir; do
-            local project
-            if ! isRegisteredProjectDir "$dir"; then
+            local application
+            if ! isRegisteredApplicationDir "$dir"; then
                 continue
             fi
-            project="$(basename "$dir")"
-            [[ "$project" == .* ]] && continue
-            add_host "${project}.${domain_suffix}"
-            add_host "vite-${project}.${domain_suffix}"
+            application="$(basename "$dir")"
+            [[ "$application" == .* ]] && continue
+            add_host "${application}.${domain_suffix}"
+            add_host "vite-${application}.${domain_suffix}"
         done < <(find "$apps_root" -mindepth 1 -maxdepth 1 -type d -print0)
     fi
 

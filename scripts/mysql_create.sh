@@ -2,7 +2,7 @@
 
 clear
 
-echo -e "-=|[ Lara-Stacker |> Service Control |> MySQL |> CREATE ]|=-"
+echo -e "-=|[ Lara-Stacker |> Services |> MySQL |> CREATE ]|=-"
 
 functions=(
     "./scripts/functions/helpers/prompt.sh"
@@ -42,7 +42,7 @@ fi
 
 if [[ -z "$(dockerCompose ps -q mysql)" ]]; then
     if ! composeUp; then
-        prompt "Failed to start the Docker stack." "Start the stack and retry." false
+        prompt "Failed to start the Docker container." "Start the container and retry." false
     fi
 fi
 

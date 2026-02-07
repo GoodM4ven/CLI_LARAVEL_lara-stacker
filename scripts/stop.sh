@@ -2,7 +2,7 @@
 
 clear
 
-echo -e "-=|[ Lara-Stacker |> Docker Stack |> TRUST HTTPS ]|=-"
+echo -e "-=|[ Lara-Stacker |> Container |> STOP ]|=-"
 echo
 
 functions=(
@@ -30,11 +30,6 @@ source $lara_stacker_dir/.env
 
 sourcer "dockerHost"
 resolveDockerHost || true
-
-if ! command -v docker >/dev/null 2>&1; then
-    prompt "Docker was not found." "Install Docker first and try again." false
-fi
-
 if ! ensureDockerAccess; then
     if [[ "$EUID" -eq 0 ]]; then
         prompt "Docker daemon is not reachable." "Try running without sudo: [./lara-stacker.sh]" false
@@ -43,27 +38,16 @@ if ! ensureDockerAccess; then
     fi
 fi
 
-if ! docker compose version >/dev/null 2>&1; then
-    prompt "Docker Compose was not found." "Install Docker Compose (v2) first and try again." false
-fi
-
 sourcer "composeCmd"
-sourcer "composeUp"
-sourcer "trustHttps"
+sourcer "composeDown"
 
-# Ensure stack is running (also restarts if trust mode changed)
-composeUp
+composeDown
+
 if [[ $? -ne 0 ]]; then
-    prompt "Failed to start Docker stack." "Check Docker daemon/compose output, then retry." false
+    prompt "Failed to stop the Docker container." "Check Docker daemon and socket permissions, then retry." false
 fi
 
-if ! trustHttps; then
-    prompt "mkcert trust failed." "Install mkcert on the host and retry." false
-fi
-
-dockerCompose up -d --force-recreate caddy >/dev/null 2>&1 || true
-echo -e "\nTrusted HTTPS via mkcert successfully."
-echo -e "\n(RESTARTING THE BROWSER IS REQUIRED)"
+echo -e "\nDocker container is stopped."
 
 echo
 echo -n "Press any key to continue..."

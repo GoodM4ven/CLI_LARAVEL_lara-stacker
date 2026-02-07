@@ -2,13 +2,8 @@
 
 clear
 
-# * Display a status indicator
-echo -e "-=|[ Lara-Stacker |> Docker Stack |> UP ]|=-"
+echo -e "-=|[ Lara-Stacker |> Container |> Certify ]|=-"
 echo
-
-# * ==========
-# * Validation
-# * ==========
 
 functions=(
     "./scripts/functions/helpers/prompt.sh"
@@ -29,10 +24,6 @@ done
 if [[ -z "$RAN_MAIN_SCRIPT" ]]; then
     prompt "Aborted for direct execution flow." "Please use the main [lara-stacker.sh] script."
 fi
-
-# * ==========
-# * Preparation
-# * ==========
 
 lara_stacker_dir=$PWD
 source $lara_stacker_dir/.env
@@ -56,46 +47,23 @@ if ! docker compose version >/dev/null 2>&1; then
     prompt "Docker Compose was not found." "Install Docker Compose (v2) first and try again." false
 fi
 
-compose_file="${DOCKER_COMPOSE_FILE:-$lara_stacker_dir/compose.yaml}"
-if [[ ! -f "$compose_file" ]]; then
-    prompt "Missing docker compose file: $compose_file" "" false
-fi
-
-# ? Ensure app root exists
-apps_root="${APPS_ROOT:-/var/www/html}"
-if [[ ! -d "$apps_root" ]]; then
-    mkdir -p "$apps_root"
-fi
-
-# * ========
-# * Process
-# * ========
-
 sourcer "composeCmd"
 sourcer "composeUp"
 sourcer "trustHttps"
+
+# Ensure container is running (also restarts if trust mode changed)
+composeUp
+if [[ $? -ne 0 ]]; then
+    prompt "Failed to start Docker container." "Check Docker daemon/compose output, then retry." false
+fi
 
 if ! trustHttps; then
     prompt "mkcert trust failed." "Install mkcert on the host and retry." false
 fi
 
-composeUp
-if [[ $? -ne 0 ]]; then
-    prompt "Failed to start Docker stack." "Check the Docker build output above (apt mirror speed or package errors), then retry." false
-fi
-
 dockerCompose up -d --force-recreate caddy >/dev/null 2>&1 || true
-
-# ? Mark docker setup as done
-if [[ ! -f "$lara_stacker_dir/done-docker.flag" ]]; then
-    touch "$lara_stacker_dir/done-docker.flag"
-fi
-
-echo -e "\nDocker stack is running."
-
-# * ========
-# * The End
-# * ========
+echo -e "\nTrusted HTTPS via mkcert successfully."
+echo -e "\n(RESTARTING THE BROWSER IS REQUIRED)"
 
 echo
 echo -n "Press any key to continue..."

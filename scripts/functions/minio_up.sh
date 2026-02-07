@@ -5,8 +5,8 @@ minioUp() {
     bucket_name=$(echo "$bucket_name" | tr ' ' '-' | tr '_' '-' | tr '[:upper:]' '[:lower:]')
     bucket_name=${bucket_name// /}
 
-    local project_path="$apps_root/$bucket_name"
-    local env_file="$project_path/.env"
+    local application_path="$apps_root/$bucket_name"
+    local env_file="$application_path/.env"
 
     read_env_value() {
         local key="$1"
