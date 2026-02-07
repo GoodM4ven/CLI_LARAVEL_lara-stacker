@@ -125,6 +125,9 @@ https://github.com/user-attachments/assets/137f6d92-e1d6-4047-b73b-f5ce1da5e69f
    chmod +x ./lara-stacker.sh && ./lara-stacker.sh
    ```
 
+
+## Usage
+
 ### Available Commands
 
 Applications:
@@ -139,7 +142,7 @@ Applications:
 
 </div>
 
-> [!NOTE]
+> [!TIP]
 > Rewire updates config only. Refresh does a full dependency reinstall on the host, clears caches, and then *rewires* too.
 
 <div align="left">
@@ -162,13 +165,6 @@ Container:
   - Requires `sudo` access once, in order to write to the system trust store
   - Requires restarting the browser, in order to pick up the new trust
 - `Purge` — removes the container and all of its resources (containers, images, volumes, networks, build cache; everything!)
-
-### Responsibilities
-
-- The container does install and expose the main services (Caddy, MySQL, Redis, MinIO, etc.) ports for you, does runtime stuff in place (PHP, PHP Extensions, PHP-FPM, etc.) too, and finally includes whatever extra packages the local server may need, such as the media's (ImageMagick, Ghostscript, FFmpeg, etc.).
-- **The container does NOT contain the [development tools](#prerequisites) themselves that need to exist locally.** This includes Java and Android tooling, etc.
-
-TLDR: **Docker provides the runtime container group**, but there are **essential [prerequisites](#prerequisites) that must be installed on the host** for ever so many reasons really... All in all, the CLI will DISFUNCTION if those tools are missing.
 
 ### Configuration
 
@@ -196,18 +192,6 @@ Notes:
 - The CLI will create `APPS_ROOT` if missing and make it owned by `USERNAME`.
 - After changing `CADDY_HTTPS_PORT`, run **Rewire Application** (or **Refresh Application**) to update each application's `APP_URL`, Vite HMR URL, and whatever is necessary.
 
-### Notes
-
-- Inside the container, applications are always mounted at `/var/www/html` (Caddy/PHP-FPM depend on this).
-- Applications can be **disabled** via the CLI. This creates a `.disabled` file, and Caddy responds with **503** while keeping files intact.
-- **You can access an application using: `https://<app>.dev.localhost:8443` (or `https://<app>.dev.localhost` if `CADDY_HTTPS_PORT=443`)**
-- Vite HMR is exposed via `https://vite-<app>.dev.localhost:8443`. Run on host: `cd <app> && npm run dev`
-- Service UIs include (the host [ports](#ports) are defined below):
-  - `https://minio.dev.localhost:8443`
-  - `https://mailpit.dev.localhost:8443`
-- mkcert installs the "trust" into the system store, so make sure it's installed back in [prerequisites](#prerequisites) section, of course.
-- Certs are generated into `./.certs` (which isn't version controlled) and Caddy is restarted to use them from there. **DO NOT REMOVE THEM.**
-
 ### Ports
 
 This container is isolated from host installs (v4-style). It only conflicts if a host service already uses these same ports:
@@ -224,6 +208,24 @@ This container is isolated from host installs (v4-style). It only conflicts if a
 > It's extremely recommended to use `80/443` ports with Caddy. I only made them different by default in order not to conflict with lara-stacker v4. Check the [.env](./.env) file.
 
 <div align="left">
+
+### Responsibilities
+
+- The container does install and expose the main services (Caddy, MySQL, Redis, MinIO, etc.) ports for you, does runtime stuff in place (PHP, PHP Extensions, PHP-FPM, etc.) too, and finally includes whatever extra packages the local server may need, such as the media's (ImageMagick, Ghostscript, FFmpeg, etc.).
+- **The container does NOT contain the [development tools](#prerequisites) themselves that need to exist locally.** This includes Java and Android tooling, etc.
+
+TLDR: **Docker provides the runtime container group**, but there are **essential [prerequisites](#prerequisites) that must be installed on the host** for ever so many reasons really... All in all, the CLI will DISFUNCTION if those tools are missing.
+
+- Inside the container, applications are always mounted at `/var/www/html` (Caddy/PHP-FPM depend on this).
+- Applications can be **disabled** via the CLI. This creates a `.disabled` file, and Caddy responds with **503** while keeping files intact.
+- **You can access an application using: `https://<app>.dev.localhost:8443` (or `https://<app>.dev.localhost` if `CADDY_HTTPS_PORT=443`)**
+- Vite HMR is exposed via `https://vite-<app>.dev.localhost:8443`. Run on host: `cd <app> && npm run dev`
+- Service UIs include (the host [ports](#ports) are defined below):
+  - `https://minio.dev.localhost:8443`
+  - `https://mailpit.dev.localhost:8443`
+- mkcert installs the "trust" into the system store, so make sure it's installed back in [prerequisites](#prerequisites) section, of course.
+- Certs are generated into `./.certs` (which isn't version controlled) and Caddy is restarted to use them from there. **DO NOT REMOVE THEM.**
+
 
 ## Support
 
