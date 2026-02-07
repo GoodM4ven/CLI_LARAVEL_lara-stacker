@@ -9,8 +9,12 @@ sessionTableUp() {
 
     local migration_glob="$project_path/database/migrations/*create_sessions_table*.php"
     if ! ls $migration_glob >/dev/null 2>&1; then
-        composeExecApp bash -lc "cd /var/www/html/$project_name && php artisan make:session-table" || return 1
+        if ! composeExecApp bash -lc "cd /var/www/html/$project_name && php artisan make:session-table"; then
+            if ! ls $migration_glob >/dev/null 2>&1; then
+                return 1
+            fi
+        fi
     fi
 
-    composeExecApp bash -lc "cd /var/www/html/$project_name && php artisan migrate" || return 1
+    composeExecApp bash -lc "cd /var/www/html/$project_name && php artisan migrate --graceful --ansi" || return 1
 }

@@ -70,7 +70,8 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
         xml \
     && pecl install xdebug \
     && pecl install redis \
-    && docker-php-ext-enable xdebug redis opcache \
+    && docker-php-ext-enable redis opcache \
+    && rm -f /usr/local/etc/php/conf.d/*xdebug*.ini \
     && rm -rf /var/lib/apt/lists/*
 
 # Optional media tools + imagick (cached separately)

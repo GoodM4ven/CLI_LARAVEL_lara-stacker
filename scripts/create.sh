@@ -41,7 +41,7 @@ sourcer "mysqlUp"
 sourcer "minioUp"
 sourcer "viteUp"
 sourcer "xdebugUp"
-sourcer "trustCa"
+sourcer "trustHttps"
 sourcer "opinionatedUp"
 sourcer "workspaceUp"
 sourcer "sessionTable"
@@ -70,7 +70,7 @@ if [[ -z "$(dockerCompose ps -q app)" ]]; then
     fi
 fi
 if [[ "${AUTO_TRUST_HTTPS:-true}" == "true" ]]; then
-    trustCa || true
+    trustHttps || true
 fi
 
 # ? Create the Laravel project

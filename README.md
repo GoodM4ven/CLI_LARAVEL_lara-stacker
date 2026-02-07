@@ -37,11 +37,6 @@ Now **Docker-only**! It runs a single containerized stack that serves **all** La
 
 ### Available Commands
 
-Container:
-- `Start Stack` — boots the Docker stack and prepares HTTPS (auto-trusts if enabled)
-- `Stop Stack` — shuts down all stack services
-- `Stack Status` — shows running container in the stack
-
 Projects:
 - `List Projects` — lists folders under `APP_ROOT` and whether they’re enabled
 - `Create A Project` — new Laravel app under `APP_ROOT`, wired to Docker services
@@ -52,7 +47,15 @@ Projects:
 - `Enable A Project` — removes `.disabled` marker and serves it
 - `Disable A Project` — adds `.disabled` marker and returns 503
 
-Extra:
+Service Control:
+- `List MySQL Databases` — shows all databases in the stack MySQL
+- `Create MySQL Database` — creates a new database by name
+- `Delete MySQL Database` — deletes a database by name (with confirmation)
+
+Container:
+- `Start Stack` — boots the Docker stack and prepares HTTPS (auto-trusts if enabled)
+- `Stop Stack` — shuts down all stack services
+- `Stack Status` — shows running container in the stack
 - `Trust HTTPS (Caddy/mkcert)` — installs local trust for clean HTTPS
   - Requires sudo once to write to system trust store
 - `Purge Stack` — removes all stack containers, images, volumes, networks, and build cache

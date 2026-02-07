@@ -33,6 +33,16 @@ sourcer "composeCmd"
 sourcer "composeUp"
 sourcer "mysqlDown"
 sourcer "minioDown"
+sourcer "dockerHost"
+
+resolveDockerHost || true
+if ! ensureDockerAccess; then
+    prompt "Docker daemon is not reachable." "Start Docker and retry deletion. Project files were not removed." false
+fi
+
+if ! docker compose version >/dev/null 2>&1; then
+    prompt "Docker Compose was not found." "Install Docker Compose (v2) first and try again." false
+fi
 
 # ? Get the project name from the user
 echo -ne "\nEnter the project name: "
@@ -47,14 +57,42 @@ if ! [ -d "$project_path" ]; then
 fi
 
 # ? Ensure stack is up (for DB/bucket cleanup)
-if [[ -z "$(dockerCompose ps -q app)" ]]; then
-    composeUp
+if ! composeUp; then
+    prompt "Failed to start the Docker stack." "Start the stack and retry deletion. Project files were not removed." false
 fi
 
-mysqlDown "$escaped_project_name"
-minioDown "$escaped_project_name"
+if [[ -z "$(dockerCompose ps -q mysql)" ]]; then
+    prompt "MySQL container is not running." "Start the stack and retry deletion. Project files were not removed." false
+fi
 
-sudo rm -rf "$project_path"
+if ! mysqlDown "$escaped_project_name"; then
+    prompt "Failed to delete MySQL database." "Project files were not removed." false
+fi
+
+minio_enabled="false"
+if [[ -n "$DOCKER_PROFILES" ]]; then
+    if echo ",$DOCKER_PROFILES," | tr '[:upper:]' '[:lower:]' | grep -q ",minio,"; then
+        minio_enabled="true"
+    fi
+fi
+
+if [[ "$minio_enabled" == "true" ]]; then
+    if ! minioDown "$escaped_project_name"; then
+        prompt "Failed to delete MinIO bucket." "Project files were not removed." false
+    fi
+fi
+
+if rm -rf "$project_path" 2>/dev/null; then
+    :
+else
+    if command -v sudo >/dev/null 2>&1; then
+        if ! sudo rm -rf "$project_path"; then
+            prompt "Failed to delete project files." "Check permissions and retry." false
+        fi
+    else
+        prompt "Failed to delete project files." "Install sudo or fix permissions and retry." false
+    fi
+fi
 
 echo -e "\nDeleted project files."
 

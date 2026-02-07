@@ -160,19 +160,25 @@ while true; do
     echo "07. Enable Project"
     echo -e "08. Disable Project\n"
 
+    echo "    Service Control"
+    echo "    ==============="
+    echo "09. List MySQL Databases"
+    echo "10. Create MySQL Database"
+    echo -e "11. Delete MySQL Database\n"
+
     echo "    Stack Setup"
     echo "    ==========="
-    echo "09. Start Stack"
-    echo "10. Stop Stack"
-    echo "11. Stack Status"
-    echo "12. Trust HTTPS (Caddy/mkcert)"
-    echo "13. Purge Stack (containers/images/volumes/cache)"
-    echo -e "14. Exit\n"
+    echo "12. Start Stack"
+    echo "13. Stop Stack"
+    echo "14. Stack Status"
+    echo "15. Trust HTTPS (Caddy/mkcert)"
+    echo "16. Purge Stack (containers/images/volumes/cache)"
+    echo -e "17. Exit\n"
 
     if [[ $counter -eq 1 && "$1" ]]; then
         choice="$1"
     else
-        read -p "Choose an operation (1-14): " choice
+        read -p "Choose an operation (1-17): " choice
     fi
     choice=$(echo "$choice" | tr -d '[:space:]')
     if [[ "$choice" =~ ^0+[0-9]+$ ]]; then
@@ -211,21 +217,30 @@ while true; do
         RAN_MAIN_SCRIPT="true" ./scripts/disable.sh
         ;;
     9)
-        RAN_MAIN_SCRIPT="true" ./scripts/up.sh
+        RAN_MAIN_SCRIPT="true" ./scripts/mysql_list.sh
         ;;
     10)
-        RAN_MAIN_SCRIPT="true" ./scripts/down.sh
+        RAN_MAIN_SCRIPT="true" ./scripts/mysql_create.sh
         ;;
     11)
-        RAN_MAIN_SCRIPT="true" ./scripts/status.sh
+        RAN_MAIN_SCRIPT="true" ./scripts/mysql_delete.sh
         ;;
     12)
-        RAN_MAIN_SCRIPT="true" ./scripts/trust.sh
+        RAN_MAIN_SCRIPT="true" ./scripts/up.sh
         ;;
     13)
-        RAN_MAIN_SCRIPT="true" ./scripts/purge.sh
+        RAN_MAIN_SCRIPT="true" ./scripts/down.sh
         ;;
     14)
+        RAN_MAIN_SCRIPT="true" ./scripts/status.sh
+        ;;
+    15)
+        RAN_MAIN_SCRIPT="true" ./scripts/trust.sh
+        ;;
+    16)
+        RAN_MAIN_SCRIPT="true" ./scripts/purge.sh
+        ;;
+    17)
         echo -e "\nExiting Lara-Stacker...\n"
         exit 0
         ;;

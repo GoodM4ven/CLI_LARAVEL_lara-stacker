@@ -26,6 +26,7 @@ composeUp() {
     local last_node_version=""
     local last_profiles=""
     local last_trust_mode=""
+    local last_build_hash=""
 
     if [[ -f "$state_file" ]]; then
         # shellcheck source=/dev/null
@@ -34,14 +35,32 @@ composeUp() {
         last_node_version="${STACKER_NODE_VERSION:-}"
         last_profiles="${STACKER_PROFILES:-}"
         last_trust_mode="${STACKER_TRUST_MODE:-}"
+        last_build_hash="${STACKER_BUILD_HASH:-}"
     fi
 
     local current_php="${PHP_VERSION:-8.3}"
     local current_node="${NODE_VERSION:-20}"
     local current_trust_mode="${HTTPS_TRUST_MODE:-caddy}"
+    local current_build_hash=""
+
+    if command -v sha256sum >/dev/null 2>&1; then
+        local repo_dir="$PWD"
+        if [[ -f "$repo_dir/files/Dockerfile" ]]; then
+            current_build_hash=$(
+                sha256sum \
+                    "$repo_dir/files/Dockerfile" \
+                    "$repo_dir/files/xdebug.ini" \
+                    "$repo_dir/files/opcache.ini" \
+                    2>/dev/null | sha256sum | awk '{print $1}'
+            )
+        fi
+    fi
 
     local need_rebuild="false"
     if [[ "$current_php" != "$last_php_version" ]] || [[ "$current_node" != "$last_node_version" ]]; then
+        need_rebuild="true"
+    fi
+    if [[ -n "$current_build_hash" ]] && [[ "$current_build_hash" != "$last_build_hash" ]]; then
         need_rebuild="true"
     fi
 
@@ -88,5 +107,6 @@ STACKER_PHP_VERSION="$current_php"
 STACKER_NODE_VERSION="$current_node"
 STACKER_PROFILES="$normalized_profiles"
 STACKER_TRUST_MODE="$current_trust_mode"
+STACKER_BUILD_HASH="$current_build_hash"
 EOF
 }
