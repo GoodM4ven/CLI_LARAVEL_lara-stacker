@@ -30,6 +30,8 @@ Now **Docker-only**! It runs a single containerized stack that serves **all** La
 - [Docker Engine](https://docs.docker.com/engine/install)
 - [Docker Compose](https://docs.docker.com/compose/install)
 - Host tools (required for create/import/refresh workflows): Composer (requires PHP), Node.js, npm
+- `ca-certificates` (Linux trust store updates)
+- `certutil` (NSS trust store; `libnss3-tools` on Debian/Ubuntu)
 - [mkcert](https://github.com/FiloSottile/mkcert) (optional, only for `HTTPS_TRUST_MODE=mkcert`)
 
 ### Installation
@@ -102,6 +104,7 @@ Host
 - `USERNAME` — system user that owns project files
 - `DB_PASSWORD` — root password for MySQL/PostgreSQL container images
 - `APP_ROOT` (default `/var/www/html`) — host directory where projects live
+- `DOMAIN_SUFFIX` (default `localhost`) — base domain for project URLs
 - `OPINIONATED` — copy opinionated project files (Prettier config)
 - `USE_VSC` — generate Xdebug `launch.json` files
 - `VSC_WORKSPACES_DIR` — auto-create `.code-workspace` files (leave empty to disable)
@@ -134,6 +137,8 @@ Notes:
 - Optional UIs: `https://mailpit.localhost:8443` and `https://minio.localhost:8443` (or use the host ports below)
 - If `certutil` is available, the CLI also adds the CA to the NSS store for browsers that use it.
 - If `HTTPS_TRUST_MODE=mkcert`, certs are generated into `./certs` and Caddy is restarted to use them.
+- If you see `NET::ERR_CERT_COMMON_NAME_INVALID` on `.localhost`, it’s usually the wildcard rule. Keep `DOMAIN_SUFFIX=localhost` and re-run **Trust HTTPS**, or switch to a multi-dot suffix like `lvh.me` for wildcard-friendly certs.
+- After changing `DOMAIN_SUFFIX` or `CADDY_HTTPS_PORT`, run **Wire Project .env** (or **Refresh Project**) to update each project's `APP_URL` and Vite HMR URL.
 - If you change `DOCKER_PROFILES`, the next `Start Stack` will restart the stack to apply additions/removals.
 
 ### Ports

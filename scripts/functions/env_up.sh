@@ -2,7 +2,7 @@ envUp() {
     local project_name="$1"
 
     local app_root="${APP_ROOT:-/var/www/html}"
-    local domain_suffix="localhost"
+    local domain_suffix="${DOMAIN_SUFFIX:-localhost}"
 
     local escaped_project_name
     escaped_project_name=$(echo "$project_name" | tr ' ' '-' | tr '_' '-' | tr '[:upper:]' '[:lower:]')

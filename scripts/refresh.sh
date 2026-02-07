@@ -45,6 +45,38 @@ sourcer "cliWrappers"
 sourcer "dockerHost"
 sourcer "hostTools"
 
+waitForProjectInContainer() {
+    local project_name="$1"
+    local retries="${2:-20}"
+    local sleep_seconds="${3:-1}"
+    local project_dir="/var/www/html/$project_name"
+
+    for _ in $(seq 1 "$retries"); do
+        if composeExecApp test -d "$project_dir" >/dev/null 2>&1; then
+            return 0
+        fi
+        sleep "$sleep_seconds"
+    done
+
+    return 1
+}
+
+waitForAutoloadInContainer() {
+    local project_name="$1"
+    local retries="${2:-30}"
+    local sleep_seconds="${3:-2}"
+    local autoload_file="/var/www/html/$project_name/vendor/autoload.php"
+
+    for _ in $(seq 1 "$retries"); do
+        if composeExecApp php -r "require '$autoload_file';" >/dev/null 2>&1; then
+            return 0
+        fi
+        sleep "$sleep_seconds"
+    done
+
+    return 1
+}
+
 resolveDockerHost || true
 if ! ensureDockerAccess; then
     prompt "Docker daemon is not reachable." "Start Docker and retry refresh." false
@@ -71,7 +103,7 @@ if [ "$project_count" -eq 0 ]; then
     prompt "No projects found." "Create a project first."
 fi
 
-echo -e "\nAvailable projects:"
+echo -e "\nAvailable projects:\n"
 digits=${#project_count}
 if [ "$digits" -lt 2 ]; then
     digits=2
@@ -117,6 +149,11 @@ if [[ "${AUTO_TRUST_HTTPS:-true}" == "true" ]]; then
     trustHttps || true
 fi
 
+# ? Ensure the container can see the project files (Docker Desktop sync or stale mounts)
+if ! waitForProjectInContainer "$escaped_project_name"; then
+    prompt "App container can't see the project files." "Check APP_ROOT in [.env] and Docker file sharing, then retry." false
+fi
+
 # ? Clear dependencies (host)
 rm -rf "$project_path/node_modules" "$project_path/vendor" "$project_path/composer.lock" "$project_path/package-lock.json" "$project_path/bun.lock" "$project_path/bun.lockb" 2>/dev/null || true
 
@@ -134,9 +171,17 @@ if [[ -f "$project_path/package.json" ]]; then
     fi
 fi
 
+# ? Ensure autoload is visible inside the container (mount sync can lag)
+if ! waitForAutoloadInContainer "$escaped_project_name"; then
+    dockerCompose restart app >/dev/null 2>&1 || true
+    if ! waitForAutoloadInContainer "$escaped_project_name"; then
+        prompt "App container can't load vendor/autoload.php." "Check APP_ROOT and Docker file sharing (or run Composer inside the app container) and retry." false
+    fi
+fi
+
 # ? Clear Laravel caches
 if ! composeExecApp php /var/www/html/$escaped_project_name/artisan optimize:clear --quiet; then
-    prompt "App container is not running." "Start the stack and retry refresh." false
+    prompt "Failed to run Artisan inside the container." "Ensure the app container is running and can access vendor/autoload.php, then retry." false
 fi
 
 # ? Re-wire project configuration

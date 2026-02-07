@@ -27,6 +27,7 @@ fi
 
 lara_stacker_dir=$PWD
 source $lara_stacker_dir/.env
+domain_suffix="${DOMAIN_SUFFIX:-localhost}"
 
 sourcer "dockerHost"
 resolveDockerHost || true
@@ -67,7 +68,7 @@ else
     if ! trustHttps; then
         if command -v curl >/dev/null 2>&1; then
             curl -ks "https://localhost:${CADDY_HTTPS_PORT:-8443}" >/dev/null 2>&1 || true
-            curl -ks "https://app.localhost:${CADDY_HTTPS_PORT:-8443}" >/dev/null 2>&1 || true
+            curl -ks "https://app.${domain_suffix}:${CADDY_HTTPS_PORT:-8443}" >/dev/null 2>&1 || true
             sleep 1
         fi
         if ! trustHttps; then
@@ -80,8 +81,8 @@ else
             echo -e "\nCaddy cert path inside container:"
             dockerCompose exec -T caddy sh -lc "ls -la /data/caddy/pki/authorities/local || true; ls -la /data/caddy/pki/authorities/local/root.crt || true" 2>/dev/null || true
             echo -e "\nAttempting HTTPS probe:"
-            curl -k -s -o /dev/null -w "https://app.localhost:${CADDY_HTTPS_PORT:-8443} -> %{http_code}\n" "https://app.localhost:${CADDY_HTTPS_PORT:-8443}" || true
-            prompt "Caddy root certificate not found." "Start the stack and visit any https://*.localhost once, then retry." false
+            curl -k -s -o /dev/null -w "https://app.${domain_suffix}:${CADDY_HTTPS_PORT:-8443} -> %{http_code}\n" "https://app.${domain_suffix}:${CADDY_HTTPS_PORT:-8443}" || true
+            prompt "Caddy root certificate not found." "Start the stack and visit any https://*.${domain_suffix} once, then retry." false
         fi
     fi
 

@@ -39,17 +39,28 @@ trustCa() {
             return 1
         fi
         sudo cp "$cert_path" "$install_path"
+        sudo chmod 644 "$install_path" 2>/dev/null || true
         sudo update-ca-certificates >/dev/null 2>&1
     else
         cp "$cert_path" "$install_path"
+        chmod 644 "$install_path" 2>/dev/null || true
         update-ca-certificates >/dev/null 2>&1
     fi
 
     local cert_user="${USERNAME:-${SUDO_USER:-$USER}}"
     if command -v certutil >/dev/null 2>&1; then
         if [[ -n "$cert_user" ]]; then
-            sudo -u "$cert_user" bash -lc "mkdir -p ~/.pki/nssdb && certutil -d sql:\$HOME/.pki/nssdb -A -t 'C,,' -n 'Caddy Local CA' -i '$install_path' >/dev/null 2>&1 || true"
-            if ! sudo -u "$cert_user" bash -lc "certutil -d sql:\$HOME/.pki/nssdb -L 2>/dev/null | grep -q 'Caddy Local CA'"; then
+            local -a cert_cmd
+            if [[ "$EUID" -eq 0 ]]; then
+                cert_cmd=(sudo -u "$cert_user" bash -lc)
+            else
+                cert_cmd=(bash -lc)
+            fi
+
+            # Ensure NSS DB exists before adding the CA (Chrome/Brave use NSS)
+            "${cert_cmd[@]}" "mkdir -p ~/.pki/nssdb && if [[ ! -f ~/.pki/nssdb/cert9.db ]]; then certutil -d sql:\$HOME/.pki/nssdb -N --empty-password >/dev/null 2>&1 || true; fi"
+            "${cert_cmd[@]}" "certutil -d sql:\$HOME/.pki/nssdb -A -t 'C,,' -n 'Caddy Local CA' -i '$install_path' >/dev/null 2>&1 || true"
+            if ! "${cert_cmd[@]}" "certutil -d sql:\$HOME/.pki/nssdb -L 2>/dev/null | grep -q 'Caddy Local CA'"; then
                 echo -e "\nWarning: NSS trust store did not register the Caddy CA. Chrome/Brave may still show 'Not secure'."
             fi
         else

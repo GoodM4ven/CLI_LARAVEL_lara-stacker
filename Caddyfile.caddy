@@ -2,17 +2,17 @@
     local_certs
 }
 
-# App sites (https://<app>.localhost)
-*.localhost {
+# App sites (https://<app>.<domain>)
+*.{$DOMAIN_SUFFIX} {
     @http protocol http
     redir @http https://{host}:{$CADDY_HTTPS_PORT}{uri} 308
 
-    @vite header_regexp vite Host ^vite-([a-z0-9-]+)\.localhost(?::\d+)?$
+    @vite header_regexp vite Host ^vite-([a-z0-9-]+)\.{$DOMAIN_SUFFIX}(?::\d+)?$
     handle @vite {
         reverse_proxy host.docker.internal:5173
     }
 
-    @app header_regexp app Host ^([a-z0-9-]+)\.localhost(?::\d+)?$
+    @app header_regexp app Host ^([a-z0-9-]+)\.{$DOMAIN_SUFFIX}(?::\d+)?$
     handle @app {
         @disabled file /var/www/html/{http.regexp.app.1}/.disabled
         handle @disabled {
@@ -27,19 +27,19 @@
 }
 
 # Optional service UIs
-mailpit.localhost {
+mailpit.{$DOMAIN_SUFFIX} {
     @http protocol http
     redir @http https://{host}:{$CADDY_HTTPS_PORT}{uri} 308
     reverse_proxy mailpit:8025
 }
 
-minio.localhost {
+minio.{$DOMAIN_SUFFIX} {
     @http protocol http
     redir @http https://{host}:{$CADDY_HTTPS_PORT}{uri} 308
     reverse_proxy minio:9001
 }
 
-minio-api.localhost {
+minio-api.{$DOMAIN_SUFFIX} {
     @http protocol http
     redir @http https://{host}:{$CADDY_HTTPS_PORT}{uri} 308
     reverse_proxy minio:9000

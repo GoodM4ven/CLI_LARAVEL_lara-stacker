@@ -121,7 +121,7 @@ fi
 
 # ? Ensure the container can see the new project files (Docker Desktop sync or stale mounts)
 if ! waitForProjectInContainer "$escaped_project_name"; then
-    echo -e "\nApp container couldn't see the new project yet. Recreating the stack...\n"
+    echo -e "\nApp container couldn't see the new project yet. Restarting the stack...\n"
     composeDown || true
     if ! composeUp; then
         prompt "Failed to start the Docker stack." "Start the stack and retry project creation." false
@@ -132,7 +132,7 @@ if ! waitForProjectInContainer "$escaped_project_name"; then
 fi
 
 if ! waitForAutoloadInContainer "$escaped_project_name"; then
-    echo -e "\nAutoload files are not fully visible inside the app container yet. Recreating the stack...\n"
+    echo -e "\nAutoload files are not fully visible inside the app container yet. Restarting the stack...\n"
     composeDown || true
     if ! composeUp; then
         prompt "Failed to start the Docker stack." "Start the stack and retry project creation." false
@@ -169,7 +169,8 @@ https_suffix=""
 if [[ "$https_port" != "443" ]]; then
     https_suffix=":$https_port"
 fi
-echo -e "\nProject created successfully! You can access it at: [https://$escaped_project_name.localhost${https_suffix}].\n"
+domain_suffix="${DOMAIN_SUFFIX:-localhost}"
+echo -e "\nProject created successfully! You can access it at: [https://$escaped_project_name.${domain_suffix}${https_suffix}].\n"
 
 echo -n "Press any key to continue..."
 read whatever

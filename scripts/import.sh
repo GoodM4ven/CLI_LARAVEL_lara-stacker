@@ -49,6 +49,38 @@ sourcer "cliWrappers"
 sourcer "dockerHost"
 sourcer "hostTools"
 
+waitForProjectInContainer() {
+    local project_name="$1"
+    local retries="${2:-20}"
+    local sleep_seconds="${3:-1}"
+    local project_dir="/var/www/html/$project_name"
+
+    for _ in $(seq 1 "$retries"); do
+        if composeExecApp test -d "$project_dir" >/dev/null 2>&1; then
+            return 0
+        fi
+        sleep "$sleep_seconds"
+    done
+
+    return 1
+}
+
+waitForAutoloadInContainer() {
+    local project_name="$1"
+    local retries="${2:-30}"
+    local sleep_seconds="${3:-2}"
+    local autoload_file="/var/www/html/$project_name/vendor/autoload.php"
+
+    for _ in $(seq 1 "$retries"); do
+        if composeExecApp php -r "require '$autoload_file';" >/dev/null 2>&1; then
+            return 0
+        fi
+        sleep "$sleep_seconds"
+    done
+
+    return 1
+}
+
 resolveDockerHost || true
 if ! ensureDockerAccess; then
     prompt "Docker daemon is not reachable." "Start Docker and retry project import." false
@@ -111,6 +143,19 @@ if [[ ! -f "$app_root/$escaped_project_name/vendor/autoload.php" ]]; then
     fi
 fi
 
+# ? Ensure the container can see the project files
+if ! waitForProjectInContainer "$escaped_project_name"; then
+    prompt "App container can't see the project files." "Check APP_ROOT in [.env] and Docker file sharing, then retry." false
+fi
+
+# ? Ensure autoload is visible inside the container (mount sync can lag)
+if ! waitForAutoloadInContainer "$escaped_project_name"; then
+    dockerCompose restart app >/dev/null 2>&1 || true
+    if ! waitForAutoloadInContainer "$escaped_project_name"; then
+        prompt "App container can't load vendor/autoload.php." "Check APP_ROOT and Docker file sharing (or run Composer inside the app container) and retry." false
+    fi
+fi
+
 # ? Wire project configuration
 envUp "$escaped_project_name"
 viteUp "$escaped_project_name"
@@ -135,7 +180,8 @@ https_suffix=""
 if [[ "$https_port" != "443" ]]; then
     https_suffix=":$https_port"
 fi
-echo -e "\nProject imported successfully! You can access it at: [https://$escaped_project_name.localhost${https_suffix}].\n"
+domain_suffix="${DOMAIN_SUFFIX:-localhost}"
+echo -e "\nProject imported successfully! You can access it at: [https://$escaped_project_name.${domain_suffix}${https_suffix}].\n"
 
 # * Prompt to continue
 echo

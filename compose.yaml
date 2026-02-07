@@ -3,6 +3,7 @@ services:
     image: caddy:2
     environment:
       CADDY_HTTPS_PORT: ${CADDY_HTTPS_PORT:-8443}
+      DOMAIN_SUFFIX: ${DOMAIN_SUFFIX:-localhost}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:
