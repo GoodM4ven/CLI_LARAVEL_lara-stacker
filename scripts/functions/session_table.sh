@@ -1,7 +1,7 @@
 sessionTableUp() {
     local project_name="$1"
-    local app_root="${APP_ROOT:-/var/www/html}"
-    local project_path="$app_root/$project_name"
+    local apps_root="${APPS_ROOT:-/var/www/html}"
+    local project_path="$apps_root/$project_name"
 
     if [[ ! -d "$project_path" ]]; then
         return 1

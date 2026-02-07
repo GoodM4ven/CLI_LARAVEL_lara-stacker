@@ -2,7 +2,7 @@ dockerCompose() {
     local lara_stacker_dir="$PWD"
     local compose_file="${DOCKER_COMPOSE_FILE:-$lara_stacker_dir/compose.yaml}"
     local project_name="lara-stacker"
-    local app_root="${APP_ROOT:-/var/www/html}"
+    local apps_root="${APPS_ROOT:-/var/www/html}"
     local php_version="${PHP_VERSION:-8.3}"
 
     if [[ -f "$lara_stacker_dir/scripts/functions/docker_host.sh" ]]; then
@@ -22,7 +22,7 @@ dockerCompose() {
         host_gid=$(id -g)
     fi
 
-    APP_ROOT="$app_root" \
+    APPS_ROOT="$apps_root" \
     HOST_UID="$host_uid" \
     HOST_GID="$host_gid" \
     PHP_VERSION="$php_version" \

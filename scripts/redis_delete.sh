@@ -27,7 +27,7 @@ fi
 lara_stacker_dir=$PWD
 source $lara_stacker_dir/.env
 
-app_root="${APP_ROOT:-/var/www/html}"
+apps_root="${APPS_ROOT:-/var/www/html}"
 
 sourcer "dockerHost"
 sourcer "composeCmd"
@@ -62,7 +62,7 @@ fi
 
 project_names=()
 project_statuses=()
-for dir in "$app_root"/*/; do
+for dir in "$apps_root"/*/; do
     if [ ! -d "$dir" ]; then
         continue
     fi
@@ -111,7 +111,7 @@ echo
 escaped_project_name=$(echo "$project_name" | tr ' ' '-' | tr '_' '-' | tr '[:upper:]' '[:lower:]')
 escaped_project_name=${escaped_project_name// /}
 
-project_path="$app_root/$escaped_project_name"
+project_path="$apps_root/$escaped_project_name"
 if ! [ -d "$project_path" ]; then
     prompt "Project \"$escaped_project_name\" doesn't exist."
 fi

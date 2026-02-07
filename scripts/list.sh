@@ -28,7 +28,7 @@ fi
 lara_stacker_dir=$PWD
 source $lara_stacker_dir/.env
 
-app_root="${APP_ROOT:-/var/www/html}"
+apps_root="${APPS_ROOT:-/var/www/html}"
 domain_suffix="dev.localhost"
 https_port="${CADDY_HTTPS_PORT:-8443}"
 https_suffix=""
@@ -37,7 +37,7 @@ if [[ "$https_port" != "443" ]]; then
 fi
 
 count=0
-for dir in $(ls -d $app_root/*/ 2>/dev/null); do
+for dir in $(ls -d $apps_root/*/ 2>/dev/null); do
     if [ ! -d "$dir" ]; then
         continue
     fi

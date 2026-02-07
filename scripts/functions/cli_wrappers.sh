@@ -1,7 +1,7 @@
 cliWrappersUp() {
     local project_name="$1"
-    local app_root="${APP_ROOT:-/var/www/html}"
-    local project_path="$app_root/$project_name"
+    local apps_root="${APPS_ROOT:-/var/www/html}"
+    local project_path="$apps_root/$project_name"
     local source_php="$PWD/files/php"
     local dest_php="$project_path/php"
 

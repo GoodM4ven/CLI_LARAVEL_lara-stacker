@@ -8,7 +8,7 @@ workspaceUp() {
         return 0
     fi
 
-    local app_root="${APP_ROOT:-/var/www/html}"
+    local apps_root="${APPS_ROOT:-/var/www/html}"
 
     local escaped_project_name
     escaped_project_name=$(echo "$1" | tr ' ' '-' | tr '_' '-' | tr '[:upper:]' '[:lower:]')
@@ -24,7 +24,7 @@ workspaceUp() {
 
     if [ -f "$lara_stacker_dir/files/.opinionated/project.code-workspace" ]; then
         cp "$lara_stacker_dir/files/.opinionated/project.code-workspace" "$workspace_file"
-        sed -i "s~<projectsDirectory>~$app_root~g" "$workspace_file"
+        sed -i "s~<projectsDirectory>~$apps_root~g" "$workspace_file"
         sed -i "s~<projectName>~$escaped_project_name~g" "$workspace_file"
         echo -e "\nCreated VSC workspace file."
     fi

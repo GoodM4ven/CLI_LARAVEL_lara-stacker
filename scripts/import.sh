@@ -27,10 +27,10 @@ fi
 lara_stacker_dir=$PWD
 source $lara_stacker_dir/.env
 
-app_root="${APP_ROOT:-/var/www/html}"
-if [[ ! -d "$app_root" ]]; then
-    mkdir -p "$app_root"
-    chown -R "$USERNAME:$USERNAME" "$app_root"
+apps_root="${APPS_ROOT:-/var/www/html}"
+if [[ ! -d "$apps_root" ]]; then
+    mkdir -p "$apps_root"
+    chown -R "$USERNAME:$USERNAME" "$apps_root"
 fi
 
 sourcer "composeCmd"
@@ -93,7 +93,7 @@ fi
 escaped_project_name=$(echo "$project_name" | tr ' ' '-' | tr '_' '-' | tr '[:upper:]' '[:lower:]')
 escaped_project_name=${escaped_project_name// /}
 
-if [ -d "$app_root/$escaped_project_name" ]; then
+if [ -d "$apps_root/$escaped_project_name" ]; then
     prompt "A project with the same name already exists!" "Project importing cancelled."
 fi
 
@@ -106,34 +106,34 @@ fi
 trustHttps || true
 
 # ? Copy the project into the app root
-sudo cp -r "$project_path/$source_project_name" "$app_root/$escaped_project_name"
-sudo chown -R "$USERNAME:$USERNAME" "$app_root/$escaped_project_name"
+sudo cp -r "$project_path/$source_project_name" "$apps_root/$escaped_project_name"
+sudo chown -R "$USERNAME:$USERNAME" "$apps_root/$escaped_project_name"
 
-echo -e "\nProject files copied into $app_root."
+echo -e "\nProject files copied into $apps_root."
 
 # ? Ensure host Node is available if package.json exists
-if [[ -f "$app_root/$escaped_project_name/package.json" ]]; then
+if [[ -f "$apps_root/$escaped_project_name/package.json" ]]; then
     requireHostNode
 fi
 
 # ? Install composer deps if missing
-if [[ ! -f "$app_root/$escaped_project_name/vendor/autoload.php" ]]; then
+if [[ ! -f "$apps_root/$escaped_project_name/vendor/autoload.php" ]]; then
     echo -e "\nInstalling Composer dependencies for the project..."
     requireHostComposer
-    if ! runAsHostUser composer install --no-interaction --no-scripts --working-dir="$app_root/$escaped_project_name"; then
+    if ! runAsHostUser composer install --no-interaction --no-scripts --working-dir="$apps_root/$escaped_project_name"; then
         prompt "Failed to install Composer dependencies." "Ensure Composer is working on the host and retry." false
     fi
 fi
 
 # ? Ensure the container can see the project files
 if ! waitForProjectInContainer "$escaped_project_name"; then
-    prompt "App container can't see the project files." "Check APP_ROOT in [.env] and Docker file sharing, then retry." false
+    prompt "App container can't see the project files." "Check APPS_ROOT in [.env] and Docker file sharing, then retry." false
 fi
 
 # ? Restart app container to refresh autoload visibility (no wait/retry)
 dockerCompose restart app >/dev/null 2>&1 || true
 if ! composeExecApp php -r "require '/var/www/html/$escaped_project_name/vendor/autoload.php';" >/dev/null 2>&1; then
-    prompt "App container can't load vendor/autoload.php." "Check APP_ROOT and Docker file sharing (or run Composer inside the app container) and retry." false
+    prompt "App container can't load vendor/autoload.php." "Check APPS_ROOT and Docker file sharing (or run Composer inside the app container) and retry." false
 fi
 
 # ? Rewire project configuration

@@ -51,9 +51,9 @@ HTTPS trust is always handled by mkcert (no Caddy CA mode).
 ### Available Commands
 
 Applications:
-- `List` — lists folders under `APP_ROOT` and whether they’re enabled
-- `Create` — new Laravel app under `APP_ROOT`, wired to Docker services
-- `Import` — copy an existing app into `APP_ROOT` and wire it
+- `List` — lists folders under `APPS_ROOT` and whether they’re enabled
+- `Create` — new Laravel app under `APPS_ROOT`, wired to Docker services
+- `Import` — copy an existing app into `APPS_ROOT` and wire it
 - `Refresh` — reinstall deps, clear caches, rewire env (full consistency pass)
 - `Rewire` — updates a project’s `.env` + Vite config to match the stack (no reinstall)
 - `Delete` — removes project files and its DB/bucket
@@ -113,7 +113,7 @@ Edit `.env` (same order as the file):
 Host
 - `USERNAME` — system user that owns project files
 - `DB_PASSWORD` — root password for the MySQL container image
-- `APP_ROOT` (default `/var/www/html`) — host directory where projects live
+- `APPS_ROOT` (default `/var/www/html`) — host directory where projects live
 - `OPINIONATED` — copy opinionated project files (Prettier config)
 - `USE_VSC` — generate Xdebug `launch.json` files
 - `VSC_WORKSPACES_DIR` — auto-create `.code-workspace` files (leave empty to disable)
@@ -127,7 +127,7 @@ Container
 
 Notes:
 - When `USE_VSC=true`, the CLI also copies `files/.vscode/launch.json` into each project.
-- The CLI will create `APP_ROOT` if missing and make it owned by `USERNAME`.
+- The CLI will create `APPS_ROOT` if missing and make it owned by `USERNAME`.
 - The base domain is fixed to `dev.localhost`.
 - HTTPS trust via `mkcert` is always attempted when bringing the stack up or preparing projects.
 

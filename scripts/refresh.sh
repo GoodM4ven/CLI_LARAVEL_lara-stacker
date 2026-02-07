@@ -27,7 +27,7 @@ fi
 lara_stacker_dir=$PWD
 source $lara_stacker_dir/.env
 
-app_root="${APP_ROOT:-/var/www/html}"
+apps_root="${APPS_ROOT:-/var/www/html}"
 
 sourcer "composeCmd"
 sourcer "composeUp"
@@ -69,7 +69,7 @@ fi
 # ? List projects and get the project name/number from the user
 project_names=()
 project_statuses=()
-for dir in "$app_root"/*/; do
+for dir in "$apps_root"/*/; do
     if [ ! -d "$dir" ]; then
         continue
     fi
@@ -118,7 +118,7 @@ echo
 escaped_project_name=$(echo "$project_name" | tr ' ' '-' | tr '_' '-' | tr '[:upper:]' '[:lower:]')
 escaped_project_name=${escaped_project_name// /}
 
-project_path="$app_root/$escaped_project_name"
+project_path="$apps_root/$escaped_project_name"
 if ! [ -d "$project_path" ]; then
     prompt "Project \"$escaped_project_name\" doesn't exist."
 fi
@@ -133,7 +133,7 @@ trustHttps || true
 
 # ? Ensure the container can see the project files (Docker Desktop sync or stale mounts)
 if ! waitForProjectInContainer "$escaped_project_name"; then
-    prompt "App container can't see the project files." "Check APP_ROOT in [.env] and Docker file sharing, then retry." false
+    prompt "App container can't see the project files." "Check APPS_ROOT in [.env] and Docker file sharing, then retry." false
 fi
 
 # ? Clear dependencies (host)
@@ -156,7 +156,7 @@ fi
 # ? Restart app container to refresh autoload visibility (no wait/retry)
 dockerCompose restart app >/dev/null 2>&1 || true
 if ! composeExecApp php -r "require '/var/www/html/$escaped_project_name/vendor/autoload.php';" >/dev/null 2>&1; then
-    prompt "App container can't load vendor/autoload.php." "Check APP_ROOT and Docker file sharing (or run Composer inside the app container) and retry." false
+    prompt "App container can't load vendor/autoload.php." "Check APPS_ROOT and Docker file sharing (or run Composer inside the app container) and retry." false
 fi
 
 # ? Clear Laravel caches

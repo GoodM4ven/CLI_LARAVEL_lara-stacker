@@ -5,13 +5,13 @@ opinionatedUp() {
         return 0
     fi
 
-    local app_root="${APP_ROOT:-/var/www/html}"
+    local apps_root="${APPS_ROOT:-/var/www/html}"
 
     local escaped_project_name
     escaped_project_name=$(echo "$project_name" | tr ' ' '-' | tr '_' '-' | tr '[:upper:]' '[:lower:]')
     escaped_project_name=${escaped_project_name// /}
 
-    local project_path="$app_root/$escaped_project_name"
+    local project_path="$apps_root/$escaped_project_name"
 
     if [ ! -d "$project_path" ]; then
         return 0

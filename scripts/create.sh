@@ -27,10 +27,10 @@ fi
 lara_stacker_dir=$PWD
 source $lara_stacker_dir/.env
 
-app_root="${APP_ROOT:-/var/www/html}"
-if [[ ! -d "$app_root" ]]; then
-    mkdir -p "$app_root"
-    chown -R "$USERNAME:$USERNAME" "$app_root"
+apps_root="${APPS_ROOT:-/var/www/html}"
+if [[ ! -d "$apps_root" ]]; then
+    mkdir -p "$apps_root"
+    chown -R "$USERNAME:$USERNAME" "$apps_root"
 fi
 
 sourcer "composeCmd"
@@ -81,9 +81,9 @@ read project_name
 escaped_project_name=$(echo "$project_name" | tr ' ' '-' | tr '_' '-' | tr '[:upper:]' '[:lower:]')
 escaped_project_name=${escaped_project_name// /}
 
-project_path="$app_root/$escaped_project_name"
+project_path="$apps_root/$escaped_project_name"
 
-if [ -d "$app_root/$escaped_project_name" ]; then
+if [ -d "$apps_root/$escaped_project_name" ]; then
     prompt "Project folder already exists!" "Project creation cancelled."
 fi
 
@@ -109,7 +109,7 @@ if ! waitForProjectInContainer "$escaped_project_name"; then
         prompt "Failed to start the Docker stack." "Start the stack and retry project creation." false
     fi
     if ! waitForProjectInContainer "$escaped_project_name"; then
-        prompt "App container can't see the project files." "Check APP_ROOT in [.env] and Docker file sharing, then retry." false
+        prompt "App container can't see the project files." "Check APPS_ROOT in [.env] and Docker file sharing, then retry." false
     fi
 fi
 
@@ -119,7 +119,7 @@ if ! composeUp; then
     prompt "Failed to start the Docker stack." "Start the stack and retry project creation." false
 fi
 if ! composeExecApp php -r "require '/var/www/html/$escaped_project_name/vendor/autoload.php';" >/dev/null 2>&1; then
-    prompt "App container can't load vendor/autoload.php." "Check APP_ROOT and Docker file sharing (or run Composer inside the app container) and retry." false
+    prompt "App container can't load vendor/autoload.php." "Check APPS_ROOT and Docker file sharing (or run Composer inside the app container) and retry." false
 fi
 
 # ? Rewire project configuration

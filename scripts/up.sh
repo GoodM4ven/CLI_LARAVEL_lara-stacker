@@ -62,9 +62,9 @@ if [[ ! -f "$compose_file" ]]; then
 fi
 
 # ? Ensure app root exists
-app_root="${APP_ROOT:-/var/www/html}"
-if [[ ! -d "$app_root" ]]; then
-    mkdir -p "$app_root"
+apps_root="${APPS_ROOT:-/var/www/html}"
+if [[ ! -d "$apps_root" ]]; then
+    mkdir -p "$apps_root"
 fi
 
 # * ========

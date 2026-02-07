@@ -34,8 +34,8 @@ read project_name
 escaped_project_name=$(echo "$project_name" | tr ' ' '-' | tr '_' '-' | tr '[:upper:]' '[:lower:]')
 escaped_project_name=${escaped_project_name// /}
 
-app_root="${APP_ROOT:-/var/www/html}"
-project_path="$app_root/$escaped_project_name"
+apps_root="${APPS_ROOT:-/var/www/html}"
+project_path="$apps_root/$escaped_project_name"
 
 if ! [ -d "$project_path" ]; then
     prompt "Project \"$escaped_project_name\" doesn't exist."

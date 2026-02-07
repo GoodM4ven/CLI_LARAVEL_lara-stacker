@@ -5,7 +5,7 @@ trustMkcert() {
     local key_file="$cert_dir/dev.localhost-key.pem"
     local mkcert_user="${USERNAME:-$USER}"
     local domain_suffix="dev.localhost"
-    local app_root="${APP_ROOT:-/var/www/html}"
+    local apps_root="${APPS_ROOT:-/var/www/html}"
     local -A seen_hosts
     local -a hosts
 
@@ -29,14 +29,14 @@ trustMkcert() {
     add_host "minio.${domain_suffix}"
     add_host "minio-api.${domain_suffix}"
 
-    if [[ -d "$app_root" ]]; then
+    if [[ -d "$apps_root" ]]; then
         while IFS= read -r -d '' dir; do
             local project
             project="$(basename "$dir")"
             [[ "$project" == .* ]] && continue
             add_host "${project}.${domain_suffix}"
             add_host "vite-${project}.${domain_suffix}"
-        done < <(find "$app_root" -mindepth 1 -maxdepth 1 -type d -print0)
+        done < <(find "$apps_root" -mindepth 1 -maxdepth 1 -type d -print0)
     fi
 
     if [[ "$domain_suffix" != "localhost" ]]; then

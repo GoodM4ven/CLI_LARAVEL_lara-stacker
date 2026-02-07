@@ -13,7 +13,7 @@ services:
       - ./.certs:/etc/caddy/certs:ro
       - caddy_data:/data
       - caddy_config:/config
-      - ${APP_ROOT}:/var/www/html:ro
+      - ${APPS_ROOT}:/var/www/html:ro
     depends_on:
       - app
 
@@ -26,7 +26,7 @@ services:
         APT_SECURITY_MIRROR: ${APT_SECURITY_MIRROR:-security.debian.org}
     working_dir: /var/www/html
     volumes:
-      - ${APP_ROOT}:/var/www/html
+      - ${APPS_ROOT}:/var/www/html
     expose:
       - "9000"
       - "5173"
