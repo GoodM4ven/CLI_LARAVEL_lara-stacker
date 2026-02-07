@@ -46,6 +46,8 @@ if [[ "$confirm" != "purge" ]]; then
     exit 0
 fi
 
+echo
+
 container_ids=$(docker ps -aq --filter label=com.docker.compose.project=lara-stacker)
 volume_ids=""
 if [[ -n "$container_ids" ]]; then
