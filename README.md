@@ -208,7 +208,8 @@ This container is isolated from host installs (v4-style). It only conflicts if a
 
 <div align="left">
 
-### Responsibilities
+
+## Responsibilities
 
 - The container does install and expose the main services (Caddy, MySQL, Redis, MinIO, etc.) ports for you, does runtime stuff in place (PHP, PHP Extensions, PHP-FPM, etc.) too, and finally includes whatever extra packages the local server may need, such as the media's (ImageMagick, Ghostscript, FFmpeg, etc.).
 - **The container does NOT contain the [development tools](#prerequisites) themselves that need to exist locally.** This includes Java and Android tooling, etc.
