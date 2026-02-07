@@ -27,18 +27,93 @@ Now **Docker-only**! It runs a single containerized stack that serves **all** La
 
 ### Requirements
 
-- [Docker Engine](https://docs.docker.com/engine/install)
-- [Docker Compose](https://docs.docker.com/compose/install)
-- Host tools (required for create/import/refresh workflows): Composer (requires PHP), Node.js, npm
-- `ca-certificates` (Linux trust store updates)
-- `certutil` (NSS trust store; `libnss3-tools` on Debian/Ubuntu)
-- [mkcert](https://github.com/FiloSottile/mkcert) (required for HTTPS trust)
+- <details>
+  <summary>Docker Desktop (which contains <a href="https://docs.docker.com/engine/install">Engine</a> and <a href="https://docs.docker.com/compose/install">Compose</a>)</summary>
 
-HTTPS trust is always handled by mkcert (no Caddy CA mode).
+  - Linux (Ubuntu tested)
+    ```bash
+    set -e
+    uname -m | grep -Eq 'x86_64|amd64'
+    grep -Eq '(vmx|svm)' /proc/cpuinfo
 
-### Installation
+    sudo apt update
+    sudo apt install -y ca-certificates curl gnupg qemu-kvm qemu-utils libvirt-daemon-system libvirt-clients pass gnome-terminal || true
 
-1. Clone this repo, from the new main `docker` branch of course.
+    lsmod | grep -q '^kvm' || sudo modprobe kvm
+    if grep -qi intel /proc/cpuinfo; then
+        lsmod | grep -q '^kvm_intel' || sudo modprobe kvm_intel
+    fi
+    if grep -qi amd /proc/cpuinfo; then
+        lsmod | grep -q '^kvm_amd' || sudo modprobe kvm_amd
+    fi
+    getent group kvm | grep -q "$USER" || sudo usermod -aG kvm "$USER"
+
+    sudo install -m 0755 -d /etc/apt/keyrings
+    if [ ! -f /etc/apt/keyrings/docker.gpg ]; then
+        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+        sudo chmod a+r /etc/apt/keyrings/docker.gpg
+    fi
+    if [ ! -f /etc/apt/sources.list.d/docker.list ]; then
+        echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" \
+        | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+    fi
+
+    sudo apt update
+    cd ~/Downloads
+    [ -f docker-desktop-amd64.deb ] || wget https://desktop.docker.com/linux/main/amd64/docker-desktop-amd64.deb
+    sudo apt install ./docker-desktop-amd64.deb
+
+    systemctl --user start docker-desktop
+    systemctl --user enable docker-desktop
+    ```
+  </details>
+
+- <details>
+  <summary>Building tools</summary>
+
+  - Linux (Ubuntu tested)
+    - <a href="https://php.net">PHP</a> and <a href="https://getcomposer.org">Composer</a>:
+      ```bash
+      sudo apt update
+      sudo apt install -y php-cli unzip
+      php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
+      php composer-setup.php --install-dir=/usr/local/bin --filename=composer
+      rm composer-setup.php
+      ```
+    - <a href="https://nodejs.org">Node.js</a> via <a href="https://github.com/nvm-sh/nvm">NVM</a> preferably:
+      ```bash
+      curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.4/install.sh | bash
+      ```
+  </details>
+
+- <details>
+  <summary>Certification Tools</summary>
+
+  - Linux (Ubuntu tested)
+    ```bash
+    sudo apt update
+    sudo apt install ca-certificates certutil libnss3-tools
+    git clone https://github.com/FiloSottile/mkcert && cd mkcert
+    go build -ldflags "-X main.Version=$(git describe --tags)"
+    ```
+  </details>
+
+- <details>
+  <summary>Android Tools (for NativePHP Android apps)</summary>
+
+  - Linux (Ubuntu tested)
+    ```bash
+    sudo apt update
+    sudo apt install openjdk-17-jdk
+    echo 'export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64' >> ~/.bashrc
+    echo 'export PATH=$PATH:$JAVA_HOME/bin' >> ~/.bashrc
+    sudo snap install android-studio --classic
+    ```
+  </details>
+
+### CLI Installation
+
+1. Clone this repo, from the new main `docker` branch, and navigate to it.
 2. Create `.env` from `.env.example` and fill the values.
    ```bash
    cp .env.example .env
@@ -60,16 +135,21 @@ Applications:
 - `Enable` — removes `.disabled` marker and serves it
 - `Disable` — adds `.disabled` marker and returns 503
 
-Rewire updates config only. Refresh does a full dependency reinstall on the host, clears caches, and then rewires.
+</div>
+
+> [!NOTE]
+> Rewire updates config only. Refresh does a full dependency reinstall on the host, clears caches, and then *rewires* too.
+
+<div align="left">
 
 Services:
-- `MySQL > List` — shows all databases in the stack MySQL
+- `MySQL > Browse` — shows all databases in the stack MySQL
 - `MySQL > Create` — creates a new database by name
 - `MySQL > Delete` — deletes a database by name (with confirmation)
-- `MinIO > List` — lists MinIO buckets
+- `MinIO > Browse` — lists MinIO buckets
 - `MinIO > Create` — creates a MinIO bucket
 - `MinIO > Delete` — deletes a MinIO bucket
-- `Redis > List` — lists Redis keys
+- `Redis > Browse` — lists Redis keys
 - `Redis > Delete` — deletes Redis keys by pattern
 
 Container:
@@ -77,34 +157,22 @@ Container:
 - `Check` — shows running containers in the stack
 - `Stop` — shuts down all stack services
 - `Certify` — installs local HTTPS certs/trust (mkcert)
-  - Requires sudo once to write to system trust store
-  - Restart your browser after running this to pick up the new trust
+  - Requires `sudo` access once, in order to write to the system trust store
+  - Requires restarting the browser, in order to pick up the new trust
 - `Purge` — removes all stack containers, images, volumes, networks, and build cache
-
-Access:
-- Visit: `https://<app>.dev.localhost:8443` (or `https://<app>.dev.localhost` if `CADDY_HTTPS_PORT=443`)
-
-### Project CLI Wrappers
-
-Each created/imported project gets a `php` helper in its root. Use it from the project directory:
-
-```bash
-./php -v
-./php artisan migrate
-```
 
 ### Responsibilities
 
-**What the container does for you (main services + runtime stack):**
+What the container does for you (main services + runtime stack):
 - Runs the **main services** and exposes them on ports (Caddy + PHP-FPM, MySQL, Redis, Mailpit, MinIO).
 - Installs the **runtime stack** needed to serve apps **inside the container** (PHP + extensions).
 - Includes **media tooling** (ImageMagick/Ghostscript/FFmpeg) for local dev needs.
 
 **What the container does NOT do for you (and you must install it yourself):**
-- The **shared build tools** in order to run them locally (Composer, Node.js + npm).
-- Java, Android tooling, pywatchman, etc (for NativePHP development).
+- The **building tools** in order to run them locally (Composer, Node.js + npm).
+- Java and Android tooling, pywatchman, etc (for NativePHP development).
 
-In short: **Docker provides the runtime stack**, but **shared build tools must be installed on the host** for creation/refresh workflows. The CLI will stop if these tools are missing.
+In short: **Docker provides the runtime stack**, but there are **essential tools that must be installed on the host** for ever so many reasons really. All and all, the CLI will DISFUNCTION if these tools are missing.
 
 ### Configuration
 
@@ -141,6 +209,7 @@ Notes:
 
 - Inside the container, projects are always mounted at `/var/www/html` (Caddy/PHP-FPM depend on this).
 - Projects can be **disabled** via the CLI. This creates a `.disabled` file, and Caddy responds with 503 while keeping files intact.
+- You can access an application using: `https://<app>.dev.localhost:8443` (or `https://<app>.dev.localhost` if `CADDY_HTTPS_PORT=443`)
 - Vite HMR is exposed via `https://vite-<app>.dev.localhost:8443`. Run on host: `cd <app> && npm run dev`
 - Service UIs: `https://mailpit.dev.localhost:8443` and `https://minio.dev.localhost:8443` (or use the host ports below)
 - mkcert installs trust into the system store (and NSS if `certutil` is available).
@@ -156,25 +225,6 @@ This stack is isolated from host installs (v4-style). It only conflicts if a hos
 - [Redis](https://redis.io/): `6380` (container `6379`)
 - [Mailpit](https://mailpit.axllent.org/) SMTP/UI: `1026` / `8026`
 - [MinIO](https://www.min.io/) API/Console: `9100` / `9101`
-
-### Linux Host Tool Install (Ubuntu/Debian)
-
-Composer:
-
-```bash
-sudo apt update
-sudo apt install -y php-cli unzip
-php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
-php composer-setup.php --install-dir=/usr/local/bin --filename=composer
-rm composer-setup.php
-```
-
-Node.js + npm (Node 20 LTS):
-
-```bash
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-sudo apt install -y nodejs
-```
 
 
 ## Support

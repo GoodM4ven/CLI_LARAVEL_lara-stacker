@@ -34,7 +34,7 @@ mysqlUp() {
         local db_connection
         db_connection=$(read_env_value "DB_CONNECTION" "$env_file")
         if [[ -n "$db_connection" && "$db_connection" != "mysql" && "$db_connection" != "mariadb" ]]; then
-            echo -e "\nDB_CONNECTION is '$db_connection'; skipped MySQL database creation."
+            echo -e "DB_CONNECTION is '$db_connection'; skipped MySQL database creation."
             return 0
         fi
     fi

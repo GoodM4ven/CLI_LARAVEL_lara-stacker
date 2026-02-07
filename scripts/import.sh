@@ -178,10 +178,8 @@ if [[ "$https_port" != "443" ]]; then
     https_suffix=":$https_port"
 fi
 domain_suffix="dev.localhost"
-echo -e "\nProject imported successfully! You can access it at: [https://$escaped_project_name.${domain_suffix}${https_suffix}].\n"
+echo -e "Project imported successfully! You can access it at: [https://$escaped_project_name.${domain_suffix}${https_suffix}].\n"
 
-# * Prompt to continue
-echo
 echo -n "Press any key to continue..."
 read whatever
 
