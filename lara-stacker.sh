@@ -236,9 +236,9 @@ while true; do
     echo "$top_border"
     for ((i = 0; i < max_lines; i++)); do
         if [ $i -eq 0 ]; then
-            col1_line=$(center_text "$col1_title" "$col1_width")
+            col1_line=$(printf "%-*s" "$col1_width" "$col1_title")
             col2_line=$(center_text "$col2_title" "$col2_width")
-            col3_line=$(center_text "$col3_title" "$col3_width")
+            col3_line=$(printf "%*s" "$col3_width" "$col3_title")
         elif [ $i -eq 1 ]; then
             col1_line=$(repeat_char "=" "$col1_width")
             col2_line=$(repeat_char "=" "$col2_width")
