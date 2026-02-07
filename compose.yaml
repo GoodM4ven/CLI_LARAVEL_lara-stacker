@@ -24,8 +24,6 @@ services:
         PHP_VERSION: ${PHP_VERSION:-8.3}
         APT_MIRROR: ${APT_MIRROR:-deb.debian.org}
         APT_SECURITY_MIRROR: ${APT_SECURITY_MIRROR:-security.debian.org}
-        APT_PROXY: ${APT_PROXY:-}
-        INSTALL_MEDIA_TOOLS: ${INSTALL_MEDIA_TOOLS:-true}
     working_dir: /var/www/html
     volumes:
       - ${APP_ROOT}:/var/www/html

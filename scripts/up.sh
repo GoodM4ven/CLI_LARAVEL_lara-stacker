@@ -4,6 +4,7 @@ clear
 
 # * Display a status indicator
 echo -e "-=|[ Lara-Stacker |> Docker Stack |> UP ]|=-"
+echo
 
 # * ==========
 # * Validation

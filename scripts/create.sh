@@ -54,6 +54,7 @@ if ! ensureDockerAccess; then
 fi
 
 requireHostComposer
+requireHostNode
 
 # ? Get the project name from the user
 echo -ne "\nEnter the project name: "

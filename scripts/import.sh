@@ -96,6 +96,11 @@ sudo chown -R "$USERNAME:$USERNAME" "$app_root/$escaped_project_name"
 
 echo -e "\nProject files copied into $app_root."
 
+# ? Ensure host Node is available if package.json exists
+if [[ -f "$app_root/$escaped_project_name/package.json" ]]; then
+    requireHostNode
+fi
+
 # ? Install composer deps if missing
 if [[ ! -f "$app_root/$escaped_project_name/vendor/autoload.php" ]]; then
     echo -e "\nInstalling Composer dependencies for the project..."

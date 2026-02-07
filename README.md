@@ -21,7 +21,7 @@ Now **Docker-only**! It runs a single containerized stack that serves **all** La
 
 - [Docker Engine](https://docs.docker.com/engine/install)
 - [Docker Compose](https://docs.docker.com/compose/install)
-- Host tools (required for creation/refresh workflows): Composer (requires PHP), Node.js, npm
+- Host tools (required for create/import/refresh workflows): Composer (requires PHP), Node.js, npm
 - [mkcert](https://github.com/FiloSottile/mkcert) (optional, only for `HTTPS_TRUST_MODE=mkcert`)
 
 ### Installation
@@ -97,8 +97,6 @@ Container
 - `HTTPS_TRUST_MODE` — `caddy` (default) or `mkcert`
 - `APT_MIRROR` — Debian main mirror (HTTPS)
 - `APT_SECURITY_MIRROR` — Debian security mirror (HTTPS)
-- `APT_PROXY` — apt proxy (e.g., `http://host.docker.internal:3142`)
-- `INSTALL_MEDIA_TOOLS` — ImageMagick/Ghostscript/FFmpeg + imagick extension
 - `CADDY_HTTP_PORT` / `CADDY_HTTPS_PORT` — host ports for Caddy (use `80/443` if free)
 
 Notes:

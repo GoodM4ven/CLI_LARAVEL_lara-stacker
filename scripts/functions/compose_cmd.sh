@@ -9,6 +9,7 @@ dockerCompose() {
         # shellcheck source=/dev/null
         source "$lara_stacker_dir/scripts/functions/docker_host.sh"
         resolveDockerHost || true
+        ensureDockerAccess || true
     fi
 
     local host_uid

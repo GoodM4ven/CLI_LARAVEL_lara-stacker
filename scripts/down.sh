@@ -3,6 +3,7 @@
 clear
 
 echo -e "-=|[ Lara-Stacker |> Docker Stack |> DOWN ]|=-"
+echo
 
 functions=(
     "./scripts/functions/helpers/prompt.sh"
@@ -27,10 +28,24 @@ fi
 lara_stacker_dir=$PWD
 source $lara_stacker_dir/.env
 
+sourcer "dockerHost"
+resolveDockerHost || true
+if ! ensureDockerAccess; then
+    if [[ "$EUID" -eq 0 ]]; then
+        prompt "Docker daemon is not reachable." "Try running without sudo: [./lara-stacker.sh]" false
+    else
+        prompt "Docker daemon is not reachable." "Start Docker (or fix your Docker Desktop socket) and try again." false
+    fi
+fi
+
 sourcer "composeCmd"
 sourcer "composeDown"
 
 composeDown
+
+if [[ $? -ne 0 ]]; then
+    prompt "Failed to stop the Docker stack." "Check Docker daemon and socket permissions, then retry." false
+fi
 
 echo -e "\nDocker stack is stopped."
 
