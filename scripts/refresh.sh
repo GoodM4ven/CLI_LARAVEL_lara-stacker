@@ -31,6 +31,7 @@ apps_root="${APPS_ROOT:-/var/www/html}"
 
 sourcer "composeCmd"
 sourcer "composeUp"
+sourcer "composeDown"
 sourcer "composeExecApp"
 sourcer "envUp"
 sourcer "mysqlUp"
@@ -132,7 +133,14 @@ trustHttps || true
 
 # ? Ensure the container can see the project files (Docker Desktop sync or stale mounts)
 if ! waitForProjectInContainer "$escaped_project_name"; then
-    prompt "App container can't see the project files." "Check APPS_ROOT in [.env] and Docker file sharing, then retry." false
+    echo -e "\nApp container couldn't see the project yet. Restarting the stack...\n"
+    composeDown || true
+    if ! composeUp; then
+        prompt "Failed to start the Docker stack." "Start the stack and retry refresh." false
+    fi
+    if ! waitForProjectInContainer "$escaped_project_name"; then
+        prompt "App container can't see the project files." "Check APPS_ROOT in [.env] and Docker file sharing, then retry." false
+    fi
 fi
 
 # ? Clear dependencies (host)
@@ -152,8 +160,12 @@ if [[ -f "$project_path/package.json" ]]; then
     fi
 fi
 
-# ? Restart app container to refresh autoload visibility (no wait/retry)
-dockerCompose restart app >/dev/null 2>&1 || true
+# ? Restart the stack to refresh autoload visibility
+echo -e "\nRestarting the stack to refresh autoload visibility...\n"
+composeDown || true
+if ! composeUp; then
+    prompt "Failed to start the Docker stack." "Start the stack and retry refresh." false
+fi
 if ! composeExecApp php -r "require '/var/www/html/$escaped_project_name/vendor/autoload.php';" >/dev/null 2>&1; then
     prompt "App container can't load vendor/autoload.php." "Check APPS_ROOT and Docker file sharing (or run Composer inside the app container) and retry." false
 fi
