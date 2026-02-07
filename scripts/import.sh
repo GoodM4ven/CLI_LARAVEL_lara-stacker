@@ -48,6 +48,7 @@ sourcer "workspaceUp"
 sourcer "sessionTable"
 sourcer "dockerHost"
 sourcer "hostTools"
+sourcer "helpers.projectRegistry"
 
 waitForProjectInContainer() {
     local project_name="$1"
@@ -92,11 +93,12 @@ resolveDir() {
 
 apps_root_real=$(resolveDir "$apps_root")
 source_project_real=$(resolveDir "$project_path/$source_project_name")
+source_in_apps_root="false"
 if [[ -n "$apps_root_real" && -n "$source_project_real" ]]; then
     apps_root_real="${apps_root_real%/}"
     source_project_real="${source_project_real%/}"
     if [[ "$source_project_real" == "$apps_root_real" || "$source_project_real" == "$apps_root_real/"* ]]; then
-        prompt "The project is already inside APPS_ROOT!" "Choose a project outside $apps_root_real to import."
+        source_in_apps_root="true"
     fi
 fi
 
@@ -110,7 +112,14 @@ fi
 escaped_project_name=$(echo "$project_name" | tr ' ' '-' | tr '_' '-' | tr '[:upper:]' '[:lower:]')
 escaped_project_name=${escaped_project_name// /}
 
-if [ -d "$apps_root/$escaped_project_name" ]; then
+target_project_path="$apps_root/$escaped_project_name"
+source_project_path="$project_path/$source_project_name"
+skip_copy="false"
+if [[ "$source_in_apps_root" == "true" && "$target_project_path" == "$source_project_path" ]]; then
+    skip_copy="true"
+fi
+
+if [ -d "$target_project_path" ] && [[ "$skip_copy" != "true" ]]; then
     prompt "A project with the same name already exists!" "Project importing cancelled."
 fi
 
@@ -123,21 +132,26 @@ fi
 trustHttps || true
 
 # ? Copy the project into the app root
-sudo cp -r "$project_path/$source_project_name" "$apps_root/$escaped_project_name"
-sudo chown -R "$USERNAME:$USERNAME" "$apps_root/$escaped_project_name"
+if [[ "$skip_copy" != "true" ]]; then
+    sudo cp -r "$project_path/$source_project_name" "$target_project_path"
+    sudo chown -R "$USERNAME:$USERNAME" "$target_project_path"
 
-echo -e "\nProject files copied into $apps_root."
+    echo -e "\nProject files copied into $apps_root."
+else
+    sudo chown -R "$USERNAME:$USERNAME" "$target_project_path"
+    echo -e "\nProject already in $apps_root. Skipping copy."
+fi
 
 # ? Ensure host Node is available if package.json exists
-if [[ -f "$apps_root/$escaped_project_name/package.json" ]]; then
+if [[ -f "$target_project_path/package.json" ]]; then
     requireHostNode
 fi
 
 # ? Install composer deps if missing
-if [[ ! -f "$apps_root/$escaped_project_name/vendor/autoload.php" ]]; then
+if [[ ! -f "$target_project_path/vendor/autoload.php" ]]; then
     echo -e "\nInstalling Composer dependencies for the project..."
     requireHostComposer
-    if ! runAsHostUser composer install --no-interaction --no-scripts --working-dir="$apps_root/$escaped_project_name"; then
+    if ! runAsHostUser composer install --no-interaction --no-scripts --working-dir="$target_project_path"; then
         prompt "Failed to install Composer dependencies." "Ensure Composer is working on the host and retry." false
     fi
 fi
@@ -174,6 +188,10 @@ mysqlUp "$escaped_project_name"
 minioUp "$escaped_project_name"
 if ! sessionTableUp "$escaped_project_name"; then
     prompt "Failed to create session table or run migrations." "Check database connectivity and retry." false
+fi
+
+if ! registerProjectDir "$target_project_path"; then
+    prompt "Failed to mark project as registered." "Check permissions and retry."
 fi
 
 # ? Mark docker setup as done

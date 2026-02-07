@@ -35,10 +35,14 @@ https_suffix=""
 if [[ "$https_port" != "443" ]]; then
     https_suffix=":$https_port"
 fi
+sourcer "helpers.projectRegistry"
 
 count=0
 for dir in $(ls -d $apps_root/*/ 2>/dev/null); do
     if [ ! -d "$dir" ]; then
+        continue
+    fi
+    if ! isRegisteredProjectDir "$dir"; then
         continue
     fi
     project_name=$(basename "$dir")
@@ -52,6 +56,9 @@ for dir in $(ls -d $apps_root/*/ 2>/dev/null); do
 done
 
 if [ $count -gt 0 ]; then
+    echo ""
+else
+    echo "No registered projects found. Use Import to register an existing project."
     echo ""
 fi
 

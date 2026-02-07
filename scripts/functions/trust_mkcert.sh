@@ -9,6 +9,8 @@ trustMkcert() {
     local -A seen_hosts
     local -a hosts
 
+    sourcer "helpers.projectRegistry"
+
     if ! command -v mkcert >/dev/null 2>&1; then
         return 1
     fi
@@ -32,6 +34,9 @@ trustMkcert() {
     if [[ -d "$apps_root" ]]; then
         while IFS= read -r -d '' dir; do
             local project
+            if ! isRegisteredProjectDir "$dir"; then
+                continue
+            fi
             project="$(basename "$dir")"
             [[ "$project" == .* ]] && continue
             add_host "${project}.${domain_suffix}"

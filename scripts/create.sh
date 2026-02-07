@@ -48,6 +48,7 @@ sourcer "workspaceUp"
 sourcer "sessionTable"
 sourcer "dockerHost"
 sourcer "hostTools"
+sourcer "helpers.projectRegistry"
 
 waitForProjectInContainer() {
     local project_name="$1"
@@ -135,6 +136,10 @@ viteUp "$escaped_project_name"
 xdebugUp "$escaped_project_name"
 opinionatedUp "$escaped_project_name"
 workspaceUp "$escaped_project_name"
+
+if ! registerProjectDir "$project_path"; then
+    prompt "Failed to mark project as registered." "Check permissions and retry."
+fi
 
 # ? Mark docker setup as done
 if [[ ! -f "$lara_stacker_dir/done-docker.flag" ]]; then

@@ -28,12 +28,16 @@ lara_stacker_dir=$PWD
 source $lara_stacker_dir/.env
 
 apps_root="${APPS_ROOT:-/var/www/html}"
+sourcer "helpers.projectRegistry"
 
 # ? List projects and get the project name/number from the user
 project_names=()
 project_statuses=()
 for dir in "$apps_root"/*/; do
     if [ ! -d "$dir" ]; then
+        continue
+    fi
+    if ! isRegisteredProjectDir "$dir"; then
         continue
     fi
     name=$(basename "$dir")
@@ -47,7 +51,7 @@ done
 
 project_count=${#project_names[@]}
 if [ "$project_count" -eq 0 ]; then
-    prompt "No projects found." "Create a project first."
+    prompt "No registered projects found." "Use Import to register an existing project or Create a new one."
 fi
 
 echo -e "\nAvailable projects:\n"
@@ -83,6 +87,9 @@ project_path="$apps_root/$escaped_project_name"
 
 if ! [ -d "$project_path" ]; then
     prompt "Project \"$escaped_project_name\" doesn't exist."
+fi
+if ! isRegisteredProjectDir "$project_path"; then
+    prompt "Project \"$escaped_project_name\" is not registered." "Run the Import command first."
 fi
 
 if [ -f "$project_path/.disabled" ]; then
