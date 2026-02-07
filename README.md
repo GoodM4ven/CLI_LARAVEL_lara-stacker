@@ -113,7 +113,7 @@ https://github.com/user-attachments/assets/137f6d92-e1d6-4047-b73b-f5ce1da5e69f
     ```
   </details>
 
-### CLI Installation
+### Installation
 
 1. Clone this repo, from the new main `docker` branch, and navigate to it.
 2. Create `.env` from `.env.example` and fill the values.
@@ -185,7 +185,6 @@ Edit `.env` (same order as the file):
   - `APT_SECURITY_MIRROR` — Debian security mirror (HTTPS)
   - `CADDY_HTTP_PORT` / `CADDY_HTTPS_PORT` — host ports for Caddy (**it's recommended to use `80/443` if free**)
 
-Notes:
 - When `USE_VSC=true`, the CLI also copies `files/.vscode/launch.json` into each application, that runs [xdebug](https://xdebug.org) in the proper way for [VSCodium](https://vscodium.com).
   - Xdebug is run in "trigger-only" mode.
   - Use the [browser extension](https://chromewebstore.google.com/detail/xdebug-chrome-extension/oiofkammbajfehgpleginfomeppgnglk?hl=en&pli=1) and make sure it's on **only when needed**.
