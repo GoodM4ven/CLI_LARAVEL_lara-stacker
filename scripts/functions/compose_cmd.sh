@@ -4,7 +4,6 @@ dockerCompose() {
     local project_name="lara-stacker"
     local app_root="${APP_ROOT:-/var/www/html}"
     local php_version="${PHP_VERSION:-8.3}"
-    local node_version="${NODE_VERSION:-20}"
 
     if [[ -f "$lara_stacker_dir/scripts/functions/docker_host.sh" ]]; then
         # shellcheck source=/dev/null
@@ -26,6 +25,5 @@ dockerCompose() {
     HOST_UID="$host_uid" \
     HOST_GID="$host_gid" \
     PHP_VERSION="$php_version" \
-    NODE_VERSION="$node_version" \
         docker compose -f "$compose_file" --project-name "$project_name" "$@"
 }

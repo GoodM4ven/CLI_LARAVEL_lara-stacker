@@ -21,6 +21,7 @@ Now **Docker-only**! It runs a single containerized stack that serves **all** La
 
 - [Docker Engine](https://docs.docker.com/engine/install)
 - [Docker Compose](https://docs.docker.com/compose/install)
+- Host tools (required for creation/refresh workflows): Composer (requires PHP), Node.js, npm
 - [mkcert](https://github.com/FiloSottile/mkcert) (optional, only for `HTTPS_TRUST_MODE=mkcert`)
 
 ### Installation
@@ -68,14 +69,13 @@ Access:
 **What the container does for you (main services + runtime stack):**
 - Runs the **main services** and exposes them on ports (Caddy + PHP-FPM, MySQL, and optional Redis/Mailpit/MinIO/PostgreSQL via profiles).
 - Installs the **runtime stack** needed to serve apps **inside the container** (PHP + extensions).
-- Installs **container-side build tools** (Composer, Node.js + npm) for project creation inside Docker.
 - Optionally installs **media tooling** (ImageMagick/Ghostscript/FFmpeg) when `INSTALL_MEDIA_TOOLS=true`.
 
 **What the container does NOT do for you (and you must install it yourself):**
-- The **same build tools** in order to run them locally (Composer, Node.js + npm).
+- The **shared build tools** in order to run them locally (Composer, Node.js + npm).
 - Java, Android tooling, pywatchman, etc (for NativePHP development).
 
-In short: **Docker provides shared tools for container workflows**, but **you still need the shared tools on the host for local/IDE workflows**.
+In short: **Docker provides the runtime stack**, but **shared build tools must be installed on the host** for creation/refresh workflows. The CLI will stop if these tools are missing.
 
 ### Configuration
 
@@ -92,7 +92,7 @@ Host
 Container
 - `DOCKER_COMPOSE_FILE` — override the compose file path
 - `DOCKER_PROFILES` (default `redis,mailpit,minio`) — available: `redis`, `mailpit`, `minio`, `postgres` (MySQL always on)
-- `PHP_VERSION` / `NODE_VERSION` — changing triggers a rebuild on next `Start Stack`
+- `PHP_VERSION` — changing triggers a rebuild on next `Start Stack`
 - `AUTO_TRUST_HTTPS` — auto-install HTTPS trust based on `HTTPS_TRUST_MODE`
 - `HTTPS_TRUST_MODE` — `caddy` (default) or `mkcert`
 - `APT_MIRROR` — Debian main mirror (HTTPS)
@@ -115,7 +115,7 @@ Notes:
 
 - Inside the container, projects are always mounted at `/var/www/html` (Caddy/PHP-FPM depend on this).
 - Projects can be **disabled** via the CLI. This creates a `.disabled` file, and Caddy responds with 503 while keeping files intact.
-- Vite HMR is exposed via `https://vite-<app>.localhost:8443`. Run: `docker compose -f ./compose.yaml --project-name lara-stacker exec app bash -lc "cd /var/www/html/<app> && npm run dev"`
+- Vite HMR is exposed via `https://vite-<app>.localhost:8443`. Run on host: `cd <app> && npm run dev`
 - Optional UIs: `https://mailpit.localhost:8443` and `https://minio.localhost:8443` (or use the host ports below)
 - If `certutil` is available, the CLI also adds the CA to the NSS store for browsers that use it.
 - If `HTTPS_TRUST_MODE=mkcert`, certs are generated into `./certs` and Caddy is restarted to use them.

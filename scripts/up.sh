@@ -104,6 +104,7 @@ echo -e "\nDocker stack is running."
 # * The End
 # * ========
 
+echo
 echo -n "Press any key to continue..."
 read whatever
 

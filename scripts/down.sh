@@ -34,6 +34,7 @@ composeDown
 
 echo -e "\nDocker stack is stopped."
 
+echo
 echo -n "Press any key to continue..."
 read whatever
 

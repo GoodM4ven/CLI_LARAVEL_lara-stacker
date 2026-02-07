@@ -44,7 +44,8 @@ opinionatedUp "$project_name"
 workspaceUp "$project_name"
 
 # * The End
-echo -e "\nPress any key to continue..."
+echo
+echo -n "Press any key to continue..."
 read whatever
 
 clear

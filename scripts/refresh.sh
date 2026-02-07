@@ -42,6 +42,7 @@ sourcer "opinionatedUp"
 sourcer "workspaceUp"
 sourcer "sessionTable"
 sourcer "dockerHost"
+sourcer "hostTools"
 
 resolveDockerHost || true
 if ! ensureDockerAccess; then
@@ -70,20 +71,20 @@ if [[ "${AUTO_TRUST_HTTPS:-true}" == "true" ]]; then
     trustHttps || true
 fi
 
-# ? Clear dependencies
-if ! composeExecApp bash -lc "cd /var/www/html/$escaped_project_name && rm -rf node_modules vendor composer.lock package-lock.json bun.lock bun.lockb"; then
-    prompt "App container is not running." "Start the stack and retry refresh." false
-fi
+# ? Clear dependencies (host)
+rm -rf "$project_path/node_modules" "$project_path/vendor" "$project_path/composer.lock" "$project_path/package-lock.json" "$project_path/bun.lock" "$project_path/bun.lockb" 2>/dev/null || true
 
 # ? Reinstall Composer dependencies
-if ! composeExecApp composer install --no-interaction --working-dir="/var/www/html/$escaped_project_name"; then
-    prompt "App container is not running." "Start the stack and retry refresh." false
+requireHostComposer
+if ! runAsHostUser composer install --no-interaction --no-scripts --working-dir="$project_path"; then
+    prompt "Failed to install Composer dependencies." "Ensure Composer is working on the host and retry." false
 fi
 
 # ? Reinstall JS dependencies (if package.json exists)
 if [[ -f "$project_path/package.json" ]]; then
-    if ! composeExecApp npm install --silent --prefix "/var/www/html/$escaped_project_name"; then
-        prompt "App container is not running." "Start the stack and retry refresh." false
+    requireHostNode
+    if ! runAsHostUser npm install --silent --prefix "$project_path"; then
+        prompt "Failed to install npm dependencies." "Ensure Node.js/npm are working on the host and retry." false
     fi
 fi
 
@@ -108,6 +109,7 @@ fi
 echo -e "\nDone refreshing the project successfully!\n"
 
 # * Prompt to continue
+echo
 read -p "Press any key to continue..." whatever
 
 clear

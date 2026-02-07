@@ -67,6 +67,7 @@ fi
 
 echo -e "\nDatabase '$db_name' deleted (if it existed)."
 
+echo
 echo -n "Press any key to continue..."
 read whatever
 

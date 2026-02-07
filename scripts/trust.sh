@@ -87,6 +87,7 @@ else
     echo -e "\nTrusted Caddy local CA successfully."
 fi
 
+echo
 echo -n "Press any key to continue..."
 read whatever
 

@@ -46,11 +46,14 @@ sourcer "opinionatedUp"
 sourcer "workspaceUp"
 sourcer "sessionTable"
 sourcer "dockerHost"
+sourcer "hostTools"
 
 resolveDockerHost || true
 if ! ensureDockerAccess; then
     prompt "Docker daemon is not reachable." "Start Docker and retry project creation." false
 fi
+
+requireHostComposer
 
 # ? Get the project name from the user
 echo -ne "\nEnter the project name: "
@@ -58,6 +61,8 @@ read project_name
 
 escaped_project_name=$(echo "$project_name" | tr ' ' '-' | tr '_' '-' | tr '[:upper:]' '[:lower:]')
 escaped_project_name=${escaped_project_name// /}
+
+project_path="$app_root/$escaped_project_name"
 
 if [ -d "$app_root/$escaped_project_name" ]; then
     prompt "Project folder already exists!" "Project creation cancelled."
@@ -73,16 +78,19 @@ if [[ "${AUTO_TRUST_HTTPS:-true}" == "true" ]]; then
     trustHttps || true
 fi
 
-# ? Create the Laravel project
+# ? Create the Laravel project (host composer)
 echo -e "\nInstalling the project via Composer..."
-if ! composeExecApp composer create-project laravel/laravel "/var/www/html/$escaped_project_name" -n; then
-    prompt "App container is not running." "Start the stack and retry project creation." false
+if ! runAsHostUser composer create-project laravel/laravel "$project_path" --no-interaction --no-scripts; then
+    prompt "Failed to create the project via Composer." "Ensure Composer is working on the host and retry." false
 fi
 
 # ? Wire project configuration
 envUp "$escaped_project_name"
 mysqlUp "$escaped_project_name"
 minioUp "$escaped_project_name"
+if ! composeExecApp php /var/www/html/$escaped_project_name/artisan key:generate --ansi; then
+    prompt "Failed to generate application key." "Ensure the app container is running and retry." false
+fi
 if ! sessionTableUp "$escaped_project_name"; then
     prompt "Failed to create session table or run migrations." "Check database connectivity and retry." false
 fi
@@ -105,6 +113,7 @@ fi
 echo -e "\nProject created successfully! You can access it at: [https://$escaped_project_name.localhost${https_suffix}].\n"
 
 # * Prompt to continue
+echo
 echo -n "Press any key to continue..."
 read whatever
 

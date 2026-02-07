@@ -39,6 +39,7 @@ echo -e "\nThis will REMOVE containers, images, volumes, networks, and build cac
 read -p "Type 'purge' to continue: " confirm
 if [[ "$confirm" != "purge" ]]; then
     echo -e "\nCancelled.\n"
+    echo
     echo -n "Press any key to continue..."
     read whatever
     clear
@@ -57,6 +58,7 @@ done
 docker network rm -f lara-stacker_default >/dev/null 2>&1 || true
 
 echo -e "\nPurge completed."
+echo
 echo -n "Press any key to continue..."
 read whatever
 

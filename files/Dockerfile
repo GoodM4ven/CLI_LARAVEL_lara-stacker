@@ -2,7 +2,6 @@ ARG PHP_VERSION=8.3
 FROM php:${PHP_VERSION}-fpm-bookworm
 
 # System dependencies
-ARG NODE_VERSION=20
 ARG APT_MIRROR=deb.debian.org
 ARG APT_SECURITY_MIRROR=security.debian.org
 ARG APT_PROXY=
@@ -91,15 +90,6 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     fi
 
 # Host-only tools (watchman, java) are intentionally not installed here.
-
-# Node.js (for Vite)
-RUN curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION}.x | bash - \
-    && apt-get install -y --no-install-recommends nodejs \
-    && npm install -g npm@latest \
-    && rm -rf /var/lib/apt/lists/*
-
-# Composer
-COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 COPY ./xdebug.ini /usr/local/etc/php/conf.d/99-xdebug.ini
 COPY ./opcache.ini /usr/local/etc/php/conf.d/10-opcache.ini

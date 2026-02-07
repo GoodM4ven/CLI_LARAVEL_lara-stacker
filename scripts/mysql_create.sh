@@ -60,6 +60,7 @@ fi
 
 echo -e "\nDatabase '$db_name' created (if it didn't already exist)."
 
+echo
 echo -n "Press any key to continue..."
 read whatever
 

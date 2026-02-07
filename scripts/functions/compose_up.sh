@@ -23,7 +23,6 @@ composeUp() {
     local state_dir="${HOME:-/tmp}/.lara-stacker"
     local state_file="$state_dir/stacker-build.env"
     local last_php_version=""
-    local last_node_version=""
     local last_profiles=""
     local last_trust_mode=""
     local last_build_hash=""
@@ -32,14 +31,12 @@ composeUp() {
         # shellcheck source=/dev/null
         source "$state_file"
         last_php_version="${STACKER_PHP_VERSION:-}"
-        last_node_version="${STACKER_NODE_VERSION:-}"
         last_profiles="${STACKER_PROFILES:-}"
         last_trust_mode="${STACKER_TRUST_MODE:-}"
         last_build_hash="${STACKER_BUILD_HASH:-}"
     fi
 
     local current_php="${PHP_VERSION:-8.3}"
-    local current_node="${NODE_VERSION:-20}"
     local current_trust_mode="${HTTPS_TRUST_MODE:-caddy}"
     local current_build_hash=""
 
@@ -57,7 +54,7 @@ composeUp() {
     fi
 
     local need_rebuild="false"
-    if [[ "$current_php" != "$last_php_version" ]] || [[ "$current_node" != "$last_node_version" ]]; then
+    if [[ "$current_php" != "$last_php_version" ]]; then
         need_rebuild="true"
     fi
     if [[ -n "$current_build_hash" ]] && [[ "$current_build_hash" != "$last_build_hash" ]]; then
@@ -104,7 +101,6 @@ composeUp() {
     mkdir -p "$state_dir" 2>/dev/null || true
     cat > "$state_file" <<EOF
 STACKER_PHP_VERSION="$current_php"
-STACKER_NODE_VERSION="$current_node"
 STACKER_PROFILES="$normalized_profiles"
 STACKER_TRUST_MODE="$current_trust_mode"
 STACKER_BUILD_HASH="$current_build_hash"

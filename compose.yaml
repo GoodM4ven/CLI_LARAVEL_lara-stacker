@@ -3,6 +3,8 @@ services:
     image: caddy:2
     environment:
       CADDY_HTTPS_PORT: ${CADDY_HTTPS_PORT:-8443}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       - "${CADDY_HTTP_PORT:-8080}:80"
       - "${CADDY_HTTPS_PORT:-8443}:443"
@@ -20,7 +22,6 @@ services:
       context: ./files
       args:
         PHP_VERSION: ${PHP_VERSION:-8.3}
-        NODE_VERSION: ${NODE_VERSION:-20}
         APT_MIRROR: ${APT_MIRROR:-deb.debian.org}
         APT_SECURITY_MIRROR: ${APT_SECURITY_MIRROR:-security.debian.org}
         APT_PROXY: ${APT_PROXY:-}

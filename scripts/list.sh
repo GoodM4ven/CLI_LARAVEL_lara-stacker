@@ -48,6 +48,7 @@ fi
 
 echo -e "Total projects: $count\n"
 
+echo
 read -p "Press any key to continue..." whatever
 
 clear

@@ -32,6 +32,7 @@ resolveDockerHost || true
 
 if ! command -v docker >/dev/null 2>&1; then
     echo -e "\nDocker was not found.\n"
+    echo
     echo -n "Press any key to continue..."
     read whatever
     clear
@@ -45,6 +46,7 @@ if ! ensureDockerAccess; then
     else
         echo -e "\nDocker daemon is not reachable. Start Docker and try again.\n"
     fi
+    echo
     echo -n "Press any key to continue..."
     read whatever
     clear
@@ -53,6 +55,7 @@ fi
 
 if ! docker compose version >/dev/null 2>&1; then
     echo -e "\nDocker Compose (v2) was not found.\n"
+    echo
     echo -n "Press any key to continue..."
     read whatever
     clear
@@ -66,7 +69,8 @@ echo
 echo -e "Running services:\n"
 composePs
 
-echo -e "\nPress any key to continue..."
+echo
+echo -n "Press any key to continue..."
 read whatever
 
 clear

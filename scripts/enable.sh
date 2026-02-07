@@ -49,6 +49,7 @@ else
 fi
 
 # * Prompt to continue
+echo
 echo -n "Press any key to continue..."
 read whatever
 

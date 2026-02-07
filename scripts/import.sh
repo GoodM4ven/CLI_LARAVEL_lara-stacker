@@ -46,6 +46,7 @@ sourcer "opinionatedUp"
 sourcer "workspaceUp"
 sourcer "sessionTable"
 sourcer "dockerHost"
+sourcer "hostTools"
 
 resolveDockerHost || true
 if ! ensureDockerAccess; then
@@ -98,8 +99,9 @@ echo -e "\nProject files copied into $app_root."
 # ? Install composer deps if missing
 if [[ ! -f "$app_root/$escaped_project_name/vendor/autoload.php" ]]; then
     echo -e "\nInstalling Composer dependencies for the project..."
-    if ! composeExecApp composer install --no-interaction --working-dir="/var/www/html/$escaped_project_name"; then
-        prompt "App container is not running." "Start the stack and retry project import." false
+    requireHostComposer
+    if ! runAsHostUser composer install --no-interaction --no-scripts --working-dir="$app_root/$escaped_project_name"; then
+        prompt "Failed to install Composer dependencies." "Ensure Composer is working on the host and retry." false
     fi
 fi
 
@@ -129,6 +131,7 @@ fi
 echo -e "\nProject imported successfully! You can access it at: [https://$escaped_project_name.localhost${https_suffix}].\n"
 
 # * Prompt to continue
+echo
 echo -n "Press any key to continue..."
 read whatever
 

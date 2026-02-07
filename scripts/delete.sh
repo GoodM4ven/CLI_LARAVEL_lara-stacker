@@ -100,6 +100,7 @@ echo -e "\nDeleted project files."
 echo -e "\nProject $project_name deleted successfully!\n"
 
 # * Prompt to continue
+echo
 echo -n "Press any key to continue..."
 read whatever
 

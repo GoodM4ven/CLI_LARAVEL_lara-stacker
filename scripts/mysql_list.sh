@@ -51,6 +51,7 @@ if ! dockerCompose exec -T mysql mysql -u root -p"$DB_PASSWORD" -e "SHOW DATABAS
     prompt "Failed to list databases." "Check MySQL container status and retry." false
 fi
 
+echo
 echo -n "Press any key to continue..."
 read whatever
 
