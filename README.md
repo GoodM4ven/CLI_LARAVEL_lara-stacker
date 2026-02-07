@@ -22,6 +22,8 @@ Now **Docker-only**! It runs a single containerized stack that serves **all** La
 - **Host tools here**: Composer and NPM run on the host (tools most devs install anyway). The container is only for runtime electricity and services!
 - Net: **faster iteration, fewer moving parts**, and no per-application Docker overhead.
 
+https://github.com/user-attachments/assets/137f6d92-e1d6-4047-b73b-f5ce1da5e69f
+
 
 ## Setup
 
