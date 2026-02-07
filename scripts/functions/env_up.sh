@@ -63,6 +63,8 @@ envUp() {
     set_env_var "REDIS_HOST" "redis"
     set_env_var "REDIS_PORT" "6379"
     set_env_var "REDIS_PASSWORD" "null"
+    set_env_var "REDIS_PREFIX" "${escaped_project_name}_"
+    set_env_var "CACHE_PREFIX" "${escaped_project_name}_"
 
     set_env_var "MAIL_MAILER" "smtp"
     set_env_var "MAIL_HOST" "mailpit"

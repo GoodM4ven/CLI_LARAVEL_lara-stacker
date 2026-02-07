@@ -30,12 +30,17 @@ if command -v git &> /dev/null && [ -d ".git" ]; then
 fi
 
 cat <<'EOF'
- _               _____                 _____ _______       _____ _  __ _____ _____  
-| |        /\   |  __ \     /\        / ____|__   __|/\   / ____| |/ /  ____|  __ \ 
-| |       /  \  | |__) |   /  \ _____| (___    | |  /  \ | |    | ' /| |__  | |__) |
-| |      / /\ \ |  _  /   / /\ \______\___ \   | | / /\ \| |    |  < |  __| |  _  / 
-| |____ / ____ \| | \ \  / ____ \     ____) |  | |/ ____ \ |____| . \| |____| | \ \ 
-|______/_/    \_\_|  \_\/_/    \_\   |_____/   |_/_/    \_\_____|_|\_\______|_|  \_\
+╔══════════════════════════════════════════════════════════════════════════════╗
+║ ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ ║
+ _              _____                ____ _______       ____ _  __ ____ _____  
+| |       /\   |  __ \     /\       / ___|__   __|/\   / ___| |/ /  ___|  __ \ 
+| |      /  \  | |__) |   /  \ ____| (__    | |  /  \ | |   | ' /| |_  | |__) |
+| |     / /\ \ |  _  /   / /\ \_____\__ \   | | / /\ \| |   |  < |  _| |  _  / 
+| |___ / ____ \| | \ \  / ____ \    ___) |  | |/ ____ \ |___| . \| |___| | \ \ 
+|_____/_/    \_\_|  \_\/_/    \_\  |____/   |_/_/    \_\____|_|\_\_____|_|  \_\
+║                                                                              ║
+║                                                                  ~ GoodM4ven ║
+╚══════════════════════════════════════════════════════════════════════════════╝
 EOF
 
 release_version="unknown"
@@ -149,36 +154,41 @@ while true; do
 
     echo -e "Available Operations:\n"
 
-    echo "    Project Management"
-    echo "    =================="
-    echo "01. List Projects"
-    echo "02. Create Project"
-    echo "03. Import Project"
-    echo "04. Refresh Project"
-    echo "05. Delete Project"
-    echo "06. Rewire Project"
-    echo "07. Enable Project"
-    echo -e "08. Disable Project\n"
+    echo "    Applications"
+    echo "    ============"
+    echo "01. List"
+    echo "02. Create"
+    echo "03. Import"
+    echo "04. Refresh"
+    echo "05. Rewire"
+    echo "06. Delete"
+    echo "07. Enable"
+    echo -e "08. Disable\n"
 
-    echo "    Service Control"
-    echo "    ==============="
+    echo "    Services"
+    echo "    ========"
     echo "09. List MySQL Databases"
     echo "10. Create MySQL Database"
-    echo -e "11. Delete MySQL Database\n"
+    echo "11. Delete MySQL Database"
+    echo "12. List MinIO Buckets"
+    echo "13. Create MinIO Bucket"
+    echo "14. Delete MinIO Bucket"
+    echo "15. List Redis Keys"
+    echo -e "16. Delete Redis Keys\n"
 
-    echo "    Stack Setup"
-    echo "    ==========="
-    echo "12. Start Stack"
-    echo "13. Stop Stack"
-    echo "14. Stack Status"
-    echo "15. Trust HTTPS"
-    echo "16. Purge Stack (containers/images/volumes/cache)"
-    echo -e "17. Exit\n"
+    echo "    Container"
+    echo "    ========="
+    echo "17. Start"
+    echo "18. Check"
+    echo "19. Stop"
+    echo "20. Install HTTPS Certificates"
+    echo "21. Purge Stack (containers/images/volumes/cache)"
+    echo -e "22. Exit\n"
 
     if [[ $counter -eq 1 && "$1" ]]; then
         choice="$1"
     else
-        read -p "Choose an operation (1-17): " choice
+        read -p "Choose an operation (1-22): " choice
     fi
     choice=$(echo "$choice" | tr -d '[:space:]')
     if [[ "$choice" =~ ^0+[0-9]+$ ]]; then
@@ -226,21 +236,36 @@ while true; do
         RAN_MAIN_SCRIPT="true" ./scripts/mysql_delete.sh
         ;;
     12)
-        RAN_MAIN_SCRIPT="true" ./scripts/up.sh
+        RAN_MAIN_SCRIPT="true" ./scripts/minio_list.sh
         ;;
     13)
-        RAN_MAIN_SCRIPT="true" ./scripts/down.sh
+        RAN_MAIN_SCRIPT="true" ./scripts/minio_create.sh
         ;;
     14)
-        RAN_MAIN_SCRIPT="true" ./scripts/status.sh
+        RAN_MAIN_SCRIPT="true" ./scripts/minio_delete.sh
         ;;
     15)
-        RAN_MAIN_SCRIPT="true" ./scripts/trust.sh
+        RAN_MAIN_SCRIPT="true" ./scripts/redis_list.sh
         ;;
     16)
-        RAN_MAIN_SCRIPT="true" ./scripts/purge.sh
+        RAN_MAIN_SCRIPT="true" ./scripts/redis_delete.sh
         ;;
     17)
+        RAN_MAIN_SCRIPT="true" ./scripts/up.sh
+        ;;
+    18)
+        RAN_MAIN_SCRIPT="true" ./scripts/down.sh
+        ;;
+    19)
+        RAN_MAIN_SCRIPT="true" ./scripts/status.sh
+        ;;
+    20)
+        RAN_MAIN_SCRIPT="true" ./scripts/trust.sh
+        ;;
+    21)
+        RAN_MAIN_SCRIPT="true" ./scripts/purge.sh
+        ;;
+    22)
         echo -e "\nExiting Lara-Stacker...\n"
         exit 0
         ;;

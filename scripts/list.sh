@@ -29,18 +29,26 @@ lara_stacker_dir=$PWD
 source $lara_stacker_dir/.env
 
 app_root="${APP_ROOT:-/var/www/html}"
+domain_suffix="dev.localhost"
+https_port="${CADDY_HTTPS_PORT:-8443}"
+https_suffix=""
+if [[ "$https_port" != "443" ]]; then
+    https_suffix=":$https_port"
+fi
 
 count=0
 for dir in $(ls -d $app_root/*/ 2>/dev/null); do
     if [ ! -d "$dir" ]; then
         continue
     fi
+    project_name=$(basename "$dir")
     ((count++))
     status="enabled"
     if [ -f "$dir/.disabled" ]; then
         status="disabled"
     fi
-    echo "$dir ($status)"
+    project_url="https://${project_name}.${domain_suffix}${https_suffix}"
+    echo "${project_url} -> ${dir%/} ($status)"
 done
 
 if [ $count -gt 0 ]; then
