@@ -66,22 +66,6 @@ waitForProjectInContainer() {
     return 1
 }
 
-waitForAutoloadInContainer() {
-    local project_name="$1"
-    local retries="${2:-30}"
-    local sleep_seconds="${3:-2}"
-    local autoload_file="/var/www/html/$project_name/vendor/autoload.php"
-
-    for _ in $(seq 1 "$retries"); do
-        if composeExecApp php -r "require '$autoload_file';" >/dev/null 2>&1; then
-            return 0
-        fi
-        sleep "$sleep_seconds"
-    done
-
-    return 1
-}
-
 resolveDockerHost || true
 if ! ensureDockerAccess; then
     prompt "Docker daemon is not reachable." "Start Docker and retry project creation." false
@@ -129,15 +113,13 @@ if ! waitForProjectInContainer "$escaped_project_name"; then
     fi
 fi
 
-if ! waitForAutoloadInContainer "$escaped_project_name"; then
-    echo -e "\nAutoload files are not fully visible inside the app container yet. Restarting the stack...\n"
-    composeDown || true
-    if ! composeUp; then
-        prompt "Failed to start the Docker stack." "Start the stack and retry project creation." false
-    fi
-    if ! waitForAutoloadInContainer "$escaped_project_name"; then
-        prompt "App container can't load vendor/autoload.php." "Check APP_ROOT and Docker file sharing (or run Composer inside the app container) and retry." false
-    fi
+echo -e "\nRestarting the stack to refresh autoload visibility...\n"
+composeDown || true
+if ! composeUp; then
+    prompt "Failed to start the Docker stack." "Start the stack and retry project creation." false
+fi
+if ! composeExecApp php -r "require '/var/www/html/$escaped_project_name/vendor/autoload.php';" >/dev/null 2>&1; then
+    prompt "App container can't load vendor/autoload.php." "Check APP_ROOT and Docker file sharing (or run Composer inside the app container) and retry." false
 fi
 
 # ? Rewire project configuration

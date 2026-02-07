@@ -61,22 +61,6 @@ waitForProjectInContainer() {
     return 1
 }
 
-waitForAutoloadInContainer() {
-    local project_name="$1"
-    local retries="${2:-30}"
-    local sleep_seconds="${3:-2}"
-    local autoload_file="/var/www/html/$project_name/vendor/autoload.php"
-
-    for _ in $(seq 1 "$retries"); do
-        if composeExecApp php -r "require '$autoload_file';" >/dev/null 2>&1; then
-            return 0
-        fi
-        sleep "$sleep_seconds"
-    done
-
-    return 1
-}
-
 resolveDockerHost || true
 if ! ensureDockerAccess; then
     prompt "Docker daemon is not reachable." "Start Docker and retry refresh." false
@@ -169,12 +153,10 @@ if [[ -f "$project_path/package.json" ]]; then
     fi
 fi
 
-# ? Ensure autoload is visible inside the container (mount sync can lag)
-if ! waitForAutoloadInContainer "$escaped_project_name"; then
-    dockerCompose restart app >/dev/null 2>&1 || true
-    if ! waitForAutoloadInContainer "$escaped_project_name"; then
-        prompt "App container can't load vendor/autoload.php." "Check APP_ROOT and Docker file sharing (or run Composer inside the app container) and retry." false
-    fi
+# ? Restart app container to refresh autoload visibility (no wait/retry)
+dockerCompose restart app >/dev/null 2>&1 || true
+if ! composeExecApp php -r "require '/var/www/html/$escaped_project_name/vendor/autoload.php';" >/dev/null 2>&1; then
+    prompt "App container can't load vendor/autoload.php." "Check APP_ROOT and Docker file sharing (or run Composer inside the app container) and retry." false
 fi
 
 # ? Clear Laravel caches
