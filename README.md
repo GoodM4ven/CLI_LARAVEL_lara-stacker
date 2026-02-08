@@ -228,6 +228,13 @@ TLDR: **Docker provides the runtime container group**, but there are **essential
 - mkcert installs the "trust" into the system store, so make sure it's installed back in [prerequisites](#prerequisites) section, of course.
 - Certs are generated into `./.certs` (which isn't version controlled) and Caddy is restarted to use them from there. **DO NOT REMOVE THEM.**
 
+</div>
+
+> [!IMPORTANT]
+> This stack uses PHP-FPM (with OPcache), which is fast but **can sometimes make changes appear “stuck” due to caching** configs, routes, views, or bytecode. If something behaves oddly after a change, this Artisan command should fix it: `php artisan optimize:clear`.
+
+<div align="left">
+
 
 ## Support
 
