@@ -17,6 +17,33 @@ opinionatedUp() {
         return 0
     fi
 
+    local env_file="$application_path/.env"
+    if [ -f "$env_file" ]; then
+        awk '
+        function is_blank(s) { return s ~ /^[[:space:]]*$/ }
+        function is_target(s) { return s ~ /^[[:space:]]*MEMCACHED_HOST=127\\.0\\.0\\.1[[:space:]]*$/ }
+        {
+            if (is_target($0)) {
+                if (has_prev && !prev_blank) {
+                    print prev
+                }
+                has_prev = 0
+                next
+            }
+            if (has_prev) {
+                print prev
+            }
+            prev = $0
+            prev_blank = is_blank(prev)
+            has_prev = 1
+        }
+        END {
+            if (has_prev) {
+                print prev
+            }
+        }' "$env_file" > "$env_file.tmp" && mv "$env_file.tmp" "$env_file"
+    fi
+
     if [ -f "$lara_stacker_dir/files/.opinionated/.prettierrc" ]; then
         if [ ! -f "$application_path/.prettierrc" ]; then
             cp "$lara_stacker_dir/files/.opinionated/.prettierrc" "$application_path/.prettierrc"

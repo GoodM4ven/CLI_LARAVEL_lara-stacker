@@ -106,6 +106,26 @@ envUp() {
         fi
     }
 
+    set_env_var_after() {
+        local key="$1"
+        local value="$2"
+        local after_key="$3"
+        local escaped_value
+        escaped_value=$(printf '%s' "$value" | sed -e 's/[\\/&|]/\\&/g')
+
+        if grep -Eq "^[#[:space:]]*${key}=" "$env_file"; then
+            sed -i -E "0,/^[#[:space:]]*${key}=/{s|^[#[:space:]]*${key}=.*|${key}=${escaped_value}|}" "$env_file"
+            return
+        fi
+
+        if grep -Eq "^[#[:space:]]*${after_key}=" "$env_file"; then
+            sed -i -E "0,/^[#[:space:]]*${after_key}=/{s|^[#[:space:]]*${after_key}=.*|&\n${key}=${escaped_value}|}" "$env_file"
+            return
+        fi
+
+        echo "${key}=${value}" >>"$env_file"
+    }
+
     local app_domain="${escaped_application_name}.${domain_suffix}"
     local vite_domain="vite-${escaped_application_name}.${domain_suffix}"
 
@@ -134,8 +154,8 @@ envUp() {
         set_env_var "CACHE_STORE" "redis"
         set_env_var "REDIS_HOST" "redis"
         set_env_var "REDIS_PORT" "6379"
+        set_env_var_after "REDIS_PREFIX" "${escaped_application_name}_" "REDIS_PORT"
         set_env_var "REDIS_PASSWORD" "null"
-        set_env_var "REDIS_PREFIX" "${escaped_application_name}_"
         set_env_var "CACHE_PREFIX" "${escaped_application_name}_"
     fi
 
