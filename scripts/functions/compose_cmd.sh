@@ -1,6 +1,6 @@
 dockerCompose() {
     local lara_stacker_dir="$PWD"
-    local compose_file="${DOCKER_COMPOSE_FILE:-$lara_stacker_dir/compose.yaml}"
+    local compose_file="${DOCKER_COMPOSE_FILE:-$lara_stacker_dir/configurations/compose.yaml}"
     local compose_project_name="lara-stacker"
     local apps_root="${APPS_ROOT:-/var/www/html}"
     local php_version="${PHP_VERSION:-8.3}"
@@ -26,5 +26,9 @@ dockerCompose() {
     HOST_UID="$host_uid" \
     HOST_GID="$host_gid" \
     PHP_VERSION="$php_version" \
-        docker compose -f "$compose_file" --project-name "$compose_project_name" "$@"
+        docker compose \
+        --env-file "$lara_stacker_dir/.env" \
+        -f "$compose_file" \
+        --project-name "$compose_project_name" \
+        "$@"
 }

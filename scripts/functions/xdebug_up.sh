@@ -20,7 +20,7 @@ xdebugUp() {
         mkdir -p "$application_path/.vscode"
     fi
 
-    cp "$lara_stacker_dir/files/.vscode/launch.json" "$application_path/.vscode/launch.json"
+    cp "$lara_stacker_dir/stubs/.vscode/launch.json" "$application_path/.vscode/launch.json"
 
     sed -i "s~\[applicationName\]~$escaped_application_name~g" "$application_path/.vscode/launch.json"
     sed -i "s~\[appsRoot\]~$apps_root~g" "$application_path/.vscode/launch.json"

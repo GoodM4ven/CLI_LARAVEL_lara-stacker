@@ -56,7 +56,7 @@ if ! docker compose version >/dev/null 2>&1; then
     prompt "Docker Compose was not found." "Install Docker Compose (v2) first and try again." false
 fi
 
-compose_file="${DOCKER_COMPOSE_FILE:-$lara_stacker_dir/compose.yaml}"
+compose_file="${DOCKER_COMPOSE_FILE:-$lara_stacker_dir/configurations/compose.yaml}"
 if [[ ! -f "$compose_file" ]]; then
     prompt "Missing docker compose file: $compose_file" "" false
 fi

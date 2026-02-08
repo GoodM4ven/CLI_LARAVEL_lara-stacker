@@ -16,12 +16,12 @@ composeUp() {
 
     if command -v sha256sum >/dev/null 2>&1; then
         local repo_dir="$PWD"
-        if [[ -f "$repo_dir/files/Dockerfile" ]]; then
+        if [[ -f "$repo_dir/configurations/Dockerfile" ]]; then
             current_build_hash=$(
                 sha256sum \
-                    "$repo_dir/files/Dockerfile" \
-                    "$repo_dir/files/xdebug.ini" \
-                    "$repo_dir/files/opcache.ini" \
+                    "$repo_dir/configurations/Dockerfile" \
+                    "$repo_dir/configurations/xdebug.ini" \
+                    "$repo_dir/configurations/opcache.ini" \
                     2>/dev/null | sha256sum | awk '{print $1}'
             )
         fi

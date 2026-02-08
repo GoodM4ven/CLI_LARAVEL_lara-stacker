@@ -22,8 +22,8 @@ workspaceUp() {
         return 0
     fi
 
-    if [ -f "$lara_stacker_dir/files/.opinionated/application.code-workspace" ]; then
-        cp "$lara_stacker_dir/files/.opinionated/application.code-workspace" "$workspace_file"
+    if [ -f "$lara_stacker_dir/stubs/.opinionated/application.code-workspace" ]; then
+        cp "$lara_stacker_dir/stubs/.opinionated/application.code-workspace" "$workspace_file"
         sed -i "s~<applicationsDirectory>~$apps_root~g" "$workspace_file"
         sed -i "s~<applicationName>~$escaped_application_name~g" "$workspace_file"
         echo -e "\nCreated VSC workspace file."

@@ -10,7 +10,7 @@ services:
       - "${CADDY_HTTPS_PORT:-8443}:443"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - ./.certs:/etc/caddy/certs:ro
+      - ../.certs:/etc/caddy/certs:ro
       - caddy_data:/data
       - caddy_config:/config
       - ${APPS_ROOT}:/var/www/html:ro
@@ -19,7 +19,7 @@ services:
 
   app:
     build:
-      context: ./files
+      context: .
       args:
         PHP_VERSION: ${PHP_VERSION:-8.3}
         APT_MIRROR: ${APT_MIRROR:-deb.debian.org}

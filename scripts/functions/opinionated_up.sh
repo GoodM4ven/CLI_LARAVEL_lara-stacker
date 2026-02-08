@@ -44,9 +44,9 @@ opinionatedUp() {
         }' "$env_file" > "$env_file.tmp" && mv "$env_file.tmp" "$env_file"
     fi
 
-    if [ -f "$lara_stacker_dir/files/.opinionated/.prettierrc" ]; then
+    if [ -f "$lara_stacker_dir/stubs/.opinionated/.prettierrc" ]; then
         if [ ! -f "$application_path/.prettierrc" ]; then
-            cp "$lara_stacker_dir/files/.opinionated/.prettierrc" "$application_path/.prettierrc"
+            cp "$lara_stacker_dir/stubs/.opinionated/.prettierrc" "$application_path/.prettierrc"
             echo -e "\nCopied opinionated Prettier config."
         fi
     fi
