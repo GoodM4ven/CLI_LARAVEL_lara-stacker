@@ -109,6 +109,16 @@ if ! isRegisteredApplicationDir "$application_path"; then
     prompt "Application \"$escaped_application_name\" is not registered." "Run the Import command first."
 fi
 
+# ? Require explicit confirmation by typing the application name
+echo -e "Type the application name to confirm deletion: $application_name"
+read -r confirmation_input
+if [[ -z "$confirmation_input" ]]; then
+    prompt "Confirmation cannot be empty."
+fi
+if [[ "$confirmation_input" != "$application_name" ]]; then
+    prompt "Confirmation did not match the application name." "Deletion aborted."
+fi
+
 # ? Ensure container is up (for DB/bucket cleanup)
 if ! composeUp; then
     prompt "Failed to start the Docker container." "Start the container and retry deletion. Application files were not removed." false

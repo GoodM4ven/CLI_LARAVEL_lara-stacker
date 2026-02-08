@@ -4,24 +4,6 @@
     redir @http https://{host}:{$CADDY_HTTPS_PORT}{uri} 308
     tls /etc/caddy/certs/dev.localhost.pem /etc/caddy/certs/dev.localhost-key.pem
 
-    root * /var/www/html
-
-    @disabled_test {
-        header_regexp disabledtest Host ^new-laravel-app-anew\.dev\.localhost(?::\d+)?$
-        file /var/www/html/new-laravel-app-anew/.disabled
-    }
-    handle @disabled_test {
-        respond "Application disabled (test)" 503
-    }
-
-    @disabled {
-        header_regexp disabled Host ^([a-z0-9-]+)\.dev\.localhost(?::\d+)?$
-        file {http.regexp.disabled.1}/.disabled
-    }
-    handle @disabled {
-        respond "Application disabled" 503
-    }
-
     @vite header_regexp vite Host ^vite-([a-z0-9-]+)\.dev\.localhost(?::\d+)?$
     handle @vite {
         reverse_proxy host.docker.internal:5173
@@ -29,6 +11,11 @@
 
     @app header_regexp app Host ^([a-z0-9-]+)\.dev\.localhost(?::\d+)?$
     handle @app {
+        @disabled file /var/www/html/{http.regexp.app.1}/.disabled
+        handle @disabled {
+            respond "Application disabled" 503
+        }
+
         root * /var/www/html/{http.regexp.app.1}/public
         php_fastcgi app:9000
         file_server
