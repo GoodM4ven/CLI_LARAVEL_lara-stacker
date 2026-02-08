@@ -58,7 +58,7 @@ done
 if [ $count -gt 0 ]; then
     echo ""
 else
-    echo "No registered applications found. Use Import to register an existing application."
+    echo "No registered apps found. Use Import to register an existing application."
     echo ""
 fi
 

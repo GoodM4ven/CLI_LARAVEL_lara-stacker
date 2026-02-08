@@ -201,6 +201,11 @@ This container is isolated from host installs (v4-style). It only conflicts if a
 - [Mailpit](https://mailpit.axllent.org/) SMTP/UI: `1026` / `8026`
 - [MinIO](https://www.min.io/) API/Console: `9100` / `9101`
 
+Service UIs include:
+
+- `https://minio.dev.localhost:8443`
+- `https://mailpit.dev.localhost:8443`
+
 </div>
 
 > [!NOTE]
@@ -220,9 +225,6 @@ TLDR: **Docker provides the runtime container group**, but there are **essential
 - Applications can be **disabled** via the CLI. This creates a `.disabled` file, and Caddy responds with **503** while keeping files intact.
 - **You can access an application using: `https://<app>.dev.localhost:8443` (or `https://<app>.dev.localhost` if `CADDY_HTTPS_PORT=443`)**
 - Vite HMR is exposed via `https://vite-<app>.dev.localhost:8443`. Run on host: `cd <app> && npm run dev`
-- Service UIs include (the host [ports](#ports) are defined below):
-  - `https://minio.dev.localhost:8443`
-  - `https://mailpit.dev.localhost:8443`
 - mkcert installs the "trust" into the system store, so make sure it's installed back in [prerequisites](#prerequisites) section, of course.
 - Certs are generated into `./.certs` (which isn't version controlled) and Caddy is restarted to use them from there. **DO NOT REMOVE THEM.**
 
