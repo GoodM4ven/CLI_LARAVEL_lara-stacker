@@ -74,10 +74,10 @@ https://github.com/user-attachments/assets/137f6d92-e1d6-4047-b73b-f5ce1da5e69f
   <summary>Building tools</summary>
 
   - Linux (Ubuntu tested)
-    - <a href="https://php.net">PHP</a> and <a href="https://getcomposer.org">Composer</a>:
+    - <a href="https://php.net">PHP</a> and <a href="https://getcomposer.org">PHP, Composer, and some extensions</a>:
       ```bash
       sudo apt update
-      sudo apt install -y php-cli unzip php-xml php-bcmath php-sqlite3 composer
+      sudo apt install -y php-cli unzip php-xml php-bcmath php-sqlite3 php-gd composer
       ```
     - <a href="https://nodejs.org">Node.js</a> via <a href="https://github.com/nvm-sh/nvm">NVM</a> preferably:
       ```bash
