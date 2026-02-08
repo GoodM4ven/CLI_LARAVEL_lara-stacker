@@ -77,10 +77,7 @@ https://github.com/user-attachments/assets/137f6d92-e1d6-4047-b73b-f5ce1da5e69f
     - <a href="https://php.net">PHP</a> and <a href="https://getcomposer.org">Composer</a>:
       ```bash
       sudo apt update
-      sudo apt install -y php-cli unzip
-      php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
-      php composer-setup.php --install-dir=/usr/local/bin --filename=composer
-      rm composer-setup.php
+      sudo apt install -y php-cli unzip php-xml php-bcmath php-sqlite3 composer
       ```
     - <a href="https://nodejs.org">Node.js</a> via <a href="https://github.com/nvm-sh/nvm">NVM</a> preferably:
       ```bash
