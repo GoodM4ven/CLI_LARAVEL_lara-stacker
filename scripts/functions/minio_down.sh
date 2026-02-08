@@ -19,7 +19,7 @@ minioDown() {
         return 0
     fi
 
-    if ! dockerCompose exec -T minio-client mc rb -r --force local/"$bucket_name" >/dev/null 2>&1; then
+    if ! dockerCompose exec -T minio-client mc rb --force local/"$bucket_name" >/dev/null 2>&1; then
         echo -e "\nError: Failed to delete MinIO bucket '$bucket_name'."
         return 1
     fi
