@@ -48,7 +48,7 @@ for dir in $(ls -d $apps_root/*/ 2>/dev/null); do
     application_name=$(basename "$dir")
     ((count++))
     status="enabled"
-    if [ -f "$dir/.disabled" ]; then
+    if isDisabledApplicationDir "$dir"; then
         status="disabled"
     fi
     application_url="https://${application_name}.${domain_suffix}${https_suffix}"

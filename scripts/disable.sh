@@ -42,7 +42,7 @@ for dir in "$apps_root"/*/; do
     fi
     name=$(basename "$dir")
     status="enabled"
-    if [ -f "$dir/.disabled" ]; then
+    if isDisabledApplicationDir "$dir"; then
         status="disabled"
     fi
     application_names+=("$name")
@@ -92,10 +92,22 @@ if ! isRegisteredApplicationDir "$application_path"; then
     prompt "Application \"$escaped_application_name\" is not registered." "Run the Import command first."
 fi
 
-if [ -f "$application_path/.disabled" ]; then
+disabled_marker="$application_path/.disabled"
+public_disabled_marker="$application_path/public/.disabled"
+
+was_disabled="false"
+if isDisabledApplicationDir "$application_path"; then
+    was_disabled="true"
+fi
+
+touch "$disabled_marker"
+if [ -d "$application_path/public" ]; then
+    touch "$public_disabled_marker"
+fi
+
+if [[ "$was_disabled" == "true" ]]; then
     echo -e "\nApplication is already disabled."
 else
-    touch "$application_path/.disabled"
     echo -e "\nDisabled the application."
 fi
 

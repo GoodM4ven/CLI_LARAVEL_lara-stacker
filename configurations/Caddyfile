@@ -3,7 +3,6 @@
     @http protocol http
     redir @http https://{host}:{$CADDY_HTTPS_PORT}{uri} 308
     tls /etc/caddy/certs/dev.localhost.pem /etc/caddy/certs/dev.localhost-key.pem
-
     @vite header_regexp vite Host ^vite-([a-z0-9-]+)\.dev\.localhost(?::\d+)?$
     handle @vite {
         reverse_proxy host.docker.internal:5173
@@ -11,10 +10,10 @@
 
     @app header_regexp app Host ^([a-z0-9-]+)\.dev\.localhost(?::\d+)?$
     handle @app {
-        @disabled file /var/www/html/{http.regexp.app.1}/.disabled
-        handle @disabled {
-            respond "Application disabled" 503
-        }
+        root * /var/www/html/{http.regexp.app.1}
+        try_files /.disabled /public/.disabled {path}
+        @disabled path /.disabled /public/.disabled
+        respond @disabled "Application disabled" 503
 
         root * /var/www/html/{http.regexp.app.1}/public
         php_fastcgi app:9000

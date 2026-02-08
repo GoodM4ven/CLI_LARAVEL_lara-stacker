@@ -53,7 +53,7 @@ for dir in "$apps_root"/*/; do
     fi
     name=$(basename "$dir")
     status="enabled"
-    if [ -f "$dir/.disabled" ]; then
+    if isDisabledApplicationDir "$dir"; then
         status="disabled"
     fi
     application_names+=("$name")

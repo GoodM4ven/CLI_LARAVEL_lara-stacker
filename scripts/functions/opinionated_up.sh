@@ -21,9 +21,14 @@ opinionatedUp() {
     if [ -f "$env_file" ]; then
         awk '
         function is_blank(s) { return s ~ /^[[:space:]]*$/ }
-        function is_target(s) { return s ~ /^[[:space:]]*MEMCACHED_HOST=127\\.0\\.0\\.1[[:space:]]*$/ }
+        function strip_cr(s) { sub(/\r$/, "", s); return s }
+        function is_target(s) {
+            s = strip_cr(s)
+            return s ~ /^[[:space:]]*MEMCACHED_HOST[[:space:]]*=[[:space:]]*["\047]?127\\.0\\.0\\.1["\047]?[[:space:]]*(#.*)?$/
+        }
         {
-            if (is_target($0)) {
+            line = $0
+            if (is_target(line)) {
                 if (has_prev && !prev_blank) {
                     print prev
                 }
@@ -33,7 +38,7 @@ opinionatedUp() {
             if (has_prev) {
                 print prev
             }
-            prev = $0
+            prev = line
             prev_blank = is_blank(prev)
             has_prev = 1
         }

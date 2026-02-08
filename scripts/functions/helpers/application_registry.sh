@@ -20,3 +20,17 @@ registerApplicationDir() {
     touch "$marker" 2>/dev/null || return 1
     return 0
 }
+
+isDisabledApplicationDir() {
+    local application_path="$1"
+    if [[ -z "$application_path" ]]; then
+        return 1
+    fi
+    if [[ -f "$application_path/.disabled" ]]; then
+        return 0
+    fi
+    if [[ -f "$application_path/public/.disabled" ]]; then
+        return 0
+    fi
+    return 1
+}
