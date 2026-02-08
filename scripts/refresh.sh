@@ -44,6 +44,7 @@ sourcer "workspaceUp"
 sourcer "sessionTable"
 sourcer "dockerHost"
 sourcer "hostTools"
+sourcer "autoloadGuard"
 sourcer "helpers.applicationRegistry"
 
 waitForApplicationInContainer() {
@@ -167,15 +168,8 @@ if [[ -f "$application_path/package.json" ]]; then
     fi
 fi
 
-# ? Restart the container to refresh autoload visibility
-echo -e "\nRestarting the container to refresh autoload visibility...\n"
-composeDown || true
-if ! composeUp; then
-    prompt "Failed to start the Docker container." "Start the container and retry refresh." false
-fi
-if ! composeExecApp php -r "require '/var/www/html/$escaped_application_name/vendor/autoload.php';" >/dev/null 2>&1; then
-    prompt "App container can't load vendor/autoload.php." "Check APPS_ROOT and Docker file sharing (or run Composer inside the app container) and retry." false
-fi
+# ? Ensure the container can load autoload.php (reload PHP-FPM or restart if needed)
+autoloadGuard "$escaped_application_name"
 
 # ? Clear Laravel caches
 if ! composeExecApp php /var/www/html/$escaped_application_name/artisan optimize:clear --quiet; then

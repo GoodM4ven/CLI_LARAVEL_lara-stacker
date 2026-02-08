@@ -48,6 +48,7 @@ sourcer "workspaceUp"
 sourcer "sessionTable"
 sourcer "dockerHost"
 sourcer "hostTools"
+sourcer "autoloadGuard"
 sourcer "helpers.applicationRegistry"
 
 waitForApplicationInContainer() {
@@ -113,14 +114,7 @@ if ! waitForApplicationInContainer "$escaped_application_name"; then
     fi
 fi
 
-echo -e "\nRestarting the container to refresh autoload visibility...\n"
-composeDown || true
-if ! composeUp; then
-    prompt "Failed to start the Docker container." "Start the container and retry application creation." false
-fi
-if ! composeExecApp php -r "require '/var/www/html/$escaped_application_name/vendor/autoload.php';" >/dev/null 2>&1; then
-    prompt "App container can't load vendor/autoload.php." "Check APPS_ROOT and Docker file sharing (or run Composer inside the app container) and retry." false
-fi
+autoloadGuard "$escaped_application_name"
 
 # ? Rewire application configuration
 envUp "$escaped_application_name"
