@@ -4,14 +4,12 @@
 
 # LARA-STACKER v5
 
-Now **Docker-backed**! A single containerized stack provides runtime and services (PHP-FPM, MySQL, Redis, MinIO, Mailpit), all exposed to the host system. While the CLI still offers container, services, and application management means (including HTTPS certifying).
+Now **Docker-backed**! A single containerized stack provides runtime and services (PHP-FPM, MySQL, Redis, MinIO, Mailpit) exposed to the host, while the CLI manages apps, services, and HTTPS certs.
 
 ### Highlights
 
 - One Docker container, many applications.
 - `https://<app>.dev.localhost` for every application (no more `/etc/hosts`).
-- Includes MySQL, Redis, MinIO, and Mailpit out of the box.
-- Applications are wired to `127.0.0.1` with the host-exposed service ports.
 - Xdebug is **trigger-only** (no idling slow cost).
 - Enable/disable applications without deleting them.
 
@@ -20,7 +18,7 @@ Now **Docker-backed**! A single containerized stack provides runtime and service
 - **Sail is per-application**: each app ships its own `compose.yaml` and containers. That means duplicated services and **rebuild time per application**.
 - **Shared container here**: one runtime container group serves **all apps**, so no duplicate services per application.
 - **Sail CLI depends on containers**: if an application’s container fail, Sail commands for that application is blocked, since the devEnvironment is inaccessible.
-- **System hosts tools here**: Composer, PHP/Artisan, and NPM run on the host. The container only provides runtime and services.
+- **Host tools here**: Composer, PHP, and NPM run on the host. The container only provides runtime and services.
 - Net: **faster iteration, fewer moving parts**, and no per-application Docker overhead.
 
 https://github.com/user-attachments/assets/137f6d92-e1d6-4047-b73b-f5ce1da5e69f
@@ -133,7 +131,7 @@ Applications:
 - `Create` — new Laravel app under `APPS_ROOT`, wired to Docker services
 - `Import` — copy an existing app into `APPS_ROOT` and wire it
 - `Refresh` — reinstall deps, clear caches, rewire env (full consistency pass)
-- `Rewire` — updates an application’s `.env` and the Vite configuration file to match host-exposed services
+- `Rewire` — updates an application’s `.env` and the Vite configuration file
 - `Delete` — removes application files and its database, bucket, etc.
 - `Enable` — removes `.disabled` marker and serves the app
 - `Disable` — adds `.disabled` marker and returns 503 blocked response
@@ -172,8 +170,11 @@ Edit `.env` (same order as the file):
   - `USERNAME` — system user that owns application files
   - `DB_PASSWORD` — root password for the MySQL container image
   - `APPS_ROOT` (default `/var/www/html`) — host directory where applications live and coded from, locally!
+    - The CLI will create `APPS_ROOT` if missing and make it owned by `USERNAME`.
   - `OPINIONATED` — copy opinionated application files (Prettier config)
-  - `USE_VSC` — generate Xdebug `launch.json` files, for example...
+  - `USE_VSC` — the CLI copies `stubs/.vscode/launch.json` into each application, that runs [xdebug](https://xdebug.org) in the proper way for [VSCodium](https://vscodium.com).
+    - Xdebug is run in "trigger-only" mode.
+    - Use the [browser extension](https://chromewebstore.google.com/detail/xdebug-chrome-extension/oiofkammbajfehgpleginfomeppgnglk?hl=en&pli=1) and make sure it's on **only when needed**.
   - `VSC_WORKSPACES_DIR` — auto-create `.code-workspace` files (leave empty to disable)
 
 - Container
@@ -187,18 +188,12 @@ Edit `.env` (same order as the file):
   - `MAILPIT_SMTP_PORT` / `MAILPIT_UI_PORT` — host ports for Mailpit SMTP/UI (container `1025/8025`)
   - `MINIO_PORT` / `MINIO_CONSOLE_PORT` — host ports for MinIO API/Console (container `9000/9001`)
 
-- These host port values are what **rewire** command writes into each application’s `.env` (with `DB_HOST=127.0.0.1`, `REDIS_HOST=127.0.0.1`, etc.).
-
-- When `USE_VSC=true`, the CLI also copies `stubs/.vscode/launch.json` into each application, that runs [xdebug](https://xdebug.org) in the proper way for [VSCodium](https://vscodium.com).
-  - Xdebug is run in "trigger-only" mode.
-  - Use the [browser extension](https://chromewebstore.google.com/detail/xdebug-chrome-extension/oiofkammbajfehgpleginfomeppgnglk?hl=en&pli=1) and make sure it's on **only when needed**.
-- The CLI will create `APPS_ROOT` if missing and make it owned by `USERNAME`.
+- The **rewire** command writes these host port values into each application’s `.env` (with `DB_HOST=127.0.0.1`, `REDIS_HOST=127.0.0.1`, etc.).
 - After changing any host port variables, restart the container and run the **rewire** command to refresh each app’s `.env`.
-- After changing `CADDY_HTTPS_PORT`, run **Rewire Application** (or **Refresh Application**) to update each application's `APP_URL`, Vite HMR URL, and whatever is necessary.
 
 ### Ports
 
-This container is isolated from host installs (v4-style). **Applications connect via `127.0.0.1` and the host ports below**, so conflicts only happen if a host service already uses these same ports:
+This container is isolated from host installs (v4-style). Conflicts only happen if a host service already uses these same ports:
 
 - [Caddy](https://caddyserver.com/): `CADDY_HTTP_PORT/CADDY_HTTPS_PORT` (default `8080/8443`, container `80/443`)
 - [MySQL](https://www.mysql.com/): `MYSQL_PORT` (default `3307`, container `3306`)
