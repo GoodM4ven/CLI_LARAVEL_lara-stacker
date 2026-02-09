@@ -8,6 +8,14 @@ minioUp() {
     local application_path="$apps_root/$bucket_name"
     local env_file="$application_path/.env"
 
+    local wire_host="127.0.0.1"
+    local expected_endpoint="http://${wire_host}:${MINIO_PORT:-9100}"
+    local expected_url="http://${wire_host}:${MINIO_PORT:-9100}/${bucket_name}"
+    local expected_url_https="https://${wire_host}:${MINIO_PORT:-9100}/${bucket_name}"
+    local expected_endpoint_container="http://minio:9000"
+    local expected_url_container="http://minio:9000/${bucket_name}"
+    local expected_url_container_https="https://minio:9000/${bucket_name}"
+
     read_env_value() {
         local key="$1"
         local file="$2"
@@ -43,11 +51,11 @@ minioUp() {
             echo -e "\nFILESYSTEM_DISK is '$filesystem_disk'; skipped MinIO bucket creation."
             return 0
         fi
-        if [[ -n "$aws_endpoint" && "$aws_endpoint" != "http://minio:9000" ]]; then
+        if [[ -n "$aws_endpoint" && "$aws_endpoint" != "$expected_endpoint" && "$aws_endpoint" != "$expected_endpoint_container" ]]; then
             echo -e "\nAWS_ENDPOINT is '$aws_endpoint'; skipped MinIO bucket creation."
             return 0
         fi
-        if [[ -z "$aws_endpoint" && -n "$aws_url" && "$aws_url" != "http://minio:9000/$bucket_name" && "$aws_url" != "https://minio:9000/$bucket_name" ]]; then
+        if [[ -z "$aws_endpoint" && -n "$aws_url" && "$aws_url" != "$expected_url" && "$aws_url" != "$expected_url_https" && "$aws_url" != "$expected_url_container" && "$aws_url" != "$expected_url_container_https" ]]; then
             echo -e "\nAWS_URL is '$aws_url'; skipped MinIO bucket creation."
             return 0
         fi

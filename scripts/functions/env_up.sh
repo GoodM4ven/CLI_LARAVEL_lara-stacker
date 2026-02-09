@@ -11,6 +11,20 @@ envUp() {
     local application_path="$apps_root/$escaped_application_name"
     local env_file="$application_path/.env"
 
+    local wire_host="127.0.0.1"
+    local mysql_host="$wire_host"
+    local mysql_port="${MYSQL_PORT:-3307}"
+    local redis_host="$wire_host"
+    local redis_port="${REDIS_PORT:-6380}"
+    local mail_host="$wire_host"
+    local mail_port="${MAILPIT_SMTP_PORT:-1026}"
+    local minio_endpoint="http://${wire_host}:${MINIO_PORT:-9100}"
+    local minio_url="http://${wire_host}:${MINIO_PORT:-9100}/${escaped_application_name}"
+    local minio_url_https="https://${wire_host}:${MINIO_PORT:-9100}/${escaped_application_name}"
+    local container_minio_endpoint="http://minio:9000"
+    local container_minio_url="http://minio:9000/$escaped_application_name"
+    local container_minio_url_https="https://minio:9000/$escaped_application_name"
+
     if [[ ! -d "$application_path" ]]; then
         prompt "The expected '$application_path' directory was not found." "" false true
         return 1
@@ -85,10 +99,10 @@ envUp() {
         if [[ -n "$fs_setting" && "$fs_setting" != "s3" ]]; then
             use_minio="false"
         fi
-        if [[ -n "$existing_aws_endpoint" && "$existing_aws_endpoint" != "http://minio:9000" ]]; then
+        if [[ -n "$existing_aws_endpoint" && "$existing_aws_endpoint" != "$minio_endpoint" && "$existing_aws_endpoint" != "$container_minio_endpoint" ]]; then
             use_minio="false"
         fi
-        if [[ -z "$existing_aws_endpoint" && -n "$existing_aws_url" && "$existing_aws_url" != "http://minio:9000/$escaped_application_name" && "$existing_aws_url" != "https://minio:9000/$escaped_application_name" ]]; then
+        if [[ -z "$existing_aws_endpoint" && -n "$existing_aws_url" && "$existing_aws_url" != "$minio_url" && "$existing_aws_url" != "$minio_url_https" && "$existing_aws_url" != "$container_minio_url" && "$existing_aws_url" != "$container_minio_url_https" ]]; then
             use_minio="false"
         fi
     fi
@@ -143,8 +157,8 @@ envUp() {
 
     if [[ "$use_mysql" == "true" ]]; then
         set_env_var "DB_CONNECTION" "mysql"
-        set_env_var "DB_HOST" "mysql"
-        set_env_var "DB_PORT" "3306"
+        set_env_var "DB_HOST" "$mysql_host"
+        set_env_var "DB_PORT" "$mysql_port"
         set_env_var "DB_DATABASE" "$db_name"
         set_env_var "DB_USERNAME" "root"
         set_env_var "DB_PASSWORD" "$DB_PASSWORD"
@@ -152,16 +166,16 @@ envUp() {
 
     if [[ "$use_redis" == "true" ]]; then
         set_env_var "CACHE_STORE" "redis"
-        set_env_var "REDIS_HOST" "redis"
-        set_env_var "REDIS_PORT" "6379"
+        set_env_var "REDIS_HOST" "$redis_host"
+        set_env_var "REDIS_PORT" "$redis_port"
         set_env_var_after "REDIS_PREFIX" "${escaped_application_name}_" "REDIS_PORT"
         set_env_var "REDIS_PASSWORD" "null"
         set_env_var "CACHE_PREFIX" "${escaped_application_name}_"
     fi
 
     set_env_var "MAIL_MAILER" "smtp"
-    set_env_var "MAIL_HOST" "mailpit"
-    set_env_var "MAIL_PORT" "1025"
+    set_env_var "MAIL_HOST" "$mail_host"
+    set_env_var "MAIL_PORT" "$mail_port"
 
     if [[ "$use_minio" == "true" ]]; then
         set_env_var "FILESYSTEM_DISK" "s3"
@@ -169,12 +183,12 @@ envUp() {
         set_env_var "AWS_SECRET_ACCESS_KEY" "minioadmin"
         set_env_var "AWS_DEFAULT_REGION" "us-east-1"
         set_env_var "AWS_BUCKET" "$escaped_application_name"
-        set_env_var "AWS_ENDPOINT" "http://minio:9000"
-        set_env_var "AWS_URL" "http://minio:9000/$escaped_application_name"
+        set_env_var "AWS_ENDPOINT" "$minio_endpoint"
+        set_env_var "AWS_URL" "$minio_url"
         set_env_var "AWS_USE_PATH_STYLE_ENDPOINT" "true"
     fi
 
     set_env_var "VITE_DEV_SERVER_URL" "https://${vite_domain}${https_suffix}"
 
-    echo -e "\nRewired the application's .env file to match the container."
+    echo -e "\nRewired the application's .env file to match host-exposed services."
 }

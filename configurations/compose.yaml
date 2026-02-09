@@ -36,6 +36,13 @@ services:
     environment:
       HOME: /tmp
       COMPOSER_HOME: /tmp/composer
+      DB_HOST: mysql
+      DB_PORT: 3306
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      MAIL_HOST: mailpit
+      MAIL_PORT: 1025
+      AWS_ENDPOINT: http://minio:9000
 
   mysql:
     image: mysql:8.4
