@@ -181,22 +181,27 @@ Edit `.env` (same order as the file):
   - `APT_MIRROR` — Debian main mirror (HTTPS)
   - `APT_SECURITY_MIRROR` — Debian security mirror (HTTPS)
   - `CADDY_HTTP_PORT` / `CADDY_HTTPS_PORT` — host ports for Caddy (**it's recommended to use `80/443` if free**)
+  - `MYSQL_PORT` — host port for MySQL (container `3306`)
+  - `REDIS_PORT` — host port for Redis (container `6379`)
+  - `MAILPIT_SMTP_PORT` / `MAILPIT_UI_PORT` — host ports for Mailpit SMTP/UI (container `1025/8025`)
+  - `MINIO_PORT` / `MINIO_CONSOLE_PORT` — host ports for MinIO API/Console (container `9000/9001`)
 
 - When `USE_VSC=true`, the CLI also copies `stubs/.vscode/launch.json` into each application, that runs [xdebug](https://xdebug.org) in the proper way for [VSCodium](https://vscodium.com).
   - Xdebug is run in "trigger-only" mode.
   - Use the [browser extension](https://chromewebstore.google.com/detail/xdebug-chrome-extension/oiofkammbajfehgpleginfomeppgnglk?hl=en&pli=1) and make sure it's on **only when needed**.
 - The CLI will create `APPS_ROOT` if missing and make it owned by `USERNAME`.
+- After changing any host port variables, restart the container.
 - After changing `CADDY_HTTPS_PORT`, run **Rewire Application** (or **Refresh Application**) to update each application's `APP_URL`, Vite HMR URL, and whatever is necessary.
 
 ### Ports
 
 This container is isolated from host installs (v4-style). It only conflicts if a host service already uses these same ports:
 
-- [Caddy](https://caddyserver.com/): `8080/8443` (container `80/443`)
-- [MySQL](https://www.mysql.com/): `3307` (container `3306`)
-- [Redis](https://redis.io/): `6380` (container `6379`)
-- [Mailpit](https://mailpit.axllent.org/) SMTP/UI: `1026` / `8026`
-- [MinIO](https://www.min.io/) API/Console: `9100` / `9101`
+- [Caddy](https://caddyserver.com/): `CADDY_HTTP_PORT/CADDY_HTTPS_PORT` (default `8080/8443`, container `80/443`)
+- [MySQL](https://www.mysql.com/): `MYSQL_PORT` (default `3307`, container `3306`)
+- [Redis](https://redis.io/): `REDIS_PORT` (default `6380`, container `6379`)
+- [Mailpit](https://mailpit.axllent.org/) SMTP/UI: `MAILPIT_SMTP_PORT/MAILPIT_UI_PORT` (default `1026/8026`, container `1025/8025`)
+- [MinIO](https://www.min.io/) API/Console: `MINIO_PORT/MINIO_CONSOLE_PORT` (default `9100/9101`, container `9000/9001`)
 
 Service UIs include:
 
