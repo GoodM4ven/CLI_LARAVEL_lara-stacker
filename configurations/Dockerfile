@@ -65,6 +65,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
         curl \
         dom \
         xml \
+        sockets \
     && pecl install xdebug \
     && pecl install redis \
     && pecl install imagick \
