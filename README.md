@@ -172,13 +172,15 @@ Edit `.env` (same order as the file):
   - `APPS_ROOT` (default `/var/www/html`) — host directory where applications live and coded from, locally!
     - The CLI will create `APPS_ROOT` if missing and make it owned by `USERNAME`.
   - `OPINIONATED` — copy opinionated application files (Prettier config)
-  - `USE_VSC` — the CLI copies `stubs/.vscode/launch.json` into each application, that runs [xdebug](https://xdebug.org) in the proper way for [VSCodium](https://vscodium.com).
-    - Xdebug is run in "trigger-only" mode.
-    - Use the [browser extension](https://chromewebstore.google.com/detail/xdebug-chrome-extension/oiofkammbajfehgpleginfomeppgnglk?hl=en&pli=1) and make sure it's on **only when needed**.
+  - `USE_VSC` — when `true`, `Create`, `Import`, `Refresh`, and `Rewire` generate each app's `.vscode/launch.json` (plus `.vscode/extensions.json` if missing) for [xdebug](https://xdebug.org) with [VSCodium](https://vscodium.com)/VS Code.
+    - Xdebug is run in "trigger-only" mode (`xdebug.start_with_request=trigger`).
+    - Install the [`xdebug.php-debug` extension](https://marketplace.visualstudio.com/items?itemName=xdebug.php-debug) for VSC.
+    - Use the [browser extension](https://chromewebstore.google.com/detail/xdebug-chrome-extension/oiofkammbajfehgpleginfomeppgnglk?hl=en&pli=1) and keep it on **only when needed**.
   - `VSC_WORKSPACES_DIR` — auto-create `.code-workspace` files (leave empty to disable)
 
 - Container
   - `DOCKER_COMPOSE_FILE` — override the compose file path
+  - `RESTART_UNLESS_STOPPED` — whether to start the container automatically along Docker.
   - `PHP_VERSION` — changing this triggers a rebuild on next `Start Container`
   - `APT_MIRROR` — Debian main mirror (HTTPS)
   - `APT_SECURITY_MIRROR` — Debian security mirror (HTTPS)
@@ -212,6 +214,16 @@ Service UIs include:
 > It's extremely recommended to use `80/443` ports with Caddy. I only made them different by default in order not to conflict with lara-stacker v4. Check the [.env](./.env) file.
 
 <div align="left">
+
+### Xdebug Flow
+
+- The app container has Xdebug installed and configured via `configurations/xdebug.ini`:
+  - `xdebug.client_host=host.docker.internal`
+  - `xdebug.client_port=9003`
+  - `xdebug.start_with_request=trigger`
+- Container path mappings are generated as `/var/www/html/<app> -> ${workspaceFolder}` so imported/created apps map correctly during debug sessions.
+- If you enable `USE_VSC` after apps already exist, run **Rewire** (or **Refresh**) once per app to generate/update debug files.
+- For browser debugging: start "Listen for Xdebug" in VS Code/VSCodium, turn on the Xdebug browser trigger, and hit the app URL.
 
 
 ## Responsibilities

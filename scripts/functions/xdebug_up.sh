@@ -20,10 +20,15 @@ xdebugUp() {
         mkdir -p "$application_path/.vscode"
     fi
 
-    cp "$lara_stacker_dir/stubs/.vscode/launch.json" "$application_path/.vscode/launch.json"
+    local launch_file="$application_path/.vscode/launch.json"
+    local extensions_file="$application_path/.vscode/extensions.json"
 
-    sed -i "s~\[applicationName\]~$escaped_application_name~g" "$application_path/.vscode/launch.json"
-    sed -i "s~\[appsRoot\]~$apps_root~g" "$application_path/.vscode/launch.json"
+    cp "$lara_stacker_dir/stubs/.vscode/launch.json" "$launch_file"
+    sed -i "s~\[applicationName\]~$escaped_application_name~g" "$launch_file"
 
-    echo -e "\nConfigured VSC debug settings for Xdebug (Docker)."
+    if [[ ! -f "$extensions_file" ]]; then
+        cp "$lara_stacker_dir/stubs/.vscode/extensions.json" "$extensions_file"
+    fi
+
+    echo -e "\nConfigured VSC debug settings for Xdebug (Docker and container path mappings)."
 }

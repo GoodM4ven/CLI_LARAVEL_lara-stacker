@@ -1,6 +1,8 @@
 {
 	"extensions": {
-		"recommendations": [],
+		"recommendations": [
+			"xdebug.php-debug"
+		],
 		"unwantedRecommendations": [
 	        "vscode.php-language-features"
 		]

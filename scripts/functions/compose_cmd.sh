@@ -4,6 +4,8 @@ dockerCompose() {
     local compose_project_name="lara-stacker"
     local apps_root="${APPS_ROOT:-/var/www/html}"
     local php_version="${PHP_VERSION:-8.3}"
+    local restart_unless_stopped="${RESTART_UNLESS_STOPPED:-true}"
+    local restart_policy="unless-stopped"
 
     if [[ -f "$lara_stacker_dir/scripts/functions/docker_host.sh" ]]; then
         # shellcheck source=/dev/null
@@ -22,10 +24,23 @@ dockerCompose() {
         host_gid=$(id -g)
     fi
 
+    case "${restart_unless_stopped,,}" in
+        1|true|yes|on)
+            restart_policy="unless-stopped"
+            ;;
+        0|false|no|off)
+            restart_policy="no"
+            ;;
+        *)
+            restart_policy="unless-stopped"
+            ;;
+    esac
+
     APPS_ROOT="$apps_root" \
     HOST_UID="$host_uid" \
     HOST_GID="$host_gid" \
     PHP_VERSION="$php_version" \
+    STACKER_RESTART_POLICY="$restart_policy" \
         docker compose \
         --env-file "$lara_stacker_dir/.env" \
         -f "$compose_file" \
