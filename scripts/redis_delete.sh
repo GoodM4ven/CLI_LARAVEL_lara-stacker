@@ -116,21 +116,39 @@ escaped_application_name=$(echo "$application_name" | tr ' ' '-' | tr '_' '-' | 
 escaped_application_name=${escaped_application_name// /}
 
 application_path="$apps_root/$escaped_application_name"
-if ! [ -d "$application_path" ]; then
-    prompt "Application \"$escaped_application_name\" doesn't exist."
-fi
-if ! isRegisteredApplicationDir "$application_path"; then
-    prompt "Application \"$escaped_application_name\" is not registered." "Run the Import command first."
-fi
-
-env_file="$application_path/.env"
 prefix=""
-if [[ -f "$env_file" ]]; then
-    prefix=$(read_env_value "REDIS_PREFIX" "$env_file")
-    if [[ -z "$prefix" ]]; then
-        prefix=$(read_env_value "CACHE_PREFIX" "$env_file")
+app_is_registered="false"
+
+if [[ -d "$application_path" ]] && isRegisteredApplicationDir "$application_path"; then
+    app_is_registered="true"
+    env_file="$application_path/.env"
+    if [[ -f "$env_file" ]]; then
+        prefix=$(read_env_value "REDIS_PREFIX" "$env_file")
+        if [[ -z "$prefix" ]]; then
+            prefix=$(read_env_value "CACHE_PREFIX" "$env_file")
+        fi
+    fi
+else
+    echo -e "Warning: Application \"$escaped_application_name\" is missing or not registered."
+    echo -ne "Continue with manual Redis prefix deletion? (y/N): "
+    read -r manual_confirm
+    manual_confirm=$(echo "$manual_confirm" | tr '[:upper:]' '[:lower:]')
+    if [[ "$manual_confirm" != "y" && "$manual_confirm" != "yes" ]]; then
+        prompt "Deletion cancelled." "" "" false
+        exit 0
+    fi
+
+    fallback_prefix=$(echo "$escaped_application_name" | tr '-' '_' | tr '[:upper:]' '[:lower:]')
+    fallback_prefix="${fallback_prefix}_"
+    echo -ne "Enter Redis key prefix to delete (leave empty for '$fallback_prefix'): "
+    read -r prefix_input
+    if [[ -n "$prefix_input" ]]; then
+        prefix="$prefix_input"
+    else
+        prefix="$fallback_prefix"
     fi
 fi
+
 if [[ -z "$prefix" ]]; then
     fallback_prefix=$(echo "$escaped_application_name" | tr '-' '_' | tr '[:upper:]' '[:lower:]')
     prefix="${fallback_prefix}_"
@@ -143,12 +161,20 @@ if [[ -z "$keys" ]]; then
     exit 0
 fi
 
-echo -ne "Type the application name again to confirm deletion of keys with prefix '$prefix': "
-read -r confirm_input
-confirm_input=$(echo "$confirm_input" | tr ' ' '-' | tr '_' '-' | tr '[:upper:]' '[:lower:]')
-confirm_input=${confirm_input// /}
-if [[ "$confirm_input" != "$escaped_application_name" ]]; then
-    prompt "Confirmation mismatch." "Deletion cancelled." false
+if [[ "$app_is_registered" == "true" ]]; then
+    echo -ne "Type the application name again to confirm deletion of keys with prefix '$prefix': "
+    read -r confirm_input
+    confirm_input=$(echo "$confirm_input" | tr ' ' '-' | tr '_' '-' | tr '[:upper:]' '[:lower:]')
+    confirm_input=${confirm_input// /}
+    if [[ "$confirm_input" != "$escaped_application_name" ]]; then
+        prompt "Confirmation mismatch." "Deletion cancelled." false
+    fi
+else
+    echo -ne "Type the prefix again to confirm deletion of keys with prefix '$prefix': "
+    read -r confirm_input
+    if [[ "$confirm_input" != "$prefix" ]]; then
+        prompt "Confirmation mismatch." "Deletion cancelled." false
+    fi
 fi
 
 deleted=0

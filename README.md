@@ -76,7 +76,7 @@ https://github.com/user-attachments/assets/137f6d92-e1d6-4047-b73b-f5ce1da5e69f
     - <a href="https://getcomposer.org">Composer</a>, <a href="https://php.net">PHP</a>, and some of its extensions:
       ```bash
       sudo apt update
-      sudo apt install -y php-cli unzip php-xml php-bcmath php-sqlite3 php8.3-mysql php-redis php-gd composer
+      sudo apt install -y curl php-cli unzip php-xml php-bcmath php-sqlite3 php8.3-mysql php-redis php-gd composer
       sudo phpenmod sockets
       ```
     - <a href="https://nodejs.org">Node.js</a> via <a href="https://github.com/nvm-sh/nvm">NVM</a> preferably:
@@ -91,9 +91,11 @@ https://github.com/user-attachments/assets/137f6d92-e1d6-4047-b73b-f5ce1da5e69f
   - Linux (Ubuntu tested)
     ```bash
     sudo apt update
-    sudo apt install ca-certificates certutil libnss3-tools
+    sudo apt install ca-certificates libnss3-tools golang-go
     git clone https://github.com/FiloSottile/mkcert && cd mkcert
     go build -ldflags "-X main.Version=$(git describe --tags)"
+    sudo mv mkcert /usr/local/bin/
+    cd .. && rm -rf mkcert
     ```
   </details>
 
