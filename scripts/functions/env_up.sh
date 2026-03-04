@@ -107,33 +107,47 @@ envUp() {
         fi
     fi
 
-    set_env_var() {
+    set_env_var_in_group() {
         local key="$1"
         local value="$2"
+        shift 2
+        local group_keys=("$@")
         local escaped_value
         escaped_value=$(printf '%s' "$value" | sed -e 's/[\\/&|]/\\&/g')
 
-        if grep -Eq "^[#[:space:]]*${key}=" "$env_file"; then
-            sed -i -E "0,/^[#[:space:]]*${key}=/{s|^[#[:space:]]*${key}=.*|${key}=${escaped_value}|}" "$env_file"
-        else
-            echo "${key}=${value}" >>"$env_file"
+        if grep -Eq "^[[:space:]]*${key}=" "$env_file"; then
+            sed -i -E "/^[[:space:]]*${key}=/d" "$env_file"
         fi
-    }
 
-    set_env_var_after() {
-        local key="$1"
-        local value="$2"
-        local after_key="$3"
-        local escaped_value
-        escaped_value=$(printf '%s' "$value" | sed -e 's/[\\/&|]/\\&/g')
+        local before_key=""
+        local after_key=""
+        local seen_target="false"
+        local candidate
 
-        if grep -Eq "^[#[:space:]]*${key}=" "$env_file"; then
-            sed -i -E "0,/^[#[:space:]]*${key}=/{s|^[#[:space:]]*${key}=.*|${key}=${escaped_value}|}" "$env_file"
+        for candidate in "${group_keys[@]}"; do
+            if [[ "$candidate" == "$key" ]]; then
+                seen_target="true"
+                continue
+            fi
+
+            if grep -Eq "^[[:space:]]*${candidate}=" "$env_file"; then
+                if [[ "$seen_target" == "true" ]]; then
+                    if [[ -z "$before_key" ]]; then
+                        before_key="$candidate"
+                    fi
+                else
+                    after_key="$candidate"
+                fi
+            fi
+        done
+
+        if [[ -n "$after_key" ]]; then
+            sed -i -E "0,/^[[:space:]]*${after_key}=/{s|^[[:space:]]*${after_key}=.*|&\n${key}=${escaped_value}|}" "$env_file"
             return
         fi
 
-        if grep -Eq "^[#[:space:]]*${after_key}=" "$env_file"; then
-            sed -i -E "0,/^[#[:space:]]*${after_key}=/{s|^[#[:space:]]*${after_key}=.*|&\n${key}=${escaped_value}|}" "$env_file"
+        if [[ -n "$before_key" ]]; then
+            sed -i -E "0,/^[[:space:]]*${before_key}=/{s|^[[:space:]]*${before_key}=.*|${key}=${escaped_value}\n&|}" "$env_file"
             return
         fi
 
@@ -152,43 +166,50 @@ envUp() {
     local db_name
     db_name=$(echo "$escaped_application_name" | sed 's/\([[:lower:]]\)\([[:upper:]]\)/\1_\2/g' | sed 's/\([[:upper:]]\)\([[:upper:]][[:lower:]]\)/\1_\2/g' | tr '-' '_' | tr '[:upper:]' '[:lower:]' | sed 's/__/_/g' | sed 's/^_//')
 
-    set_env_var "APP_NAME" "$escaped_application_name"
-    set_env_var "APP_URL" "https://${app_domain}${https_suffix}"
+    local app_group=(APP_NAME APP_ENV APP_KEY APP_DEBUG APP_URL APP_LOCALE APP_FALLBACK_LOCALE APP_FAKER_LOCALE)
+    local db_group=(DB_CONNECTION DB_HOST DB_PORT DB_DATABASE DB_USERNAME DB_PASSWORD)
+    local cache_redis_group=(CACHE_STORE CACHE_DRIVER CACHE_PREFIX REDIS_CLIENT REDIS_HOST REDIS_PASSWORD REDIS_PORT REDIS_PREFIX)
+    local mail_group=(MAIL_MAILER MAIL_SCHEME MAIL_HOST MAIL_PORT MAIL_USERNAME MAIL_PASSWORD MAIL_FROM_ADDRESS MAIL_FROM_NAME)
+    local aws_group=(FILESYSTEM_DISK FILESYSTEM_DRIVER AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_DEFAULT_REGION AWS_BUCKET AWS_USE_PATH_STYLE_ENDPOINT AWS_ENDPOINT AWS_URL)
+    local vite_group=(VITE_APP_NAME VITE_DEV_SERVER_URL)
+
+    set_env_var_in_group "APP_NAME" "$escaped_application_name" "${app_group[@]}"
+    set_env_var_in_group "APP_URL" "https://${app_domain}${https_suffix}" "${app_group[@]}"
 
     if [[ "$use_mysql" == "true" ]]; then
-        set_env_var "DB_CONNECTION" "mysql"
-        set_env_var "DB_HOST" "$mysql_host"
-        set_env_var "DB_PORT" "$mysql_port"
-        set_env_var "DB_DATABASE" "$db_name"
-        set_env_var "DB_USERNAME" "root"
-        set_env_var "DB_PASSWORD" "$DB_PASSWORD"
+        set_env_var_in_group "DB_CONNECTION" "mysql" "${db_group[@]}"
+        set_env_var_in_group "DB_HOST" "$mysql_host" "${db_group[@]}"
+        set_env_var_in_group "DB_PORT" "$mysql_port" "${db_group[@]}"
+        set_env_var_in_group "DB_DATABASE" "$db_name" "${db_group[@]}"
+        set_env_var_in_group "DB_USERNAME" "root" "${db_group[@]}"
+        set_env_var_in_group "DB_PASSWORD" "$DB_PASSWORD" "${db_group[@]}"
     fi
 
     if [[ "$use_redis" == "true" ]]; then
-        set_env_var "CACHE_STORE" "redis"
-        set_env_var "REDIS_HOST" "$redis_host"
-        set_env_var "REDIS_PORT" "$redis_port"
-        set_env_var_after "REDIS_PREFIX" "${escaped_application_name}_" "REDIS_PORT"
-        set_env_var "REDIS_PASSWORD" "null"
-        set_env_var "CACHE_PREFIX" "${escaped_application_name}_"
+        set_env_var_in_group "CACHE_STORE" "redis" "${cache_redis_group[@]}"
+        set_env_var_in_group "CACHE_PREFIX" "${escaped_application_name}_" "${cache_redis_group[@]}"
+        set_env_var_in_group "REDIS_HOST" "$redis_host" "${cache_redis_group[@]}"
+        set_env_var_in_group "REDIS_PORT" "$redis_port" "${cache_redis_group[@]}"
+        set_env_var_in_group "REDIS_PREFIX" "${escaped_application_name}_" "${cache_redis_group[@]}"
+        set_env_var_in_group "REDIS_PASSWORD" "null" "${cache_redis_group[@]}"
     fi
 
-    set_env_var "MAIL_MAILER" "smtp"
-    set_env_var "MAIL_HOST" "$mail_host"
-    set_env_var "MAIL_PORT" "$mail_port"
+    set_env_var_in_group "MAIL_MAILER" "smtp" "${mail_group[@]}"
+    set_env_var_in_group "MAIL_HOST" "$mail_host" "${mail_group[@]}"
+    set_env_var_in_group "MAIL_PORT" "$mail_port" "${mail_group[@]}"
 
     if [[ "$use_minio" == "true" ]]; then
-        set_env_var "FILESYSTEM_DISK" "s3"
-        set_env_var "AWS_ACCESS_KEY_ID" "minioadmin"
-        set_env_var "AWS_SECRET_ACCESS_KEY" "minioadmin"
-        set_env_var "AWS_DEFAULT_REGION" "us-east-1"
-        set_env_var "AWS_BUCKET" "$escaped_application_name"
-        set_env_var "AWS_ENDPOINT" "$minio_endpoint"
-        set_env_var "AWS_URL" "$minio_url"
-        set_env_var "AWS_USE_PATH_STYLE_ENDPOINT" "true"
+        set_env_var_in_group "FILESYSTEM_DISK" "s3" "${aws_group[@]}"
+        set_env_var_in_group "AWS_ACCESS_KEY_ID" "minioadmin" "${aws_group[@]}"
+        set_env_var_in_group "AWS_SECRET_ACCESS_KEY" "minioadmin" "${aws_group[@]}"
+        set_env_var_in_group "AWS_DEFAULT_REGION" "us-east-1" "${aws_group[@]}"
+        set_env_var_in_group "AWS_BUCKET" "$escaped_application_name" "${aws_group[@]}"
+        set_env_var_in_group "AWS_ENDPOINT" "$minio_endpoint" "${aws_group[@]}"
+        set_env_var_in_group "AWS_URL" "$minio_url" "${aws_group[@]}"
+        set_env_var_in_group "AWS_USE_PATH_STYLE_ENDPOINT" "true" "${aws_group[@]}"
     fi
 
-    set_env_var "VITE_DEV_SERVER_URL" "https://${vite_domain}${https_suffix}"
+    set_env_var_in_group "VITE_DEV_SERVER_URL" "https://${vite_domain}${https_suffix}" "${vite_group[@]}"
 
     echo -e "\nRewired the application's .env file to match host-exposed services."
 }
