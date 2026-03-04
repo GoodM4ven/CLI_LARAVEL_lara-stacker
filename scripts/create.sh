@@ -117,7 +117,7 @@ fi
 autoloadGuard "$escaped_application_name"
 
 # ? Rewire application configuration
-envUp "$escaped_application_name"
+envUp "$escaped_application_name" "new"
 mysqlUp "$escaped_application_name"
 minioUp "$escaped_application_name"
 if ! composeExecApp php /var/www/html/$escaped_application_name/artisan key:generate --ansi; then

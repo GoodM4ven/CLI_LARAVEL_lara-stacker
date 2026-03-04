@@ -148,7 +148,7 @@ if [[ "$autoload_ready" == "true" && -n "$(dockerCompose ps -q app)" ]]; then
     fi
 fi
 
-envUp "$escaped_application_name"
+envUp "$escaped_application_name" "existing"
 viteUp "$escaped_application_name"
 xdebugUp "$escaped_application_name"
 opinionatedUp "$escaped_application_name"

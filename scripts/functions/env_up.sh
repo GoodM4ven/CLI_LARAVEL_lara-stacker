@@ -1,5 +1,6 @@
 envUp() {
     local application_name="$1"
+    local env_mode="${2:-existing}"
 
     local apps_root="${APPS_ROOT:-/var/www/html}"
     local domain_suffix="dev.localhost"
@@ -10,6 +11,7 @@ envUp() {
 
     local application_path="$apps_root/$escaped_application_name"
     local env_file="$application_path/.env"
+    local env_example_file="$application_path/.env.example"
 
     local wire_host="127.0.0.1"
     local mysql_host="$wire_host"
@@ -47,7 +49,7 @@ envUp() {
         local value=""
 
         if [[ -f "$file" ]]; then
-            value=$(sed -n -E "s/^[#[:space:]]*${key}=//p" "$file" | tail -n 1)
+            value=$(sed -n -E "s/^[[:space:]]*${key}=//p" "$file" | tail -n 1)
             value="${value%%\r}"
             value="${value%%#*}"
             value=$(echo "$value" | sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//')
@@ -63,6 +65,59 @@ envUp() {
     local use_mysql="true"
     local use_redis="true"
     local use_minio="true"
+
+    local preference_file=""
+    if [[ "$env_mode" != "new" ]]; then
+        use_mysql="false"
+        use_redis="false"
+        use_minio="false"
+
+        if [[ -f "$env_example_file" ]]; then
+            preference_file="$env_example_file"
+        elif [[ "$env_preexists" == "true" ]]; then
+            preference_file="$env_file"
+        fi
+    fi
+
+    if [[ -n "$preference_file" ]]; then
+        local preferred_db_connection
+        preferred_db_connection=$(read_env_value "DB_CONNECTION" "$preference_file")
+        if [[ -n "$preferred_db_connection" && ( "$preferred_db_connection" == "mysql" || "$preferred_db_connection" == "mariadb" ) ]]; then
+            use_mysql="true"
+        fi
+
+        local preferred_cache_store
+        preferred_cache_store=$(read_env_value "CACHE_STORE" "$preference_file")
+        local preferred_cache_driver
+        preferred_cache_driver=$(read_env_value "CACHE_DRIVER" "$preference_file")
+        local preferred_cache_setting="$preferred_cache_store"
+        if [[ -z "$preferred_cache_setting" ]]; then
+            preferred_cache_setting="$preferred_cache_driver"
+        fi
+        if [[ -n "$preferred_cache_setting" && "$preferred_cache_setting" == "redis" ]]; then
+            use_redis="true"
+        fi
+
+        local preferred_filesystem_disk
+        preferred_filesystem_disk=$(read_env_value "FILESYSTEM_DISK" "$preference_file")
+        local preferred_filesystem_driver
+        preferred_filesystem_driver=$(read_env_value "FILESYSTEM_DRIVER" "$preference_file")
+        local preferred_filesystem_setting="$preferred_filesystem_disk"
+        if [[ -z "$preferred_filesystem_setting" ]]; then
+            preferred_filesystem_setting="$preferred_filesystem_driver"
+        fi
+        if [[ -n "$preferred_filesystem_setting" && "$preferred_filesystem_setting" == "s3" ]]; then
+            use_minio="true"
+        fi
+
+        local preferred_aws_endpoint
+        preferred_aws_endpoint=$(read_env_value "AWS_ENDPOINT" "$preference_file")
+        local preferred_aws_url
+        preferred_aws_url=$(read_env_value "AWS_URL" "$preference_file")
+        if [[ -n "$preferred_aws_endpoint" || -n "$preferred_aws_url" ]]; then
+            use_minio="true"
+        fi
+    fi
 
     if [[ "$env_preexists" == "true" ]]; then
         local existing_db_connection

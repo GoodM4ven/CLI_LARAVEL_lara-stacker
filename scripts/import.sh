@@ -173,7 +173,7 @@ fi
 autoloadGuard "$escaped_application_name"
 
 # ? Rewire application configuration
-envUp "$escaped_application_name"
+envUp "$escaped_application_name" "existing"
 viteUp "$escaped_application_name"
 xdebugUp "$escaped_application_name"
 opinionatedUp "$escaped_application_name"
