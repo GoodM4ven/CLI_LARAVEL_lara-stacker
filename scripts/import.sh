@@ -67,6 +67,42 @@ waitForApplicationInContainer() {
     return 1
 }
 
+refreshDependenciesAfterImport() {
+    local application_name="$1"
+    local application_path="$2"
+
+    if [[ -z "$application_name" || -z "$application_path" ]]; then
+        echo -e "\nError: refreshDependenciesAfterImport requires app name and path."
+        return 1
+    fi
+
+    echo -e "\nRefreshing dependencies to recover from import failure..."
+
+    rm -rf \
+        "$application_path/vendor" \
+        "$application_path/composer.lock" \
+        "$application_path/node_modules" \
+        "$application_path/package-lock.json" \
+        "$application_path/bun.lock" \
+        "$application_path/bun.lockb" 2>/dev/null || true
+
+    requireHostComposer
+    if ! runAsHostUser composer install --no-interaction --no-scripts --working-dir="$application_path"; then
+        return 1
+    fi
+
+    if [[ -f "$application_path/package.json" ]]; then
+        requireHostNode
+        if ! runAsHostUser npm install --silent --prefix "$application_path"; then
+            return 1
+        fi
+    fi
+
+    autoloadGuard "$application_name"
+
+    composeExecApp php /var/www/html/$application_name/artisan optimize:clear --quiet >/dev/null 2>&1 || true
+}
+
 resolveDockerHost || true
 if ! ensureDockerAccess; then
     prompt "Docker daemon is not reachable." "Start Docker and retry application import." false
@@ -157,6 +193,14 @@ if [[ ! -f "$target_application_path/vendor/autoload.php" ]]; then
     fi
 fi
 
+# ? Install JS dependencies if package.json exists and node_modules is missing
+if [[ -f "$target_application_path/package.json" && ! -d "$target_application_path/node_modules" ]]; then
+    requireHostNode
+    if ! runAsHostUser npm install --silent --prefix "$target_application_path"; then
+        prompt "Failed to install npm dependencies." "Ensure Node.js/npm are working on the host and retry." false
+    fi
+fi
+
 # ? Ensure the container can see the application files (Docker Desktop sync or stale mounts)
 if ! waitForApplicationInContainer "$escaped_application_name"; then
     echo -e "\nApp container couldn't see the application yet. Restarting the container...\n"
@@ -181,7 +225,13 @@ workspaceUp "$escaped_application_name"
 mysqlUp "$escaped_application_name"
 minioUp "$escaped_application_name"
 if ! sessionTableUp "$escaped_application_name"; then
-    prompt "Failed to create session table or run migrations." "Check database connectivity and retry." false
+    echo -e "\nSession table migration failed; attempting dependency refresh..."
+    if ! refreshDependenciesAfterImport "$escaped_application_name" "$target_application_path"; then
+        prompt "Failed to refresh dependencies after import." "Check Composer/Node and retry." false
+    fi
+    if ! sessionTableUp "$escaped_application_name"; then
+        prompt "Failed to create session table or run migrations." "Check database connectivity and retry." false
+    fi
 fi
 
 if ! registerApplicationDir "$target_application_path"; then
