@@ -143,6 +143,8 @@ Applications:
 
 > [!TIP]
 > The **rewire** command updates config only (writes host-exposed service addresses and ports). Whereas the **refresh** command does a full dependency reinstall on the host, clears caches, and then *rewires* too.
+>
+> If you manually copy or `git clone` a project folder into `APPS_ROOT` (instead of using `Create`/`Import`), run **Rewire** for that app (or **Refresh**) so lara-stacker recognizes it and syncs runtime wiring for `/var/www/html/<app>`.
 
 <div align="left">
 
