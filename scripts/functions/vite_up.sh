@@ -20,53 +20,89 @@ viteUp() {
 
     local server_block="    server: {\n        host: true,\n        strictPort: true,\n        port: 5173,\n        hmr: {\n            host: '${vite_host}',\n            protocol: 'wss',\n            clientPort: ${https_port},\n        },\n    },"
 
+    local build_block="    build: {\n        emptyOutDir: false,\n    },"
+
     if grep -q "server:" "$file"; then
         if grep -q "clientPort:[[:space:]]*${https_port}" "$file" && grep -q "protocol:[[:space:]]*'wss'" "$file" && grep -q "strictPort:[[:space:]]*true" "$file"; then
             echo -e "\nDetected Docker-friendly Vite server config; skipped auto-patch."
-            return 0
-        fi
-
-        awk -v replacement="$server_block" '
-        BEGIN { in_server=0; depth=0 }
-        {
-            if (!in_server) {
-                if ($0 ~ /server:[[:space:]]*{/) {
-                    in_server=1
-                    depth=0
-                    line=$0
-                    open_count=gsub(/{/, "{", line)
-                    close_count=gsub(/}/, "}", line)
-                    depth += open_count - close_count
-                    print replacement
-                    if (depth <= 0) {
-                        in_server=0
+        else
+            awk -v replacement="$server_block" '
+            BEGIN { in_server=0; depth=0 }
+            {
+                if (!in_server) {
+                    if ($0 ~ /server:[[:space:]]*{/) {
+                        in_server=1
+                        depth=0
+                        line=$0
+                        open_count=gsub(/{/, "{", line)
+                        close_count=gsub(/}/, "}", line)
+                        depth += open_count - close_count
+                        print replacement
+                        if (depth <= 0) {
+                            in_server=0
+                        }
+                        next
                     }
+                    print
                     next
                 }
-                print
-                next
-            }
 
-            line=$0
-            open_count=gsub(/{/, "{", line)
-            close_count=gsub(/}/, "}", line)
-            depth += open_count - close_count
-            if (depth <= 0) {
-                in_server=0
+                line=$0
+                open_count=gsub(/{/, "{", line)
+                close_count=gsub(/}/, "}", line)
+                depth += open_count - close_count
+                if (depth <= 0) {
+                    in_server=0
+                }
+            }' "$file" > "$file.tmp" && mv "$file.tmp" "$file"
+
+            echo -e "\nReplaced existing Vite server config with Docker HMR settings."
+        fi
+    else
+        awk -v insert="$server_block" '
+        {
+            print
+            if ($0 ~ /export default defineConfig\({/) {
+                print insert
             }
         }' "$file" > "$file.tmp" && mv "$file.tmp" "$file"
 
-        echo -e "\nReplaced existing Vite server config with Docker HMR settings."
+        echo -e "\nAdded Docker-friendly Vite dev server config."
+    fi
+
+    if grep -q "emptyOutDir:[[:space:]]*false" "$file"; then
+        echo -e "\nDetected Vite build.emptyOutDir=false; skipped auto-patch."
         return 0
     fi
 
-    awk -v insert="$server_block" '
+    if grep -q "emptyOutDir:[[:space:]]*" "$file"; then
+        sed -i -E '0,/emptyOutDir[[:space:]]*:[[:space:]]*[^,}]+/{s/emptyOutDir[[:space:]]*:[[:space:]]*[^,}]+/emptyOutDir: false/}' "$file"
+        echo -e "\nUpdated Vite build.emptyOutDir to false."
+        return 0
+    fi
+
+    if grep -q "build:[[:space:]]*{" "$file"; then
+        awk '
+        BEGIN { inserted=0 }
+        {
+            print
+            if (!inserted && $0 ~ /build:[[:space:]]*{/) {
+                print "        emptyOutDir: false,"
+                inserted=1
+            }
+        }' "$file" > "$file.tmp" && mv "$file.tmp" "$file"
+
+        echo -e "\nAdded build.emptyOutDir=false to existing Vite build config."
+        return 0
+    fi
+
+    awk -v insert="$build_block" '
     {
         print
-        if ($0 ~ /export default defineConfig\\({/) {
+        if ($0 ~ /export default defineConfig\({/) {
             print insert
         }
     }' "$file" > "$file.tmp" && mv "$file.tmp" "$file"
 
-    echo -e "\nAdded Docker-friendly Vite dev server config."
+    echo -e "\nAdded Vite build config with emptyOutDir=false."
 }
