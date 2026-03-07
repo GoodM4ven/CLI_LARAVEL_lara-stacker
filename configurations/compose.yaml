@@ -18,6 +18,22 @@ services:
     depends_on:
       - app
 
+  hot-janitor:
+    restart: "${STACKER_RESTART_POLICY:-unless-stopped}"
+    image: alpine:3
+    depends_on:
+      - caddy
+    environment:
+      APPS_ROOT: /var/www/html
+      HOT_JANITOR_INTERVAL_SECONDS: ${HOT_JANITOR_INTERVAL_SECONDS:-2}
+      HOT_JANITOR_STALE_SECONDS: ${HOT_JANITOR_STALE_SECONDS:-6}
+      HOT_JANITOR_TIMEOUT_SECONDS: ${HOT_JANITOR_TIMEOUT_SECONDS:-1}
+      HOT_JANITOR_VERBOSE: ${HOT_JANITOR_VERBOSE:-false}
+    command: ["/bin/sh", "/usr/local/bin/hot-janitor.sh"]
+    volumes:
+      - ${APPS_ROOT}:/var/www/html
+      - ./hot-janitor.sh:/usr/local/bin/hot-janitor.sh:ro
+
   app:
     restart: "${STACKER_RESTART_POLICY:-unless-stopped}"
     build:

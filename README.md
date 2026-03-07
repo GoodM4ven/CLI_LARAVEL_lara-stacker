@@ -244,6 +244,7 @@ TLDR: **Docker provides the runtime container group**, but there are **essential
 - Vite HMR is exposed via `https://vite-<app>.dev.localhost:8443`. Run on host: `cd <app> && npm run dev`
 - mkcert installs the "trust" into the system store, so make sure it's installed back in [prerequisites](#prerequisites) section, of course.
 - Certs are generated into `./.certs` (which isn't version controlled) and Caddy is restarted to use them from there. **DO NOT REMOVE THEM.**
+- There is a bug currently where stale `public/hot` file isn't removed from the container when disconnecting `npm run dev` or `composer dev` sessions in the main app's terminal (no sync in place). So there is an automated cleanup process, `hot-janitor` sidecar, that does check every 2 seconds and considers cleanup when unreachable for ~6s.
 
 </div>
 
