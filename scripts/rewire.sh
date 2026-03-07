@@ -36,6 +36,7 @@ sourcer "opinionatedUp"
 sourcer "workspaceUp"
 sourcer "composeCmd"
 sourcer "composeExecApp"
+sourcer "appKeyUp"
 sourcer "mysqlUp"
 sourcer "minioUp"
 sourcer "sessionTable"
@@ -105,25 +106,6 @@ if ! isRegisteredApplicationDir "$application_path"; then
     prompt "Application \"$escaped_application_name\" is not registered." "Run the Import command first."
 fi
 
-read_env_value() {
-    local key="$1"
-    local file="$2"
-    local value=""
-
-    if [[ -f "$file" ]]; then
-        value=$(sed -n -E "s/^[#[:space:]]*${key}=//p" "$file" | tail -n 1)
-        value="${value%%\r}"
-        value="${value%%#*}"
-        value=$(echo "$value" | sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//')
-        value="${value%\"}"
-        value="${value#\"}"
-        value="${value%\'}"
-        value="${value#\'}"
-    fi
-
-    echo "$value"
-}
-
 autoload_ready="true"
 if [[ ! -f "$application_path/vendor/autoload.php" ]]; then
     echo -e "\nWarning: vendor/autoload.php not found. Artisan commands will fail until Composer dependencies are installed."
@@ -157,23 +139,12 @@ workspaceUp "$escaped_application_name"
 mysqlUp "$escaped_application_name"
 minioUp "$escaped_application_name"
 
-app_env_file="$application_path/.env"
-app_key=""
-if [[ -f "$app_env_file" ]]; then
-    app_key=$(read_env_value "APP_KEY" "$app_env_file")
-fi
-if [[ -z "$app_key" ]]; then
-    if [[ -n "$(dockerCompose ps -q app)" ]]; then
-        if [[ "$autoload_ready" == "true" ]]; then
-            if ! composeExecApp php /var/www/html/$escaped_application_name/artisan key:generate --ansi; then
-                prompt "Failed to generate APP_KEY." "Run 'php artisan key:generate' after dependencies are installed." false
-            fi
-        else
-            echo -e "\nSkipped APP_KEY generation because vendor/autoload.php is missing."
-        fi
-    else
-        echo -e "\nApp container is not running; skipped APP_KEY generation."
+if [[ "$autoload_ready" == "true" ]]; then
+    if ! appKeyUp "$escaped_application_name"; then
+        prompt "Failed to generate APP_KEY." "Run 'php artisan key:generate' after dependencies are installed." false
     fi
+else
+    echo -e "\nSkipped APP_KEY generation because vendor/autoload.php is missing."
 fi
 
 if [[ -n "$(dockerCompose ps -q app)" ]]; then

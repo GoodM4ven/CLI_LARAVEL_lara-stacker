@@ -37,6 +37,7 @@ sourcer "composeCmd"
 sourcer "composeUp"
 sourcer "composeDown"
 sourcer "composeExecApp"
+sourcer "appKeyUp"
 sourcer "envUp"
 sourcer "mysqlUp"
 sourcer "minioUp"
@@ -224,6 +225,9 @@ opinionatedUp "$escaped_application_name"
 workspaceUp "$escaped_application_name"
 mysqlUp "$escaped_application_name"
 minioUp "$escaped_application_name"
+if ! appKeyUp "$escaped_application_name"; then
+    prompt "Failed to generate APP_KEY." "Ensure the app container is running and Composer dependencies are installed, then retry." false
+fi
 if ! sessionTableUp "$escaped_application_name"; then
     echo -e "\nSession table migration failed; attempting dependency refresh..."
     if ! refreshDependenciesAfterImport "$escaped_application_name" "$target_application_path"; then
