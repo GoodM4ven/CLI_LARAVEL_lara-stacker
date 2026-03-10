@@ -18,21 +18,26 @@ services:
     depends_on:
       - app
 
-  hot-janitor:
+  synchronizer:
     restart: "${STACKER_RESTART_POLICY:-unless-stopped}"
     image: alpine:3
     depends_on:
+      - app
       - caddy
+    pid: "service:app"
     environment:
       APPS_ROOT: /var/www/html
-      HOT_JANITOR_INTERVAL_SECONDS: ${HOT_JANITOR_INTERVAL_SECONDS:-2}
-      HOT_JANITOR_STALE_SECONDS: ${HOT_JANITOR_STALE_SECONDS:-6}
-      HOT_JANITOR_TIMEOUT_SECONDS: ${HOT_JANITOR_TIMEOUT_SECONDS:-1}
-      HOT_JANITOR_VERBOSE: ${HOT_JANITOR_VERBOSE:-false}
-    command: ["/bin/sh", "/usr/local/bin/hot-janitor.sh"]
+      SYNCHRONIZER_INTERVAL_SECONDS: ${SYNCHRONIZER_INTERVAL_SECONDS:-2}
+      SYNCHRONIZER_HOT_STALE_SECONDS: ${SYNCHRONIZER_HOT_STALE_SECONDS:-6}
+      SYNCHRONIZER_TIMEOUT_SECONDS: ${SYNCHRONIZER_TIMEOUT_SECONDS:-1}
+      SYNCHRONIZER_VERBOSE: ${SYNCHRONIZER_VERBOSE:-false}
+      SYNCHRONIZER_APP_HTTPS_PORT: ${CADDY_HTTPS_PORT:-8443}
+      SYNCHRONIZER_AUTOLOAD_SETTLE_SECONDS: ${SYNCHRONIZER_AUTOLOAD_SETTLE_SECONDS:-4}
+      SYNCHRONIZER_AUTOLOAD_COOLDOWN_SECONDS: ${SYNCHRONIZER_AUTOLOAD_COOLDOWN_SECONDS:-20}
+    command: ["/bin/sh", "/usr/local/bin/synchronizer.sh"]
     volumes:
       - ${APPS_ROOT}:/var/www/html
-      - ./hot-janitor.sh:/usr/local/bin/hot-janitor.sh:ro
+      - ./synchronizer.sh:/usr/local/bin/synchronizer.sh:ro
 
   app:
     restart: "${STACKER_RESTART_POLICY:-unless-stopped}"
