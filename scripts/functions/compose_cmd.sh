@@ -2,6 +2,7 @@ dockerCompose() {
     local lara_stacker_dir="$PWD"
     local compose_file="${DOCKER_COMPOSE_FILE:-$lara_stacker_dir/configurations/compose.yaml}"
     local compose_project_name="lara-stacker"
+    local host_home_path="${HOST_HOME_PATH:-}"
     local apps_root="${APPS_ROOT:-/var/www/html}"
     local php_version="${PHP_VERSION:-8.3}"
     local restart_unless_stopped="${RESTART_UNLESS_STOPPED:-true}"
@@ -24,6 +25,14 @@ dockerCompose() {
         host_gid=$(id -g)
     fi
 
+    if [[ -z "$host_home_path" ]]; then
+        if [[ -n "${USERNAME:-}" ]]; then
+            host_home_path="/home/$USERNAME"
+        else
+            host_home_path="${HOME:-/home}"
+        fi
+    fi
+
     case "${restart_unless_stopped,,}" in
         1|true|yes|on)
             restart_policy="unless-stopped"
@@ -36,6 +45,7 @@ dockerCompose() {
             ;;
     esac
 
+    HOST_HOME_PATH="$host_home_path" \
     APPS_ROOT="$apps_root" \
     HOST_UID="$host_uid" \
     HOST_GID="$host_gid" \

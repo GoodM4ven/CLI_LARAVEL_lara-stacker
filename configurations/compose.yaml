@@ -50,6 +50,7 @@ services:
         APT_SECURITY_MIRROR: ${APT_SECURITY_MIRROR:-security.debian.org}
     working_dir: /var/www/html
     volumes:
+      - ${HOST_HOME_PATH}:${HOST_HOME_PATH}:ro
       - ${APPS_ROOT}:/var/www/html
     expose:
       - "9000"

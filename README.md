@@ -174,6 +174,7 @@ Edit `.env` (same order as the file):
 - Host
   - `USERNAME` — system user that owns application files
   - `DB_PASSWORD` — root password for the MySQL container image
+  - `HOST_HOME_PATH` — host home path mounted into the app container (read-only) to support Composer path-repository symlinks that resolve outside `APPS_ROOT` (for example local packages under `~/Code/LaravelPackages`).
   - `APPS_ROOT` (default `/var/www/html`) — host directory where applications live and coded from, locally!
     - The CLI will create `APPS_ROOT` if missing and make it owned by `USERNAME`.
   - `OPINIONATED` — copy opinionated application files (Prettier config)
@@ -236,6 +237,7 @@ Service UIs include:
 - The container does install and expose the main services (Caddy, MySQL, Redis, MinIO, etc.) ports for you, does runtime stuff in place (PHP, PHP Extensions, PHP-FPM, etc.) too, and finally includes whatever extra packages the local server may need, such as the media's (ImageMagick, Ghostscript, FFmpeg, etc.).
 - Application `.env` files are **host-wired** (`127.0.0.1` + host ports) because all dev tooling (Composer/PHP/Artisan/NPM) runs on the host.
 - The app container is injected with internal service hosts so runtime still connects to MySQL/Redis/MinIO when serving requests.
+- The app container also mounts `HOST_HOME_PATH` read-only to keep local Composer path-repository symlinks resolvable at runtime (preventing missing vendor class/provider errors when a dependency points outside `APPS_ROOT`).
 - **The container does NOT contain the [development tools](#prerequisites) themselves that need to exist locally.** This includes Java and Android tooling, etc.
 
 TLDR: **Docker provides the runtime container group**, but there are **essential [prerequisites](#prerequisites) that must be installed on the host** for ever so many reasons really... All in all, the CLI will DISFUNCTION if those tools are missing.
