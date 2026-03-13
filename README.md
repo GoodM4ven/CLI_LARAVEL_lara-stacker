@@ -78,6 +78,8 @@ https://github.com/user-attachments/assets/137f6d92-e1d6-4047-b73b-f5ce1da5e69f
       sudo apt update
       sudo apt install -y curl php-cli unzip php-xml php-bcmath php-sqlite3 php8.3-mysql php-redis php-gd composer
       sudo phpenmod sockets
+      echo "fs.inotify.max_user_watches=524288" | sudo tee /etc/sysctl.d/99-inotify.conf
+      sudo sysctl --system
       ```
     - <a href="https://nodejs.org">Node.js</a> via <a href="https://github.com/nvm-sh/nvm">NVM</a> preferably:
       ```bash
