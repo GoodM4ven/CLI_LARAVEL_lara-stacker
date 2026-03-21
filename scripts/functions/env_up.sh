@@ -284,6 +284,16 @@ envUp() {
         set_env_var_in_group "DB_DATABASE" "$db_name" "${db_group[@]}"
         set_env_var_in_group "DB_USERNAME" "root" "${db_group[@]}"
         set_env_var_in_group "DB_PASSWORD" "$DB_PASSWORD" "${db_group[@]}"
+    else
+        local existing_db_connection
+        existing_db_connection=$(read_env_value "DB_CONNECTION" "$env_file")
+        if [[ "$existing_db_connection" == "sqlite" ]]; then
+            local existing_db_database
+            existing_db_database=$(read_env_value "DB_DATABASE" "$env_file")
+            if [[ -z "$existing_db_database" || "$existing_db_database" == "$escaped_application_name" ]]; then
+                set_env_var_in_group "DB_DATABASE" "database/database.sqlite" "${db_group[@]}"
+            fi
+        fi
     fi
 
     if [[ "$use_redis" == "true" ]]; then

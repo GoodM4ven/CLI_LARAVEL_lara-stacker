@@ -19,17 +19,24 @@ appKeyUp() {
     fi
 
     if [[ -f "$env_file" ]]; then
-        app_key=$(sed -n -E 's/^[[:space:]]*APP_KEY=//p' "$env_file" | tail -n 1)
-        app_key="${app_key%%\r}"
-        app_key="${app_key%%#*}"
-        app_key=$(echo "$app_key" | sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//')
-        app_key="${app_key%\"}"
-        app_key="${app_key#\"}"
-        app_key="${app_key%\'}"
-        app_key="${app_key#\'}"
+        local raw_app_key=""
+        raw_app_key=$(sed -n -E 's/^[[:space:]]*APP_KEY=//p' "$env_file" | tail -n 1)
+        raw_app_key="${raw_app_key%%\r}"
+
+        # Drop trailing inline comments while preserving plain key text.
+        app_key=$(printf '%s' "$raw_app_key" | sed -E 's/[[:space:]]+#.*$//; s/^[[:space:]]+//; s/[[:space:]]+$//')
+
+        # Unquote only if the value is properly wrapped.
+        if [[ "$app_key" == \"*\" && "$app_key" == *\" ]]; then
+            app_key="${app_key#\"}"
+            app_key="${app_key%\"}"
+        elif [[ "$app_key" == \'*\' && "$app_key" == *\' ]]; then
+            app_key="${app_key#\'}"
+            app_key="${app_key%\'}"
+        fi
     fi
 
-    if [[ -n "$app_key" ]]; then
+    if [[ "$app_key" =~ ^base64:[A-Za-z0-9+/=]+$ || "$app_key" =~ ^[A-Za-z0-9]{32}$ ]]; then
         return 0
     fi
 
