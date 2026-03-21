@@ -150,6 +150,19 @@ https://github.com/user-attachments/assets/137f6d92-e1d6-4047-b73b-f5ce1da5e69f
     ```
   </details>
 
+- <details>
+  <summary>iOS Tools (for NativePHP iOS apps, macOS only)</summary>
+
+  - macOS
+    ```bash
+    open "macappstores://itunes.apple.com/app/id497799835"
+    xcode-select --install || true
+    sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer
+    sudo xcodebuild -runFirstLaunch
+    sudo xcodebuild -license accept
+    ```
+  </details>
+
 ### Installation
 
 1. Clone this repo, from the new main `docker` branch, and navigate to it.
@@ -252,6 +265,12 @@ Edit `.env` (same order as the file):
 > ```bash
 > time docker compose --env-file ./.env -f ./configurations/compose.yaml --project-name lara-stacker build --no-cache app
 > ```
+>
+> If you see `xcrun: error: unable to find utility "simctl", not a developer tool or in PATH` on macOS, install full Xcode, then run:
+> ```bash
+> sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer
+> sudo xcodebuild -runFirstLaunch
+> ```
 
 <div align="left">
 
@@ -294,7 +313,7 @@ Service UIs include:
 - Application `.env` files are **host-wired** (`127.0.0.1` + host ports) because all dev tooling (Composer/PHP/Artisan/NPM) runs on the host.
 - The app container is injected with internal service hosts so runtime still connects to MySQL/Redis/MinIO when serving requests.
 - The app container also mounts `HOST_HOME_PATH` read-only to keep local Composer path-repository symlinks resolvable at runtime (preventing missing vendor class/provider errors when a dependency points outside `APPS_ROOT`).
-- **The container does NOT contain the [development tools](#prerequisites) themselves that need to exist locally.** This includes Java and Android tooling, etc.
+- **The container does NOT contain the [development tools](#prerequisites) themselves that need to exist locally.** This includes Java/Android tooling and Xcode/iOS tooling, etc.
 
 TLDR: **Docker provides the runtime container group**, but there are **essential [prerequisites](#prerequisites) that must be installed on the host** for ever so many reasons really... All in all, the CLI will DISFUNCTION if those tools are missing.
 
