@@ -148,30 +148,50 @@ envUp() {
         local existing_aws_url
         existing_aws_url=$(read_env_value "AWS_URL" "$env_file")
 
-        if [[ -n "$existing_db_connection" && "$existing_db_connection" != "mysql" && "$existing_db_connection" != "mariadb" ]]; then
-            use_mysql="false"
+        if [[ -n "$existing_db_connection" ]]; then
+            if [[ "$existing_db_connection" == "mysql" || "$existing_db_connection" == "mariadb" ]]; then
+                use_mysql="true"
+            else
+                use_mysql="false"
+            fi
         fi
 
         local cache_setting="$existing_cache_store"
         if [[ -z "$cache_setting" ]]; then
             cache_setting="$existing_cache_driver"
         fi
-        if [[ -n "$cache_setting" && "$cache_setting" != "redis" ]]; then
-            use_redis="false"
+        if [[ -n "$cache_setting" ]]; then
+            if [[ "$cache_setting" == "redis" ]]; then
+                use_redis="true"
+            else
+                use_redis="false"
+            fi
         fi
 
         local fs_setting="$existing_filesystem_disk"
         if [[ -z "$fs_setting" ]]; then
             fs_setting="$existing_filesystem_driver"
         fi
-        if [[ -n "$fs_setting" && "$fs_setting" != "s3" ]]; then
-            use_minio="false"
+        if [[ -n "$fs_setting" ]]; then
+            if [[ "$fs_setting" == "s3" ]]; then
+                use_minio="true"
+            else
+                use_minio="false"
+            fi
         fi
-        if [[ -n "$existing_aws_endpoint" && "$existing_aws_endpoint" != "$minio_endpoint" && "$existing_aws_endpoint" != "$container_minio_endpoint" ]]; then
-            use_minio="false"
+        if [[ -n "$existing_aws_endpoint" ]]; then
+            if [[ "$existing_aws_endpoint" == "$minio_endpoint" || "$existing_aws_endpoint" == "$container_minio_endpoint" ]]; then
+                use_minio="true"
+            else
+                use_minio="false"
+            fi
         fi
-        if [[ -z "$existing_aws_endpoint" && -n "$existing_aws_url" && "$existing_aws_url" != "$minio_url" && "$existing_aws_url" != "$minio_url_https" && "$existing_aws_url" != "$container_minio_url" && "$existing_aws_url" != "$container_minio_url_https" ]]; then
-            use_minio="false"
+        if [[ -z "$existing_aws_endpoint" && -n "$existing_aws_url" ]]; then
+            if [[ "$existing_aws_url" == "$minio_url" || "$existing_aws_url" == "$minio_url_https" || "$existing_aws_url" == "$container_minio_url" || "$existing_aws_url" == "$container_minio_url_https" ]]; then
+                use_minio="true"
+            else
+                use_minio="false"
+            fi
         fi
     fi
 
