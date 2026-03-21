@@ -37,6 +37,7 @@ fi
 lara_stacker_dir=$PWD
 source $lara_stacker_dir/.env
 
+sourcer "helpers.platform"
 sourcer "dockerHost"
 resolveDockerHost || true
 
@@ -63,6 +64,7 @@ fi
 
 # ? Ensure app root exists
 apps_root="${APPS_ROOT:-/var/www/html}"
+apps_root=$(normalizePathForHost "$apps_root" "${USERNAME:-}")
 if [[ ! -d "$apps_root" ]]; then
     mkdir -p "$apps_root"
 fi

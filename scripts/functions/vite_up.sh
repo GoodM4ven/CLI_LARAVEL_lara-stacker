@@ -3,6 +3,14 @@ viteUp() {
 
     local apps_root="${APPS_ROOT:-/var/www/html}"
     local domain_suffix="dev.localhost"
+    local repo_dir="${lara_stacker_dir:-$PWD}"
+    if [[ -f "$repo_dir/scripts/functions/helpers/platform.sh" ]]; then
+        # shellcheck source=/dev/null
+        source "$repo_dir/scripts/functions/helpers/platform.sh"
+    fi
+    if declare -F normalizePathForHost >/dev/null 2>&1; then
+        apps_root=$(normalizePathForHost "$apps_root" "${USERNAME:-}")
+    fi
 
     local escaped_application_name
     escaped_application_name=$(echo "$application_name" | tr ' ' '-' | tr '_' '-' | tr '[:upper:]' '[:lower:]')
@@ -76,7 +84,11 @@ viteUp() {
     fi
 
     if grep -q "emptyOutDir:[[:space:]]*" "$file"; then
-        sed -i -E '0,/emptyOutDir[[:space:]]*:[[:space:]]*[^,}]+/{s/emptyOutDir[[:space:]]*:[[:space:]]*[^,}]+/emptyOutDir: false/}' "$file"
+        if declare -F sedi >/dev/null 2>&1; then
+            sedi -E '0,/emptyOutDir[[:space:]]*:[[:space:]]*[^,}]+/{s/emptyOutDir[[:space:]]*:[[:space:]]*[^,}]+/emptyOutDir: false/}' "$file"
+        else
+            sed -i -E '0,/emptyOutDir[[:space:]]*:[[:space:]]*[^,}]+/{s/emptyOutDir[[:space:]]*:[[:space:]]*[^,}]+/emptyOutDir: false/}' "$file"
+        fi
         echo -e "\nUpdated Vite build.emptyOutDir to false."
         return 0
     fi

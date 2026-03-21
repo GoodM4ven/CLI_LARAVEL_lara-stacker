@@ -27,10 +27,16 @@ fi
 lara_stacker_dir=$PWD
 source $lara_stacker_dir/.env
 
+sourcer "helpers.platform"
+
 apps_root="${APPS_ROOT:-/var/www/html}"
+apps_root=$(normalizePathForHost "$apps_root" "${USERNAME:-}")
 if [[ ! -d "$apps_root" ]]; then
     mkdir -p "$apps_root"
-    chown -R "$USERNAME:$USERNAME" "$apps_root"
+    if [[ "$EUID" -eq 0 && -n "${USERNAME:-}" ]]; then
+        owner_group=$(resolveUserGroup "$USERNAME")
+        chown -R "$USERNAME:$owner_group" "$apps_root" 2>/dev/null || true
+    fi
 fi
 
 sourcer "composeCmd"

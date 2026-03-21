@@ -27,6 +27,19 @@ envUp() {
     local container_minio_url="http://minio:9000/$escaped_application_name"
     local container_minio_url_https="https://minio:9000/$escaped_application_name"
 
+    local repo_dir="${lara_stacker_dir:-$PWD}"
+    if [[ -f "$repo_dir/scripts/functions/helpers/platform.sh" ]]; then
+        # shellcheck source=/dev/null
+        source "$repo_dir/scripts/functions/helpers/platform.sh"
+    fi
+
+    if declare -F normalizePathForHost >/dev/null 2>&1; then
+        apps_root=$(normalizePathForHost "$apps_root" "${USERNAME:-}")
+    fi
+    application_path="$apps_root/$escaped_application_name"
+    env_file="$application_path/.env"
+    env_example_file="$application_path/.env.example"
+
     if [[ ! -d "$application_path" ]]; then
         prompt "The expected '$application_path' directory was not found." "" false true
         return 1
@@ -167,11 +180,14 @@ envUp() {
         local value="$2"
         shift 2
         local group_keys=("$@")
-        local escaped_value
-        escaped_value=$(printf '%s' "$value" | sed -e 's/[\\/&|]/\\&/g')
+        local key_value_line="${key}=${value}"
 
         if grep -Eq "^[[:space:]]*${key}=" "$env_file"; then
-            sed -i -E "/^[[:space:]]*${key}=/d" "$env_file"
+            if declare -F sedi >/dev/null 2>&1; then
+                sedi -E "/^[[:space:]]*${key}=/d" "$env_file"
+            else
+                sed -i -E "/^[[:space:]]*${key}=/d" "$env_file"
+            fi
         fi
 
         local before_key=""
@@ -197,12 +213,42 @@ envUp() {
         done
 
         if [[ -n "$after_key" ]]; then
-            sed -i -E "0,/^[[:space:]]*${after_key}=/{s|^[[:space:]]*${after_key}=.*|&\n${key}=${escaped_value}|}" "$env_file"
+            local tmp_after
+            tmp_after=$(mktemp "${TMPDIR:-/tmp}/stacker-env-up.XXXXXX")
+            awk -v anchor="$after_key" -v kv="$key_value_line" '
+            BEGIN { inserted = 0 }
+            {
+                print
+                if (!inserted && $0 ~ "^[[:space:]]*" anchor "=") {
+                    print kv
+                    inserted = 1
+                }
+            }
+            END {
+                if (!inserted) {
+                    print kv
+                }
+            }' "$env_file" >"$tmp_after" && mv "$tmp_after" "$env_file"
             return
         fi
 
         if [[ -n "$before_key" ]]; then
-            sed -i -E "0,/^[[:space:]]*${before_key}=/{s|^[[:space:]]*${before_key}=.*|${key}=${escaped_value}\n&|}" "$env_file"
+            local tmp_before
+            tmp_before=$(mktemp "${TMPDIR:-/tmp}/stacker-env-up.XXXXXX")
+            awk -v anchor="$before_key" -v kv="$key_value_line" '
+            BEGIN { inserted = 0 }
+            {
+                if (!inserted && $0 ~ "^[[:space:]]*" anchor "=") {
+                    print kv
+                    inserted = 1
+                }
+                print
+            }
+            END {
+                if (!inserted) {
+                    print kv
+                }
+            }' "$env_file" >"$tmp_before" && mv "$tmp_before" "$env_file"
             return
         fi
 

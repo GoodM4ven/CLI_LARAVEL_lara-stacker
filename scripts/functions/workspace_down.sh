@@ -4,8 +4,19 @@ workspaceDown() {
     fi
 
     local workspaces_dir="${VSC_WORKSPACES_DIR:-}"
+    local repo_dir="${lara_stacker_dir:-$PWD}"
+    if [[ -f "$repo_dir/scripts/functions/helpers/platform.sh" ]]; then
+        # shellcheck source=/dev/null
+        source "$repo_dir/scripts/functions/helpers/platform.sh"
+    fi
+    if declare -F isNullLike >/dev/null 2>&1 && isNullLike "$workspaces_dir"; then
+        return 0
+    fi
     if [[ -z "$workspaces_dir" ]]; then
         return 0
+    fi
+    if declare -F normalizePathForHost >/dev/null 2>&1; then
+        workspaces_dir=$(normalizePathForHost "$workspaces_dir" "${USERNAME:-}")
     fi
 
     local escaped_application_name

@@ -12,8 +12,8 @@ sourcer() {
         functionNameCamel="${functionNameCamel##*.}" # * Everything after the dot
     fi
 
-    # ? Convert CamelCase to snake_case
-    functionNameSnake=$(echo $functionNameCamel | sed -r 's/([a-z])([A-Z])/\1_\L\2/g')
+    # ? Convert CamelCase to snake_case (bash3/macOS-safe)
+    functionNameSnake=$(printf '%s' "$functionNameCamel" | sed -E 's/([a-z0-9])([A-Z])/\1_\2/g' | tr '[:upper:]' '[:lower:]')
 
     # ? Construct the full path to the script file
     if [[ -n "$subDir" ]]; then
@@ -24,7 +24,7 @@ sourcer() {
 
     # ? Abort if the target script is not found
     if [[ ! -f $functionPath ]]; then
-        prompt "The \"${functionNameCamel^}\" function could not be found."
+        prompt "The \"$functionNameCamel\" function could not be found."
     fi
 
     source $functionPath

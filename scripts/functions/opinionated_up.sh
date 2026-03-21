@@ -6,6 +6,14 @@ opinionatedUp() {
     fi
 
     local apps_root="${APPS_ROOT:-/var/www/html}"
+    local repo_dir="${lara_stacker_dir:-$PWD}"
+    if [[ -f "$repo_dir/scripts/functions/helpers/platform.sh" ]]; then
+        # shellcheck source=/dev/null
+        source "$repo_dir/scripts/functions/helpers/platform.sh"
+    fi
+    if declare -F normalizePathForHost >/dev/null 2>&1; then
+        apps_root=$(normalizePathForHost "$apps_root" "${USERNAME:-}")
+    fi
 
     local escaped_application_name
     escaped_application_name=$(echo "$application_name" | tr ' ' '-' | tr '_' '-' | tr '[:upper:]' '[:lower:]')

@@ -6,7 +6,13 @@ dockerCompose() {
     local apps_root="${APPS_ROOT:-/var/www/html}"
     local php_version="${PHP_VERSION:-8.3}"
     local restart_unless_stopped="${RESTART_UNLESS_STOPPED:-true}"
+    local restart_unless_stopped_lower
     local restart_policy="unless-stopped"
+
+    if [[ -f "$lara_stacker_dir/scripts/functions/helpers/platform.sh" ]]; then
+        # shellcheck source=/dev/null
+        source "$lara_stacker_dir/scripts/functions/helpers/platform.sh"
+    fi
 
     if [[ -f "$lara_stacker_dir/scripts/functions/docker_host.sh" ]]; then
         # shellcheck source=/dev/null
@@ -26,14 +32,24 @@ dockerCompose() {
     fi
 
     if [[ -z "$host_home_path" ]]; then
-        if [[ -n "${USERNAME:-}" ]]; then
-            host_home_path="/home/$USERNAME"
-        else
-            host_home_path="${HOME:-/home}"
+        host_home_path="${HOME:-/home}"
+        if [[ -n "${USERNAME:-}" ]] && declare -F resolveUserHomePath >/dev/null 2>&1; then
+            local resolved_home
+            resolved_home=$(resolveUserHomePath "$USERNAME")
+            if [[ -n "$resolved_home" ]]; then
+                host_home_path="$resolved_home"
+            fi
         fi
     fi
 
-    case "${restart_unless_stopped,,}" in
+    if declare -F normalizePathForHost >/dev/null 2>&1; then
+        host_home_path=$(normalizePathForHost "$host_home_path" "${USERNAME:-}")
+        apps_root=$(normalizePathForHost "$apps_root" "${USERNAME:-}")
+    fi
+
+    restart_unless_stopped_lower=$(printf '%s' "$restart_unless_stopped" | tr '[:upper:]' '[:lower:]')
+
+    case "$restart_unless_stopped_lower" in
         1|true|yes|on)
             restart_policy="unless-stopped"
             ;;

@@ -31,6 +31,13 @@ https://github.com/user-attachments/assets/137f6d92-e1d6-4047-b73b-f5ce1da5e69f
 - <details>
   <summary>Docker Desktop (which contains <a href="https://docs.docker.com/engine/install">Engine</a> and <a href="https://docs.docker.com/compose/install">Compose</a> for containerization)</summary>
 
+  - macOS (Apple Silicon + Intel)
+    ```bash
+    brew install --cask docker
+    sleep 3
+    open -a Docker
+    ```
+
   - Linux (Ubuntu tested)
     ```bash
     set -e
@@ -72,6 +79,21 @@ https://github.com/user-attachments/assets/137f6d92-e1d6-4047-b73b-f5ce1da5e69f
 - <details>
   <summary>Building tools</summary>
 
+  - macOS (Homebrew + NVM)
+    - <a href="https://getcomposer.org">Composer</a>, <a href="https://php.net">PHP</a>:
+      ```bash
+      brew install php composer
+      ```
+    - <a href="https://nodejs.org">Node.js</a> via <a href="https://github.com/nvm-sh/nvm">NVM</a>:
+      ```bash
+      brew install nvm
+      mkdir -p ~/.nvm
+      export NVM_DIR="$HOME/.nvm"
+      [ -s "$(brew --prefix nvm)/nvm.sh" ] && . "$(brew --prefix nvm)/nvm.sh"
+      nvm install --lts
+      nvm use --lts
+      ```
+
   - Linux (Ubuntu tested)
     - <a href="https://getcomposer.org">Composer</a>, <a href="https://php.net">PHP</a>, and some of its extensions:
       ```bash
@@ -90,6 +112,12 @@ https://github.com/user-attachments/assets/137f6d92-e1d6-4047-b73b-f5ce1da5e69f
 - <details>
   <summary>Certification Tools</summary>
 
+  - macOS
+    ```bash
+    brew install mkcert nss
+    mkcert -install
+    ```
+
   - Linux (Ubuntu tested)
     ```bash
     sudo apt update
@@ -103,6 +131,14 @@ https://github.com/user-attachments/assets/137f6d92-e1d6-4047-b73b-f5ce1da5e69f
 
 - <details>
   <summary>Android Tools (for NativePHP Android apps)</summary>
+
+  - macOS
+    ```bash
+    brew install openjdk@17
+    echo 'export JAVA_HOME=$(/usr/libexec/java_home -v 17)' >> ~/.zshrc
+    echo 'export PATH=$PATH:$JAVA_HOME/bin' >> ~/.zshrc
+    brew install --cask android-studio
+    ```
 
   - Linux (Ubuntu tested)
     ```bash
@@ -121,6 +157,9 @@ https://github.com/user-attachments/assets/137f6d92-e1d6-4047-b73b-f5ce1da5e69f
    ```bash
    cp .env.example .env
    ```
+   - On macOS, set:
+     - `HOST_HOME_PATH=/Users/$USERNAME`
+     - `APPS_ROOT=/Users/$USERNAME/Code/Laravel`
 3. Run the CLI:
    ```bash
    chmod +x ./lara-stacker.sh && ./lara-stacker.sh
@@ -177,14 +216,18 @@ Edit `.env` (same order as the file):
   - `USERNAME` — system user that owns application files
   - `DB_PASSWORD` — root password for the MySQL container image
   - `HOST_HOME_PATH` — host home path mounted into the app container (read-only) to support Composer path-repository symlinks that resolve outside `APPS_ROOT` (for example local packages under `~/Code/LaravelPackages`).
+    - Linux typical value: `/home/<user>`
+    - macOS typical value: `/Users/<user>`
   - `APPS_ROOT` (default `/var/www/html`) — host directory where applications live and coded from, locally!
+    - Linux typical value: `/home/<user>/Code/Laravel`
+    - macOS typical value: `/Users/<user>/Code/Laravel`
     - The CLI will create `APPS_ROOT` if missing and make it owned by `USERNAME`.
   - `OPINIONATED` — copy opinionated application files (Prettier config)
   - `USE_VSC` — when `true`, `Create`, `Import`, `Refresh`, and `Rewire` generate each app's `.vscode/launch.json` (plus `.vscode/extensions.json` if missing) for [xdebug](https://xdebug.org) with [VSCodium](https://vscodium.com)/VS Code.
     - Xdebug is run in "trigger-only" mode (`xdebug.start_with_request=trigger`).
     - Install the [`xdebug.php-debug` extension](https://marketplace.visualstudio.com/items?itemName=xdebug.php-debug) for VSC.
     - Use the [browser extension](https://chromewebstore.google.com/detail/xdebug-chrome-extension/oiofkammbajfehgpleginfomeppgnglk?hl=en&pli=1) and keep it on **only when needed**.
-  - `VSC_WORKSPACES_DIR` — auto-create `.code-workspace` files (leave empty to disable)
+  - `VSC_WORKSPACES_DIR` — auto-create `.code-workspace` files (leave empty to disable; `null` is also treated as disabled)
 
 - Container
   - `DOCKER_COMPOSE_FILE` — override the compose file path
@@ -200,6 +243,17 @@ Edit `.env` (same order as the file):
 
 - The **rewire** command writes these host port values into each application’s `.env` (with `DB_HOST=127.0.0.1`, `REDIS_HOST=127.0.0.1`, etc.).
 - After changing any host port variables, restart the container and run the **rewire** command to refresh each app’s `.env`.
+
+</div>
+
+> [!TIP]
+> `APT_MIRROR` and `APT_SECURITY_MIRROR` are used inside the Debian app container image build (`apt-get` in Docker), not on the macOS host.
+> To compare mirrors from Docker Desktop, time the app image build:
+> ```bash
+> time docker compose --env-file ./.env -f ./configurations/compose.yaml --project-name lara-stacker build --no-cache app
+> ```
+
+<div align="left">
 
 ### Ports
 

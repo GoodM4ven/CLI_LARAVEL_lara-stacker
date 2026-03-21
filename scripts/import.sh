@@ -27,10 +27,16 @@ fi
 lara_stacker_dir=$PWD
 source $lara_stacker_dir/.env
 
+sourcer "helpers.platform"
+
 apps_root="${APPS_ROOT:-/var/www/html}"
+apps_root=$(normalizePathForHost "$apps_root" "${USERNAME:-}")
 if [[ ! -d "$apps_root" ]]; then
     mkdir -p "$apps_root"
-    chown -R "$USERNAME:$USERNAME" "$apps_root"
+    if [[ "$EUID" -eq 0 && -n "${USERNAME:-}" ]]; then
+        owner_group=$(resolveUserGroup "$USERNAME")
+        chown -R "$USERNAME:$owner_group" "$apps_root" 2>/dev/null || true
+    fi
 fi
 
 sourcer "composeCmd"
@@ -110,7 +116,11 @@ if ! ensureDockerAccess; then
 fi
 
 # ? Get the application path from the user
-echo -ne "\nEnter the full application path (e.g., /home/$USERNAME/Code/some_laravel_app): "
+example_home_path=$(resolveUserHomePath "${USERNAME:-$USER}")
+if [[ -z "$example_home_path" ]]; then
+    example_home_path="${HOME:-/home/${USERNAME:-$USER}}"
+fi
+echo -ne "\nEnter the full application path (e.g., $example_home_path/Code/some_laravel_app): "
 read full_directory
 
 full_directory="${full_directory%/}"
@@ -169,14 +179,37 @@ if [[ -z "$(dockerCompose ps -q app)" ]]; then
 fi
 trustHttps || true
 
+ensureOwnedByConfiguredUser() {
+    local target_path="$1"
+    [[ -z "$target_path" || ! -e "$target_path" ]] && return 0
+    [[ -z "${USERNAME:-}" ]] && return 0
+
+    local owner_group
+    owner_group=$(resolveUserGroup "$USERNAME")
+
+    if chown -R "$USERNAME:$owner_group" "$target_path" >/dev/null 2>&1; then
+        return 0
+    fi
+
+    if command -v sudo >/dev/null 2>&1; then
+        sudo chown -R "$USERNAME:$owner_group" "$target_path" >/dev/null 2>&1 || true
+    fi
+}
+
 # ? Copy the application into the app root
 if [[ "$skip_copy" != "true" ]]; then
-    sudo cp -r "$application_path/$source_application_name" "$target_application_path"
-    sudo chown -R "$USERNAME:$USERNAME" "$target_application_path"
+    if ! cp -R "$application_path/$source_application_name" "$target_application_path" >/dev/null 2>&1; then
+        if command -v sudo >/dev/null 2>&1; then
+            sudo cp -R "$application_path/$source_application_name" "$target_application_path" || prompt "Failed to copy application files." "Check read/write permissions and retry." false
+        else
+            prompt "Failed to copy application files." "Check read/write permissions and retry." false
+        fi
+    fi
+    ensureOwnedByConfiguredUser "$target_application_path"
 
     echo -e "\nApplication files copied into $apps_root."
 else
-    sudo chown -R "$USERNAME:$USERNAME" "$target_application_path"
+    ensureOwnedByConfiguredUser "$target_application_path"
     echo -e "\nApplication already in $apps_root. Skipping copy."
 fi
 

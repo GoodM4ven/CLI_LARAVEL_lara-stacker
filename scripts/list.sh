@@ -28,7 +28,9 @@ fi
 lara_stacker_dir=$PWD
 source $lara_stacker_dir/.env
 
+sourcer "helpers.platform"
 apps_root="${APPS_ROOT:-/var/www/html}"
+apps_root=$(normalizePathForHost "$apps_root" "${USERNAME:-}")
 domain_suffix="dev.localhost"
 https_port="${CADDY_HTTPS_PORT:-8443}"
 https_suffix=""

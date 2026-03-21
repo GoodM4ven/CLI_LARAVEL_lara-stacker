@@ -6,8 +6,15 @@ trustMkcert() {
     local mkcert_user="${USERNAME:-$USER}"
     local domain_suffix="dev.localhost"
     local apps_root="${APPS_ROOT:-/var/www/html}"
-    local -A seen_hosts
     local -a hosts
+
+    if [[ -f "$repo_dir/scripts/functions/helpers/platform.sh" ]]; then
+        # shellcheck source=/dev/null
+        source "$repo_dir/scripts/functions/helpers/platform.sh"
+    fi
+    if declare -F normalizePathForHost >/dev/null 2>&1; then
+        apps_root=$(normalizePathForHost "$apps_root" "${USERNAME:-}")
+    fi
 
     sourcer "helpers.applicationRegistry"
 
@@ -20,10 +27,13 @@ trustMkcert() {
     add_host() {
         local host="$1"
         [[ -z "$host" ]] && return 0
-        if [[ -z "${seen_hosts[$host]+x}" ]]; then
-            seen_hosts["$host"]=1
-            hosts+=("$host")
-        fi
+        local existing
+        for existing in "${hosts[@]}"; do
+            if [[ "$existing" == "$host" ]]; then
+                return 0
+            fi
+        done
+        hosts+=("$host")
     }
 
     add_host "localhost"
@@ -54,7 +64,11 @@ trustMkcert() {
             return 1
         fi
         if [[ -n "$mkcert_user" ]]; then
-            chown "$mkcert_user":"$mkcert_user" "$cert_dir" 2>/dev/null || true
+            local owner_group="$mkcert_user"
+            if declare -F resolveUserGroup >/dev/null 2>&1; then
+                owner_group=$(resolveUserGroup "$mkcert_user")
+            fi
+            chown "$mkcert_user":"$owner_group" "$cert_dir" 2>/dev/null || true
             sudo -u "$mkcert_user" mkcert -install >/dev/null 2>&1 || return 1
             sudo -u "$mkcert_user" mkcert -cert-file "$cert_file" -key-file "$key_file" "${hosts[@]}" >/dev/null 2>&1 || return 1
         else

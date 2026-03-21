@@ -27,7 +27,9 @@ fi
 lara_stacker_dir=$PWD
 source $lara_stacker_dir/.env
 
+sourcer "helpers.platform"
 apps_root="${APPS_ROOT:-/var/www/html}"
+apps_root=$(normalizePathForHost "$apps_root" "${USERNAME:-}")
 sourcer "helpers.applicationRegistry"
 
 # ? List applications and get the application name/number from the user
