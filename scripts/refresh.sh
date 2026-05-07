@@ -155,10 +155,11 @@ if ! waitForApplicationInContainer "$escaped_application_name"; then
 fi
 
 # ? Clear dependencies (host)
-rm -rf "$application_path/node_modules" "$application_path/vendor" "$application_path/composer.lock" "$application_path/package-lock.json" "$application_path/bun.lock" "$application_path/bun.lockb" 2>/dev/null || true
+rm -rf "$application_path/node_modules" "$application_path/vendor" 2>/dev/null || true
 
 # ? Reinstall Composer dependencies
 requireHostComposer
+requireHostComposerExtensionsForApp "$application_path"
 if ! runAsHostUser composer install --no-interaction --no-scripts --working-dir="$application_path"; then
     prompt "Failed to install Composer dependencies." "Ensure Composer is working on the host and retry." false
 fi
@@ -166,8 +167,8 @@ fi
 # ? Reinstall JS dependencies (if package.json exists)
 if [[ -f "$application_path/package.json" ]]; then
     requireHostNode
-    if ! runAsHostUser npm install --silent --prefix "$application_path"; then
-        prompt "Failed to install npm dependencies." "Ensure Node.js/npm are working on the host and retry." false
+    if ! installHostNpmDependencies "$application_path"; then
+        prompt "Failed to install npm dependencies." "Review npm error output above (dependency conflicts/network) and retry." false
     fi
 fi
 

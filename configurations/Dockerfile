@@ -57,19 +57,17 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
         gd \
         intl \
         mbstring \
-        opcache \
         mysqli \
         pdo_mysql \
         pdo_sqlite \
         zip \
         curl \
-        dom \
-        xml \
         sockets \
     && pecl install xdebug \
     && pecl install redis \
     && pecl install imagick \
-    && docker-php-ext-enable redis opcache \
+    && docker-php-ext-enable redis \
+    && php -r 'foreach (["Zend OPcache","dom","xml"] as $ext) { if (!extension_loaded($ext)) { fwrite(STDERR, "Missing required extension: {$ext}\n"); exit(1); } }' \
     && rm -f /usr/local/etc/php/conf.d/*xdebug*.ini \
     && rm -rf /var/lib/apt/lists/*
 

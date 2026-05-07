@@ -117,6 +117,7 @@ if [[ ! -f "$application_path/vendor/autoload.php" ]]; then
     if [[ -z "$install_confirm" || "$install_confirm" == "y" || "$install_confirm" == "yes" ]]; then
         echo -e "\nInstalling Composer dependencies..."
         requireHostComposer
+        requireHostComposerExtensionsForApp "$application_path"
         if ! runAsHostUser composer install --no-interaction --no-scripts --working-dir="$application_path"; then
             prompt "Failed to install Composer dependencies." "Ensure Composer is working on the host and retry."
         fi

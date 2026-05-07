@@ -83,7 +83,7 @@ fi
 
 composeUp
 if [[ $? -ne 0 ]]; then
-    prompt "Failed to start Docker container." "Check the Docker build output above (apt mirror speed or package errors), then retry." false
+    prompt "Failed to start Docker container." "Check the Docker build output above (mirror speed or package errors), then retry." false
 fi
 
 dockerCompose up -d --force-recreate caddy >/dev/null 2>&1 || true

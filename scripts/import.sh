@@ -87,20 +87,17 @@ refreshDependenciesAfterImport() {
 
     rm -rf \
         "$application_path/vendor" \
-        "$application_path/composer.lock" \
-        "$application_path/node_modules" \
-        "$application_path/package-lock.json" \
-        "$application_path/bun.lock" \
-        "$application_path/bun.lockb" 2>/dev/null || true
+        "$application_path/node_modules" 2>/dev/null || true
 
     requireHostComposer
+    requireHostComposerExtensionsForApp "$application_path"
     if ! runAsHostUser composer install --no-interaction --no-scripts --working-dir="$application_path"; then
         return 1
     fi
 
     if [[ -f "$application_path/package.json" ]]; then
         requireHostNode
-        if ! runAsHostUser npm install --silent --prefix "$application_path"; then
+        if ! installHostNpmDependencies "$application_path"; then
             return 1
         fi
     fi
@@ -222,6 +219,7 @@ fi
 if [[ ! -f "$target_application_path/vendor/autoload.php" ]]; then
     echo -e "\nInstalling Composer dependencies for the application..."
     requireHostComposer
+    requireHostComposerExtensionsForApp "$target_application_path"
     if ! runAsHostUser composer install --no-interaction --no-scripts --working-dir="$target_application_path"; then
         prompt "Failed to install Composer dependencies." "Ensure Composer is working on the host and retry." false
     fi
@@ -230,8 +228,8 @@ fi
 # ? Install JS dependencies if package.json exists and node_modules is missing
 if [[ -f "$target_application_path/package.json" && ! -d "$target_application_path/node_modules" ]]; then
     requireHostNode
-    if ! runAsHostUser npm install --silent --prefix "$target_application_path"; then
-        prompt "Failed to install npm dependencies." "Ensure Node.js/npm are working on the host and retry." false
+    if ! installHostNpmDependencies "$target_application_path"; then
+        prompt "Failed to install npm dependencies." "Review npm error output above (dependency conflicts/network) and retry." false
     fi
 fi
 

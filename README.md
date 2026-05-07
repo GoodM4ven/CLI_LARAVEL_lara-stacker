@@ -38,42 +38,70 @@ https://github.com/user-attachments/assets/137f6d92-e1d6-4047-b73b-f5ce1da5e69f
     open -a Docker
     ```
 
-  - Linux (Ubuntu tested)
-    ```bash
-    set -e
-    uname -m | grep -Eq 'x86_64|amd64'
-    grep -Eq '(vmx|svm)' /proc/cpuinfo
+  - Linux (Ubuntu / EndeavourOS)
+    - Ubuntu:
+      ```bash
+      set -e
+      uname -m | grep -Eq 'x86_64|amd64'
+      grep -Eq '(vmx|svm)' /proc/cpuinfo
 
-    sudo apt update
-    sudo apt install -y ca-certificates curl gnupg qemu-kvm qemu-utils libvirt-daemon-system libvirt-clients pass gnome-terminal || true
+      sudo apt update
+      sudo apt install -y ca-certificates curl gnupg qemu-kvm qemu-utils libvirt-daemon-system libvirt-clients pass gnome-terminal || true
 
-    lsmod | grep -q '^kvm' || sudo modprobe kvm
-    if grep -qi intel /proc/cpuinfo; then
-        lsmod | grep -q '^kvm_intel' || sudo modprobe kvm_intel
-    fi
-    if grep -qi amd /proc/cpuinfo; then
-        lsmod | grep -q '^kvm_amd' || sudo modprobe kvm_amd
-    fi
-    getent group kvm | grep -q "$USER" || sudo usermod -aG kvm "$USER"
+      lsmod | grep -q '^kvm' || sudo modprobe kvm
+      if grep -qi intel /proc/cpuinfo; then
+          lsmod | grep -q '^kvm_intel' || sudo modprobe kvm_intel
+      fi
+      if grep -qi amd /proc/cpuinfo; then
+          lsmod | grep -q '^kvm_amd' || sudo modprobe kvm_amd
+      fi
+      getent group kvm | grep -q "$USER" || sudo usermod -aG kvm "$USER"
 
-    sudo install -m 0755 -d /etc/apt/keyrings
-    if [ ! -f /etc/apt/keyrings/docker.gpg ]; then
-        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-        sudo chmod a+r /etc/apt/keyrings/docker.gpg
-    fi
-    if [ ! -f /etc/apt/sources.list.d/docker.list ]; then
-        echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" \
-        | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-    fi
+      sudo install -m 0755 -d /etc/apt/keyrings
+      if [ ! -f /etc/apt/keyrings/docker.gpg ]; then
+          curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+          sudo chmod a+r /etc/apt/keyrings/docker.gpg
+      fi
+      if [ ! -f /etc/apt/sources.list.d/docker.list ]; then
+          echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" \
+          | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+      fi
 
-    sudo apt update
-    cd ~/Downloads
-    [ -f docker-desktop-amd64.deb ] || wget https://desktop.docker.com/linux/main/amd64/docker-desktop-amd64.deb
-    sudo apt install ./docker-desktop-amd64.deb
+      sudo apt update
+      cd ~/Downloads
+      [ -f docker-desktop-amd64.deb ] || wget https://desktop.docker.com/linux/main/amd64/docker-desktop-amd64.deb
+      sudo apt install ./docker-desktop-amd64.deb
 
-    systemctl --user start docker-desktop
-    systemctl --user enable docker-desktop
-    ```
+      systemctl --user start docker-desktop
+      systemctl --user enable docker-desktop
+      ```
+    - EndeavourOS:
+      ```bash
+      set -e
+      uname -m | grep -Eq 'x86_64|amd64'
+      grep -Eq '(vmx|svm)' /proc/cpuinfo
+
+      sudo pacman -Syu --needed ca-certificates curl gnupg qemu-base libvirt pass
+
+      lsmod | grep -q '^kvm' || sudo modprobe kvm
+      if grep -qi intel /proc/cpuinfo; then
+          lsmod | grep -q '^kvm_intel' || sudo modprobe kvm_intel
+      fi
+      if grep -qi amd /proc/cpuinfo; then
+          lsmod | grep -q '^kvm_amd' || sudo modprobe kvm_amd
+      fi
+      getent group kvm | grep -q "$USER" || sudo usermod -aG kvm "$USER"
+
+      if command -v yay >/dev/null 2>&1; then
+          yay -S --needed docker-desktop
+      else
+          echo "Install an AUR helper (e.g. yay), then run: yay -S --needed docker-desktop"
+          exit 1
+      fi
+
+      systemctl --user start docker-desktop
+      systemctl --user enable docker-desktop
+      ```
   </details>
 
 - <details>
@@ -94,15 +122,37 @@ https://github.com/user-attachments/assets/137f6d92-e1d6-4047-b73b-f5ce1da5e69f
       nvm use --lts
       ```
 
-  - Linux (Ubuntu tested)
-    - <a href="https://getcomposer.org">Composer</a>, <a href="https://php.net">PHP</a>, and some of its extensions:
-      ```bash
-      sudo apt update
-      sudo apt install -y curl php-cli unzip php-xml php-bcmath php-sqlite3 php8.3-mysql php-redis php-gd composer
-      sudo phpenmod sockets
-      echo "fs.inotify.max_user_watches=524288" | sudo tee /etc/sysctl.d/99-inotify.conf
-      sudo sysctl --system
-      ```
+  - Linux (Ubuntu / EndeavourOS)
+    - Ubuntu:
+      - <a href="https://getcomposer.org">Composer</a>, <a href="https://php.net">PHP</a>, and some of its extensions:
+        ```bash
+        sudo apt update
+        sudo apt install -y curl php-cli unzip php-xml php-bcmath php-sqlite3 php8.3-mysql php-redis php-gd composer
+        sudo phpenmod sockets
+        echo "fs.inotify.max_user_watches=524288" | sudo tee /etc/sysctl.d/99-inotify.conf
+        sudo sysctl --system
+        ```
+    - EndeavourOS:
+      - <a href="https://getcomposer.org">Composer</a>, <a href="https://php.net">PHP</a>, and some of its extensions:
+        ```bash
+        sudo pacman -Syu --needed curl php composer unzip php-gd php-imagick imagemagick php-sqlite php-redis
+        sudo sed -i 's/^;extension=exif/extension=exif/' /etc/php/php.ini
+        sudo sed -i 's/^;extension=intl/extension=intl/' /etc/php/php.ini
+        sudo sed -i 's/^;extension=sockets/extension=sockets/' /etc/php/php.ini
+        sudo install -d /etc/php/conf.d
+        ls /etc/php/conf.d/*gd*.ini >/dev/null 2>&1 || echo "extension=gd" | sudo tee /etc/php/conf.d/20-gd.ini >/dev/null
+        ls /etc/php/conf.d/*imagick*.ini >/dev/null 2>&1 || echo "extension=imagick" | sudo tee /etc/php/conf.d/20-imagick.ini >/dev/null
+        ls /etc/php/conf.d/*sqlite3*.ini >/dev/null 2>&1 || echo "extension=sqlite3" | sudo tee /etc/php/conf.d/20-sqlite3.ini >/dev/null
+        ls /etc/php/conf.d/*pdo_sqlite*.ini >/dev/null 2>&1 || echo "extension=pdo_sqlite" | sudo tee /etc/php/conf.d/20-pdo_sqlite.ini >/dev/null
+        sudo sed -i 's/^;extension=igbinary\.so/extension=igbinary.so/' /etc/php/conf.d/igbinary.ini 2>/dev/null || true
+        sudo sed -i 's/^;extension=redis/extension=redis/' /etc/php/conf.d/redis.ini 2>/dev/null || true
+        grep -Rqs '^extension=igbinary' /etc/php/conf.d || echo "extension=igbinary" | sudo tee /etc/php/conf.d/20-igbinary.ini >/dev/null
+        grep -Rqs '^extension=redis' /etc/php/conf.d || echo "extension=redis" | sudo tee /etc/php/conf.d/20-redis.ini >/dev/null
+        php --ini
+        php -m | grep -Ei '^(gd|imagick|sqlite3|pdo_sqlite|igbinary|redis)$'
+        echo "fs.inotify.max_user_watches=524288" | sudo tee /etc/sysctl.d/99-inotify.conf
+        sudo sysctl --system
+        ```
     - <a href="https://nodejs.org">Node.js</a> via <a href="https://github.com/nvm-sh/nvm">NVM</a> preferably:
       ```bash
       curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.4/install.sh | bash
@@ -118,15 +168,21 @@ https://github.com/user-attachments/assets/137f6d92-e1d6-4047-b73b-f5ce1da5e69f
     mkcert -install
     ```
 
-  - Linux (Ubuntu tested)
-    ```bash
-    sudo apt update
-    sudo apt install ca-certificates libnss3-tools golang-go
-    git clone https://github.com/FiloSottile/mkcert && cd mkcert
-    go build -ldflags "-X main.Version=$(git describe --tags)"
-    sudo mv mkcert /usr/local/bin/
-    cd .. && rm -rf mkcert
-    ```
+  - Linux (Ubuntu / EndeavourOS)
+    - Ubuntu:
+      ```bash
+      sudo apt update
+      sudo apt install ca-certificates libnss3-tools golang-go
+      git clone https://github.com/FiloSottile/mkcert && cd mkcert
+      go build -ldflags "-X main.Version=$(git describe --tags)"
+      sudo mv mkcert /usr/local/bin/
+      cd .. && rm -rf mkcert
+      ```
+    - EndeavourOS:
+      ```bash
+      sudo pacman -Syu --needed ca-certificates mkcert nss
+      mkcert -install
+      ```
   </details>
 
 - <details>
@@ -140,14 +196,21 @@ https://github.com/user-attachments/assets/137f6d92-e1d6-4047-b73b-f5ce1da5e69f
     brew install --cask android-studio
     ```
 
-  - Linux (Ubuntu tested)
-    ```bash
-    sudo apt update
-    sudo apt install openjdk-17-jdk
-    echo 'export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64' >> ~/.bashrc
-    echo 'export PATH=$PATH:$JAVA_HOME/bin' >> ~/.bashrc
-    sudo snap install android-studio --classic
-    ```
+  - Linux (Ubuntu / EndeavourOS)
+    - Ubuntu:
+      ```bash
+      sudo apt update
+      sudo apt install openjdk-17-jdk
+      echo 'export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64' >> ~/.bashrc
+      echo 'export PATH=$PATH:$JAVA_HOME/bin' >> ~/.bashrc
+      sudo snap install android-studio --classic
+      ```
+    - EndeavourOS:
+      ```bash
+      sudo pacman -Syu --needed jdk17-openjdk android-studio
+      echo 'export JAVA_HOME=/usr/lib/jvm/java-17-openjdk' >> ~/.bashrc
+      echo 'export PATH=$PATH:$JAVA_HOME/bin' >> ~/.bashrc
+      ```
   </details>
 
 - <details>
@@ -236,7 +299,7 @@ Edit `.env` (same order as the file):
     - macOS typical value: `/Users/<user>/Code/Laravel`
     - The CLI will create `APPS_ROOT` if missing and make it owned by `USERNAME`.
   - `OPINIONATED` — copy opinionated application files (Prettier config)
-  - `USE_VSC` — when `true`, `Create`, `Import`, `Refresh`, and `Rewire` generate each app's `.vscode/launch.json` (plus `.vscode/extensions.json` if missing) for [xdebug](https://xdebug.org) with [VSCodium](https://vscodium.com)/VS Code.
+  - `USE_VSC` — when `true`, `Create`, `Import`, `Refresh`, and `Rewire` generate each app's `.vscode/launch.json` for [xdebug](https://xdebug.org) with [VSCodium](https://vscodium.com)/VS Code.
     - Xdebug is run in "trigger-only" mode (`xdebug.start_with_request=trigger`).
     - Install the [`xdebug.php-debug` extension](https://marketplace.visualstudio.com/items?itemName=xdebug.php-debug) for VSC.
     - Use the [browser extension](https://chromewebstore.google.com/detail/xdebug-chrome-extension/oiofkammbajfehgpleginfomeppgnglk?hl=en&pli=1) and keep it on **only when needed**.
