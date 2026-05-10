@@ -135,8 +135,10 @@ https://github.com/user-attachments/assets/137f6d92-e1d6-4047-b73b-f5ce1da5e69f
     - EndeavourOS:
       - <a href="https://getcomposer.org">Composer</a>, <a href="https://php.net">PHP</a>, and some of its extensions:
         ```bash
-        sudo pacman -Syu --needed curl php composer unzip php-gd php-imagick imagemagick php-sqlite php-redis
+        sudo pacman -Syu --needed curl php composer unzip php-gd php-imagick imagemagick php-sqlite php-mysql php-redis
+        sudo sed -i 's/^;extension=bcmath/extension=bcmath/' /etc/php/php.ini
         sudo sed -i 's/^;extension=exif/extension=exif/' /etc/php/php.ini
+        sudo sed -i 's/^;extension=iconv/extension=iconv/' /etc/php/php.ini
         sudo sed -i 's/^;extension=intl/extension=intl/' /etc/php/php.ini
         sudo sed -i 's/^;extension=sockets/extension=sockets/' /etc/php/php.ini
         sudo install -d /etc/php/conf.d
@@ -144,12 +146,17 @@ https://github.com/user-attachments/assets/137f6d92-e1d6-4047-b73b-f5ce1da5e69f
         ls /etc/php/conf.d/*imagick*.ini >/dev/null 2>&1 || echo "extension=imagick" | sudo tee /etc/php/conf.d/20-imagick.ini >/dev/null
         ls /etc/php/conf.d/*sqlite3*.ini >/dev/null 2>&1 || echo "extension=sqlite3" | sudo tee /etc/php/conf.d/20-sqlite3.ini >/dev/null
         ls /etc/php/conf.d/*pdo_sqlite*.ini >/dev/null 2>&1 || echo "extension=pdo_sqlite" | sudo tee /etc/php/conf.d/20-pdo_sqlite.ini >/dev/null
+        ls /etc/php/conf.d/*pdo_mysql*.ini >/dev/null 2>&1 || echo "extension=pdo_mysql" | sudo tee /etc/php/conf.d/20-pdo_mysql.ini >/dev/null
+        ls /etc/php/conf.d/*mysqli*.ini >/dev/null 2>&1 || echo "extension=mysqli" | sudo tee /etc/php/conf.d/20-mysqli.ini >/dev/null
         sudo sed -i 's/^;extension=igbinary\.so/extension=igbinary.so/' /etc/php/conf.d/igbinary.ini 2>/dev/null || true
         sudo sed -i 's/^;extension=redis/extension=redis/' /etc/php/conf.d/redis.ini 2>/dev/null || true
         grep -Rqs '^extension=igbinary' /etc/php/conf.d || echo "extension=igbinary" | sudo tee /etc/php/conf.d/20-igbinary.ini >/dev/null
         grep -Rqs '^extension=redis' /etc/php/conf.d || echo "extension=redis" | sudo tee /etc/php/conf.d/20-redis.ini >/dev/null
+        php --ri pdo_sqlite
         php --ini
-        php -m | grep -Ei '^(gd|imagick|sqlite3|pdo_sqlite|igbinary|redis)$'
+        php -m | grep -Ei '^(bcmath|iconv|gd|imagick|sqlite3|pdo_sqlite|pdo_mysql|mysqli|igbinary|redis)$'
+        php -i | grep '^memory_limit'
+        echo "memory_limit=512M" | sudo tee /etc/php/conf.d/99-lara-stacker-cli.ini >/dev/null
         echo "fs.inotify.max_user_watches=524288" | sudo tee /etc/sysctl.d/99-inotify.conf
         sudo sysctl --system
         ```
@@ -374,6 +381,7 @@ Service UIs include:
 
 - The container does install and expose the main services (Caddy, MySQL, Redis, MinIO, etc.) ports for you, does runtime stuff in place (PHP, PHP Extensions, PHP-FPM, etc.) too, and finally includes whatever extra packages the local server may need, such as the media's (ImageMagick, Ghostscript, FFmpeg, etc.).
 - Application `.env` files are **host-wired** (`127.0.0.1` + host ports) because all dev tooling (Composer/PHP/Artisan/NPM) runs on the host.
+- Host CLI PHP config can differ by distro (extensions and `memory_limit`). If a large migration fails with `Allowed memory size exhausted`, either raise host CLI memory (example: `memory_limit=512M` in `/etc/php/conf.d/99-lara-stacker-cli.ini`) or run once with `php -d memory_limit=512M artisan migrate`.
 - The app container is injected with internal service hosts so runtime still connects to MySQL/Redis/MinIO when serving requests.
 - The app container also mounts `HOST_HOME_PATH` read-only to keep local Composer path-repository symlinks resolvable at runtime (preventing missing vendor class/provider errors when a dependency points outside `APPS_ROOT`).
 - **The container does NOT contain the [development tools](#prerequisites) themselves that need to exist locally.** This includes Java/Android tooling and Xcode/iOS tooling, etc.
