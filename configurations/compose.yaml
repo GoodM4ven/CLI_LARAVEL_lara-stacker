@@ -24,6 +24,8 @@ services:
     depends_on:
       - app
       - caddy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     pid: "service:app"
     environment:
       APPS_ROOT: /var/www/html

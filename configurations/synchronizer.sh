@@ -57,7 +57,7 @@ probe_url() {
 
 probe_vite() {
     host_header="$1"
-    response="$(probe_url "https://caddy/@vite/client" "$host_header")"
+    response="$(probe_url "http://host.docker.internal:5173/@vite/client" "$host_header")"
     [ -n "$response" ]
 }
 
