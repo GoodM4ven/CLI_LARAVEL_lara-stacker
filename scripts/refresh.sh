@@ -176,8 +176,26 @@ fi
 autoloadGuard "$escaped_application_name"
 
 # ? Clear Laravel caches
-if ! composeExecApp php /var/www/html/$escaped_application_name/artisan optimize:clear --quiet; then
-    prompt "Failed to run Artisan inside the container." "Ensure the app container is running and can access vendor/autoload.php, then retry." false
+artisan_ok=false
+for attempt in 1 2; do
+    if artisan_output=$(composeExecApp php /var/www/html/$escaped_application_name/artisan optimize:clear 2>&1); then
+        artisan_ok=true
+        break
+    fi
+    if [[ $attempt -eq 1 ]]; then
+        echo -e "\nArtisan failed. Restarting container and retrying...\n"
+        composeDown || true
+        if ! composeUp; then
+            prompt "Failed to restart the Docker container." "Start the container and retry refresh." false
+        fi
+        trustHttps || true
+        autoloadGuard "$escaped_application_name"
+    fi
+done
+
+if [[ "$artisan_ok" != true ]]; then
+    echo -e "\nArtisan output:\n$artisan_output\n"
+    prompt "Failed to run Artisan inside the container." "Review the output above, ensure the app container is running and can access vendor/autoload.php, then retry." false
 fi
 
 # ? Re-wire application configuration
