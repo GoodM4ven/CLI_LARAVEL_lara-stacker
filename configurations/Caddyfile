@@ -15,10 +15,15 @@
         @disabled path /.disabled /public/.disabled
         respond @disabled "Application disabled" 503
 
+        # Keep Livewire request streaming uncompressed to avoid chunk coalescing.
+        @compressed {
+            not path /livewire/update
+        }
+
         root * /var/www/html/{http.regexp.app.1}/public
         php_fastcgi app:9000
         file_server
-        encode zstd gzip
+        encode @compressed zstd gzip
     }
 }
 
