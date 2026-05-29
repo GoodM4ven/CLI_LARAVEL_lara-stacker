@@ -21,7 +21,7 @@
         }
 
         root * /var/www/html/{http.regexp.app.1}/public
-        php_fastcgi app:9000
+        php_fastcgi lara-stacker-app-1:9000
         file_server
         encode @compressed zstd gzip
     }

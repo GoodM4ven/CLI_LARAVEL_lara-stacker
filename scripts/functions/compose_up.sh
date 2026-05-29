@@ -27,6 +27,13 @@ composeUp() {
         fi
     fi
 
+    normalizePhpMajorMinor() {
+        local version="$1"
+        local major_minor
+        major_minor=$(printf '%s' "$version" | sed -E 's/^([0-9]+\.[0-9]+).*/\1/')
+        printf '%s' "$major_minor"
+    }
+
     local need_rebuild="false"
     if [[ "$current_php" != "$last_php_version" ]]; then
         need_rebuild="true"
@@ -50,6 +57,17 @@ composeUp() {
 
     if [[ "$faulty" == "true" ]]; then
         dockerCompose down
+    fi
+
+    local expected_php
+    local running_php=""
+    expected_php=$(normalizePhpMajorMinor "$current_php")
+
+    if [[ "$need_rebuild" != "true" ]]; then
+        running_php=$(dockerCompose exec -T app php -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;' 2>/dev/null || true)
+        if [[ -n "$running_php" ]] && [[ "$running_php" != "$expected_php" ]]; then
+            need_rebuild="true"
+        fi
     fi
 
     local up_status=0
