@@ -399,9 +399,66 @@ TLDR: **Docker provides the runtime container group**, but there are **essential
 </div>
 
 > [!IMPORTANT]
-> This stack uses PHP-FPM (with OPcache), which is fast but **can sometimes make changes appear “stuck” due to caching** configs, routes, views, or bytecode. If something behaves oddly after a change, this Artisan command should fix it: `php artisan optimize:clear`.
+> This stack uses PHP-FPM (with OPcache), which is fast but **can sometimes make changes appear “stuck” due to caching** configs, routes, views, or bytecode. If something behaves oddly after a change, try `php artisan optimize:clear` first.
+> **But if that does NOT help** — especially on **Docker Desktop for Linux**, where edits and Composer changes only apply after a container restart — it's a filesystem-layer (virtiofs) problem, not OPcache. See [Troubleshooting → Stale code on Docker Desktop](#stale-code-on-docker-desktop-linux-editscomposer-changes-dont-apply-until-a-container-restart).
 
 <div align="left">
+
+
+## Troubleshooting
+
+### Stale code on Docker Desktop (Linux): edits/Composer changes "don't apply" until a container restart
+
+If you are on **Docker Desktop for Linux** and you hit any of these:
+
+- An exception points to **a line of code that no longer exists**, or a route/method you already deleted is still being called.
+- `php artisan optimize:clear` does **not** help.
+- Right after `composer install`/`composer update`, requests throw a `vendor/composer/autoload_static.php` parse/autoload error **before Laravel even boots**.
+- The **only** thing that reliably fixes it is restarting the app container.
+
+...then this is **not** an OPcache problem and no OPcache/Artisan setting will fix it.
+
+**Root cause.** Docker Desktop runs the whole engine inside a **VM** and shares your host code into containers over **virtiofs**. virtiofs serves **stale file _content_** to long-running containers (e.g. PHP-FPM) after in-place edits — the bytes the container reads are already old, so:
+
+| Symptom | Why |
+|---|---|
+| Exception on a line that doesn't exist | FPM read **stale file content** from virtiofs |
+| `optimize:clear` does nothing | It clears Laravel caches; this is a **filesystem-layer** problem, one level below Laravel |
+| Composer autoload errors before Laravel boots | virtiofs serves a stale/half-written `vendor/composer/autoload_*.php` |
+| Only a **container restart** fixes it | Restart = new mount namespace → virtiofs re-resolves the files |
+
+OPcache's `validate_timestamps` is already `On` in `configurations/opcache.ini` (it revalidates on every request) and is **irrelevant** here — it can only act on the content virtiofs hands it.
+
+To confirm it on your machine (host shows new code, container shows old):
+
+```bash
+# active context — "desktop-linux" means Docker Desktop (VM + virtiofs)
+docker context show
+
+# host vs container view of the SAME file — counts will differ when content is stale
+grep -c someDeletedSymbol ~/path/to/app/.../File.php
+docker exec lara-stacker-app-1 grep -c someDeletedSymbol /var/www/html/<app>/.../File.php
+```
+
+**Stop-gap:** `docker restart lara-stacker-app-1` forces a fresh re-read.
+
+**Permanent fix (recommended on Linux): use the native Docker Engine instead of Docker Desktop.** Native Docker bind-mounts the host filesystem **directly** — no VM, no virtiofs, no stale content, no restarts, and the `synchronizer` sidecar's autoload workaround becomes unnecessary. Note the native daemon is **separate** from Desktop, so its images/volumes/networks start empty (you'll re-seed MySQL/MinIO, and the `lara-stacker_default` external network is recreated by the CLI on the next up):
+
+```bash
+# 1. tear the Desktop stack down first (use your normal lara-stacker down, or compose down)
+
+# 2. enable the native daemon and your group access
+sudo systemctl enable --now docker.service docker.socket
+sudo usermod -aG docker "$USER"      # then log out/in, or: newgrp docker
+
+# 3. point Docker at the native engine
+docker context use default
+
+# 4. bring the stack back up via the CLI (recreates the network, rebuilds, and ups)
+./lara-stacker.sh
+```
+
+On macOS, Docker Desktop is unavoidable; prefer its **VirtioFS** file sharing and just restart the app container when content goes stale.
 
 
 ## Support

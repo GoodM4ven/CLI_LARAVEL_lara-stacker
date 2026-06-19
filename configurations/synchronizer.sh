@@ -15,6 +15,12 @@ APP_HTTPS_PORT="${SYNCHRONIZER_APP_HTTPS_PORT:-8443}"
 APP_MASTER_PID="${SYNCHRONIZER_APP_MASTER_PID:-1}"
 RUN_ONCE="${SYNCHRONIZER_RUN_ONCE:-false}"
 STATE_DIR="${SYNCHRONIZER_STATE_DIR:-/tmp/synchronizer}"
+# A wall-clock gap between poll iterations far larger than the poll interval means
+# the host slept/woke or the daemon stalled. OPcache keeps running across that with
+# whatever it had cached, and a backward clock jump can make it trust stale entries,
+# so we reload PHP-FPM once on resume. Default threshold is generous to avoid false
+# positives from a momentarily busy host.
+RESUME_RELOAD_THRESHOLD_SECONDS="${SYNCHRONIZER_RESUME_RELOAD_THRESHOLD_SECONDS:-30}"
 
 mkdir -p "$STATE_DIR"
 
@@ -242,8 +248,36 @@ run_iteration() {
     done
 }
 
+reload_php_fpm_master() {
+    reason="$1"
+
+    if kill -USR2 "$APP_MASTER_PID" >/dev/null 2>&1; then
+        echo "[synchronizer] reloaded PHP-FPM (${reason})"
+        return 0
+    fi
+
+    echo "[synchronizer] failed to signal PHP-FPM master process ${APP_MASTER_PID} (${reason})"
+    return 0
+}
+
+last_iteration_epoch="$(date +%s)"
+
 while true; do
-    run_iteration
+    now_epoch="$(date +%s)"
+    elapsed_since_last="$((now_epoch - last_iteration_epoch))"
+
+    # Resume guard: a gap far beyond the poll interval indicates host sleep/wake or a
+    # daemon stall, so drop any potentially stale OPcache state by reloading PHP-FPM.
+    if [ "$elapsed_since_last" -gt "$RESUME_RELOAD_THRESHOLD_SECONDS" ]; then
+        echo "[synchronizer] detected ${elapsed_since_last}s pause (likely host sleep/wake or daemon stall)"
+        reload_php_fpm_master "post-resume OPcache refresh" || true
+    fi
+
+    # Never let a transient error (probe timeout, stat hiccup) kill the daemon and
+    # leave the stack without its janitor until the next container restart.
+    run_iteration || true
+
+    last_iteration_epoch="$(date +%s)"
 
     if [ "$RUN_ONCE" = "true" ]; then
         exit 0
