@@ -88,8 +88,13 @@ composeUp() {
     if [[ "$up_status" -ne 0 ]]; then
         local err_out
         err_out=$(dockerCompose up -d --remove-orphans 2>&1 || true)
-        if echo "$err_out" | grep -qi "network .* not found"; then
+        # ponytail: a half-started stack leaves containers/proxy holding host
+        # ports ("address already in use"); a clean down clears the reservation.
+        # Same recovery serves a stale/missing network. A real host process on
+        # the port survives the down and the retry fails again, surfacing it.
+        if echo "$err_out" | grep -qiE "network .* not found|address already in use"; then
             dockerCompose down --remove-orphans >/dev/null 2>&1 || true
+            up_status=0
             if [[ "$need_rebuild" == "true" ]]; then
                 dockerCompose up -d --remove-orphans --build || up_status=$?
             else
