@@ -4,6 +4,14 @@ services:
     image: caddy:2
     environment:
       CADDY_HTTPS_PORT: ${CADDY_HTTPS_PORT:-8443}
+      # Optional Tailscale Funnel entrypoint (local dev only). Leave TS_FUNNEL_HOST
+      # unset to disable; set it to your node's funnel FQDN (e.g. box.tailXXXX.ts.net).
+      # TS_FUNNEL_APP is NOT project-specific here: it defaults to the `_funnel_app`
+      # symlink under APPS_ROOT, which each project's funnel script points at itself —
+      # so this generic multi-project setup needs no per-app value.
+      TS_FUNNEL_HOST: ${TS_FUNNEL_HOST:-funnel-disabled.invalid}
+      TS_FUNNEL_APP: ${TS_FUNNEL_APP:-_funnel_app}
+      TS_FUNNEL_REVERB_PORT: ${TS_FUNNEL_REVERB_PORT:-8080}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:

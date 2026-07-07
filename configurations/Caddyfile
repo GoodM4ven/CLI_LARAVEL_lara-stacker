@@ -1,50 +1,85 @@
+# Tailscale Funnel entrypoint (local dev only, opt-in via TS_FUNNEL_HOST).
+# Serves ONE app plus its Reverb websocket over the single :443 funnel domain, so
+# a phone/browser reaches both without a port — Telegram's login-widget domain is
+# host-only and rejects ports. TLS is pinned to the local dev cert; the funnel
+# connects with `--https=443 https+insecure://localhost:443`, so the cert-name
+# mismatch on the .ts.net host is expected and ignored. When TS_FUNNEL_HOST is
+# unset it defaults to funnel-disabled.invalid and this block never matches.
+{$TS_FUNNEL_HOST:funnel-disabled.invalid} {
+	tls /etc/caddy/certs/dev.localhost.pem /etc/caddy/certs/dev.localhost-key.pem
+
+	# Reverb websocket rides the same :443 funnel instead of a second funnel port.
+	@reverb path /app /app/*
+	handle @reverb {
+		reverse_proxy host.docker.internal:{$TS_FUNNEL_REVERB_PORT:8080}
+	}
+
+	handle {
+		root * /var/www/html/{$TS_FUNNEL_APP}/public
+		php_fastcgi lara-stacker-app-1:9000
+		file_server
+		encode zstd gzip
+	}
+}
+
 # App sites (https://<app>.dev.localhost)
 *.dev.localhost {
-    @http protocol http
-    redir @http https://{host}:{$CADDY_HTTPS_PORT}{uri} 308
-    tls /etc/caddy/certs/dev.localhost.pem /etc/caddy/certs/dev.localhost-key.pem
-    @vite header_regexp vite Host ^vite-([a-z0-9-]+)\.dev\.localhost(?::\d+)?$
-    handle @vite {
-        reverse_proxy host.docker.internal:5173
-    }
+	@http protocol http
+	redir @http https://{host}:{$CADDY_HTTPS_PORT}{uri} 308
+	tls /etc/caddy/certs/dev.localhost.pem /etc/caddy/certs/dev.localhost-key.pem
+	@vite header_regexp vite Host ^vite-([a-z0-9-]+)\.dev\.localhost(?::\d+)?$
+	handle @vite {
+		reverse_proxy host.docker.internal:5173
+	}
 
-    @app header_regexp app Host ^([a-z0-9-]+)\.dev\.localhost(?::\d+)?$
-    handle @app {
-        root * /var/www/html/{http.regexp.app.1}
-        try_files /.disabled /public/.disabled {path}
-        @disabled path /.disabled /public/.disabled
-        respond @disabled "Application disabled" 503
+	# Reverb websocket: HTTPS pages can't reach a plain-ws Reverb on :8080 directly
+	# (the browser upgrades ws:// to wss:// and the handshake fails), so terminate
+	# TLS here and proxy /app to the host Reverb. Must be a `handle` (not a bare
+	# reverse_proxy): this block mixes `handle @app`, and Caddy orders a standalone
+	# reverse_proxy AFTER the handle catch-all, letting @app swallow /app. A sibling
+	# `handle @reverb` slots in ahead of @app in source order.
+	@reverb path /app /app/*
+	handle @reverb {
+		reverse_proxy host.docker.internal:{$TS_FUNNEL_REVERB_PORT:8080}
+	}
 
-        # Keep Livewire request streaming uncompressed to avoid chunk coalescing.
-        @compressed {
-            not path /livewire/update
-        }
+	@app header_regexp app Host ^([a-z0-9-]+)\.dev\.localhost(?::\d+)?$
+	handle @app {
+		root * /var/www/html/{http.regexp.app.1}
+		try_files /.disabled /public/.disabled {path}
+		@disabled path /.disabled /public/.disabled
+		respond @disabled "Application disabled" 503
 
-        root * /var/www/html/{http.regexp.app.1}/public
-        php_fastcgi lara-stacker-app-1:9000
-        file_server
-        encode @compressed zstd gzip
-    }
+		# Keep Livewire request streaming uncompressed to avoid chunk coalescing.
+		@compressed {
+			not path /livewire/update
+		}
+
+		root * /var/www/html/{http.regexp.app.1}/public
+		php_fastcgi lara-stacker-app-1:9000
+		file_server
+		encode @compressed zstd gzip
+	}
 }
 
 # Service UIs
 mailpit.dev.localhost {
-    @http protocol http
-    redir @http https://{host}:{$CADDY_HTTPS_PORT}{uri} 308
-    tls /etc/caddy/certs/dev.localhost.pem /etc/caddy/certs/dev.localhost-key.pem
-    reverse_proxy mailpit:8025
+	@http protocol http
+	redir @http https://{host}:{$CADDY_HTTPS_PORT}{uri} 308
+	tls /etc/caddy/certs/dev.localhost.pem /etc/caddy/certs/dev.localhost-key.pem
+	reverse_proxy mailpit:8025
 }
 
 minio.dev.localhost {
-    @http protocol http
-    redir @http https://{host}:{$CADDY_HTTPS_PORT}{uri} 308
-    tls /etc/caddy/certs/dev.localhost.pem /etc/caddy/certs/dev.localhost-key.pem
-    reverse_proxy minio:9001
+	@http protocol http
+	redir @http https://{host}:{$CADDY_HTTPS_PORT}{uri} 308
+	tls /etc/caddy/certs/dev.localhost.pem /etc/caddy/certs/dev.localhost-key.pem
+	reverse_proxy minio:9001
 }
 
 minio-api.dev.localhost {
-    @http protocol http
-    redir @http https://{host}:{$CADDY_HTTPS_PORT}{uri} 308
-    tls /etc/caddy/certs/dev.localhost.pem /etc/caddy/certs/dev.localhost-key.pem
-    reverse_proxy minio:9000
+	@http protocol http
+	redir @http https://{host}:{$CADDY_HTTPS_PORT}{uri} 308
+	tls /etc/caddy/certs/dev.localhost.pem /etc/caddy/certs/dev.localhost-key.pem
+	reverse_proxy minio:9000
 }
