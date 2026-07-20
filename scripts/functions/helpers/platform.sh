@@ -81,3 +81,28 @@ sedi() {
         sed -i "$@"
     fi
 }
+
+# Normalizes DEV_EDITOR into "zed", "vsc", or "" (disabled).
+# Falls back to the legacy USE_VSC toggle when DEV_EDITOR is absent.
+resolveDevEditor() {
+    local editor
+    editor=$(printf '%s' "${DEV_EDITOR:-}" | tr '[:upper:]' '[:lower:]')
+
+    case "$editor" in
+        zed)
+            echo "zed"
+            return 0
+            ;;
+        vsc|vscode|code|vscodium)
+            echo "vsc"
+            return 0
+            ;;
+    esac
+
+    if isNullLike "$editor" && [[ "${USE_VSC:-}" == "true" ]]; then
+        echo "vsc"
+        return 0
+    fi
+
+    echo ""
+}

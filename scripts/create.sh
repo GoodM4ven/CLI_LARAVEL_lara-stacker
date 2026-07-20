@@ -48,6 +48,7 @@ sourcer "envUp"
 sourcer "mysqlUp"
 sourcer "minioUp"
 sourcer "viteUp"
+sourcer "miseUp"
 sourcer "xdebugUp"
 sourcer "trustHttps"
 sourcer "opinionatedUp"
@@ -134,6 +135,7 @@ if ! sessionTableUp "$escaped_application_name"; then
     prompt "Failed to create session table or run migrations." "Check database connectivity and retry." false
 fi
 viteUp "$escaped_application_name"
+miseUp "$escaped_application_name"
 xdebugUp "$escaped_application_name"
 opinionatedUp "$escaped_application_name"
 workspaceUp "$escaped_application_name"

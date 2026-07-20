@@ -11,7 +11,11 @@ xdebugUp() {
         apps_root=$(normalizePathForHost "$apps_root" "${USERNAME:-}")
     fi
 
-    if [[ "$USE_VSC" != "true" ]]; then
+    local dev_editor=""
+    if declare -F resolveDevEditor >/dev/null 2>&1; then
+        dev_editor=$(resolveDevEditor)
+    fi
+    if [[ -z "$dev_editor" ]]; then
         return 0
     fi
 
@@ -25,18 +29,33 @@ xdebugUp() {
         return 0
     fi
 
-    if [ ! -d "$application_path/.vscode" ]; then
-        mkdir -p "$application_path/.vscode"
-    fi
+    local target_dir=""
+    local target_file=""
+    local stub_file=""
+    local editor_label=""
 
-    local launch_file="$application_path/.vscode/launch.json"
-
-    cp "$lara_stacker_dir/stubs/.vscode/launch.json" "$launch_file"
-    if declare -F sedi >/dev/null 2>&1; then
-        sedi "s~\[applicationName\]~$escaped_application_name~g" "$launch_file"
+    if [[ "$dev_editor" == "zed" ]]; then
+        target_dir="$application_path/.zed"
+        target_file="$target_dir/debug.json"
+        stub_file="$lara_stacker_dir/stubs/.zed/debug.json"
+        editor_label="Zed"
     else
-        sed -i "s~\[applicationName\]~$escaped_application_name~g" "$launch_file"
+        target_dir="$application_path/.vscode"
+        target_file="$target_dir/launch.json"
+        stub_file="$lara_stacker_dir/stubs/.vscode/launch.json"
+        editor_label="VSC"
     fi
 
-    echo -e "\nConfigured VSC debug settings for Xdebug (Docker and container path mappings)."
+    if [ ! -d "$target_dir" ]; then
+        mkdir -p "$target_dir"
+    fi
+
+    cp "$stub_file" "$target_file"
+    if declare -F sedi >/dev/null 2>&1; then
+        sedi "s~\[applicationName\]~$escaped_application_name~g" "$target_file"
+    else
+        sed -i "s~\[applicationName\]~$escaped_application_name~g" "$target_file"
+    fi
+
+    echo -e "\nConfigured $editor_label debug settings for Xdebug (Docker and container path mappings)."
 }

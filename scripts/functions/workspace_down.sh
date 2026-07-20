@@ -1,13 +1,14 @@
 workspaceDown() {
-    if [[ "$USE_VSC" != "true" ]]; then
-        return 0
-    fi
-
     local workspaces_dir="${VSC_WORKSPACES_DIR:-}"
     local repo_dir="${lara_stacker_dir:-$PWD}"
     if [[ -f "$repo_dir/scripts/functions/helpers/platform.sh" ]]; then
         # shellcheck source=/dev/null
         source "$repo_dir/scripts/functions/helpers/platform.sh"
+    fi
+
+    # Workspace files are a VSC-only concept; Zed opens app folders directly
+    if ! declare -F resolveDevEditor >/dev/null 2>&1 || [[ "$(resolveDevEditor)" != "vsc" ]]; then
+        return 0
     fi
     if declare -F isNullLike >/dev/null 2>&1 && isNullLike "$workspaces_dir"; then
         return 0

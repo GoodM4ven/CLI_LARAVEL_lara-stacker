@@ -36,6 +36,12 @@ resolveDockerHost() {
         return 0
     fi
 
+    local orbstack_sock="$user_home/.orbstack/run/docker.sock"
+    if [[ -S "$orbstack_sock" ]]; then
+        export DOCKER_HOST="unix://$orbstack_sock"
+        return 0
+    fi
+
     local desktop_cli_sock="$user_home/.docker/desktop/docker-cli.sock"
     if [[ -S "$desktop_cli_sock" ]]; then
         export DOCKER_HOST="unix://$desktop_cli_sock"
@@ -91,6 +97,7 @@ ensureDockerAccess() {
         user_home=$(resolveUserHomePath "$user")
     fi
     local sockets=(
+        "$user_home/.orbstack/run/docker.sock"
         "$user_home/.docker/desktop/docker-cli.sock"
         "$user_home/.docker/desktop/docker.sock"
         "$user_home/.docker/run/docker.sock"

@@ -1,0 +1,11 @@
+[
+    {
+        "label": "Listen for Xdebug",
+        "adapter": "PHP",
+        "request": "launch",
+        "port": 9003,
+        "pathMappings": {
+            "/var/www/html/[applicationName]": "$ZED_WORKTREE_ROOT"
+        }
+    }
+]

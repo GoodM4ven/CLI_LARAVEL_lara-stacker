@@ -33,6 +33,7 @@ apps_root=$(normalizePathForHost "$apps_root" "${USERNAME:-}")
 
 sourcer "envUp"
 sourcer "viteUp"
+sourcer "miseUp"
 sourcer "xdebugUp"
 sourcer "opinionatedUp"
 sourcer "workspaceUp"
@@ -135,6 +136,7 @@ fi
 
 envUp "$escaped_application_name" "existing"
 viteUp "$escaped_application_name"
+miseUp "$escaped_application_name"
 xdebugUp "$escaped_application_name"
 opinionatedUp "$escaped_application_name"
 workspaceUp "$escaped_application_name"

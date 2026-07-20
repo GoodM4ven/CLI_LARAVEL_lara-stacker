@@ -2,23 +2,29 @@
 <div align="left">
 
 
-# LARA-STACKER v5
+# LARA-STACKER v6
 
-Now **Docker-backed**! A single containerized stack provides runtime and services (PHP-FPM, MySQL, Redis, MinIO, Mailpit) exposed to the host, while the CLI manages apps, services, and HTTPS certs.
+Now **macOS-first, Docker-backed, and [mise](https://mise.jdx.dev)-managed**! A single containerized stack provides runtime and services (PHP-FPM, MySQL, Redis, MinIO, Mailpit) exposed to the host, while the CLI manages apps, services, and HTTPS certs. The host toolchain (PHP, Composer, Node) is no longer a pile of Homebrew/apt/NVM installs — it's all resolved through **mise**.
 
 ### Highlights
 
 - One Docker container, many applications.
 - `https://<app>.dev.localhost` for every application (no more `/etc/hosts`).
+- **mise-managed host tools** — one runtime manager for PHP, Composer, Node, and npm; each app gets a `mise.toml` pinned to the container's PHP version.
+- **Zed-first Xdebug** — generates `.zed/debug.json` per app (VS Code/VSCodium still supported via `DEV_EDITOR=vsc`).
+- [OrbStack](https://orbstack.dev)-friendly on macOS (auto-detected socket; lighter and faster than Docker Desktop).
 - Xdebug is **trigger-only** (no idling slow cost).
 - Enable/disable applications without deleting them.
+
+> [!TIP]
+> This stack is built around [my macOS setup](https://github.com/GoodM4ven/CLI_MACOS_dot-zsh) — **dot-zsh** — which carries the mise config, the `lara` launcher alias, the `permit` helper alias, the Zed configuration, and the Brewfile that installs most prerequisites below. If you adopt that repo, most of this page's setup is already done.
 
 ### Laravel Sail vs Lara-Stacker
 
 - **Sail is per-application**: each app ships its own `compose.yaml` and containers. That means duplicated services and **rebuild time per application**.
 - **Shared container here**: one runtime container group serves **all apps**, so no duplicate services per application.
-- **Sail CLI depends on containers**: if an application’s container fail, Sail commands for that application is blocked, since the devEnvironment is inaccessible.
-- **Host tools here**: Composer, PHP, and NPM run on the host. The container only provides runtime and services.
+- **Sail CLI depends on containers**: if an application's container fails, Sail commands for that application are blocked, since the devEnvironment is inaccessible.
+- **mise-managed host tools here**: Composer, PHP, and NPM run on the host through mise. The container only provides runtime and services.
 - Net: **faster iteration, fewer moving parts**, and no per-application Docker overhead.
 
 https://github.com/user-attachments/assets/137f6d92-e1d6-4047-b73b-f5ce1da5e69f
@@ -29,141 +35,60 @@ https://github.com/user-attachments/assets/137f6d92-e1d6-4047-b73b-f5ce1da5e69f
 ### Prerequisites
 
 - <details>
-  <summary>Docker Desktop (which contains <a href="https://docs.docker.com/engine/install">Engine</a> and <a href="https://docs.docker.com/compose/install">Compose</a> for containerization)</summary>
+  <summary>Docker (<a href="https://orbstack.dev">OrbStack</a> recommended on macOS)</summary>
 
-  - macOS (Apple Silicon + Intel)
+  - macOS — **OrbStack** (recommended; fast VM, native `docker` CLI, auto-detected by the CLI):
+    ```bash
+    brew install --cask orbstack
+    open -a OrbStack
+    ```
+
+  - macOS — Docker Desktop (alternative):
     ```bash
     brew install --cask docker
     sleep 3
     open -a Docker
     ```
 
-  - Linux (Ubuntu / EndeavourOS)
-    - Ubuntu:
-      ```bash
-      set -e
-      uname -m | grep -Eq 'x86_64|amd64'
-      grep -Eq '(vmx|svm)' /proc/cpuinfo
-
-      sudo apt update
-      sudo apt install -y ca-certificates curl gnupg qemu-kvm qemu-utils libvirt-daemon-system libvirt-clients pass gnome-terminal || true
-
-      lsmod | grep -q '^kvm' || sudo modprobe kvm
-      if grep -qi intel /proc/cpuinfo; then
-          lsmod | grep -q '^kvm_intel' || sudo modprobe kvm_intel
-      fi
-      if grep -qi amd /proc/cpuinfo; then
-          lsmod | grep -q '^kvm_amd' || sudo modprobe kvm_amd
-      fi
-      getent group kvm | grep -q "$USER" || sudo usermod -aG kvm "$USER"
-
-      sudo install -m 0755 -d /etc/apt/keyrings
-      if [ ! -f /etc/apt/keyrings/docker.gpg ]; then
-          curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-          sudo chmod a+r /etc/apt/keyrings/docker.gpg
-      fi
-      if [ ! -f /etc/apt/sources.list.d/docker.list ]; then
-          echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" \
-          | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-      fi
-
-      sudo apt update
-      cd ~/Downloads
-      [ -f docker-desktop-amd64.deb ] || wget https://desktop.docker.com/linux/main/amd64/docker-desktop-amd64.deb
-      sudo apt install ./docker-desktop-amd64.deb
-
-      systemctl --user start docker-desktop
-      systemctl --user enable docker-desktop
-      ```
-    - EndeavourOS:
-      ```bash
-      set -e
-      uname -m | grep -Eq 'x86_64|amd64'
-      grep -Eq '(vmx|svm)' /proc/cpuinfo
-
-      sudo pacman -Syu --needed ca-certificates curl gnupg qemu-base libvirt pass
-
-      lsmod | grep -q '^kvm' || sudo modprobe kvm
-      if grep -qi intel /proc/cpuinfo; then
-          lsmod | grep -q '^kvm_intel' || sudo modprobe kvm_intel
-      fi
-      if grep -qi amd /proc/cpuinfo; then
-          lsmod | grep -q '^kvm_amd' || sudo modprobe kvm_amd
-      fi
-      getent group kvm | grep -q "$USER" || sudo usermod -aG kvm "$USER"
-
-      if command -v yay >/dev/null 2>&1; then
-          yay -S --needed docker-desktop
-      else
-          echo "Install an AUR helper (e.g. yay), then run: yay -S --needed docker-desktop"
-          exit 1
-      fi
-
-      systemctl --user start docker-desktop
-      systemctl --user enable docker-desktop
-      ```
+  - Linux — prefer the **native Docker Engine** (no VM, no virtiofs staleness; see [Troubleshooting](#stale-code-on-docker-desktop-linux-editscomposer-changes-dont-apply-until-a-container-restart)):
+    ```bash
+    # Debian/Ubuntu example — see https://docs.docker.com/engine/install for your distro
+    curl -fsSL https://get.docker.com | sh
+    sudo systemctl enable --now docker.service docker.socket
+    sudo usermod -aG docker "$USER" # then log out/in, or: newgrp docker
+    ```
   </details>
 
 - <details>
-  <summary>Building tools</summary>
+  <summary>Host toolchain via <a href="https://mise.jdx.dev">mise</a> (PHP + Composer + Node + npm)</summary>
 
-  - macOS (Homebrew + NVM)
-    - <a href="https://getcomposer.org">Composer</a>, <a href="https://php.net">PHP</a>:
-      ```bash
-      brew install php composer
-      ```
-    - <a href="https://nodejs.org">Node.js</a> via <a href="https://github.com/nvm-sh/nvm">NVM</a>:
-      ```bash
-      brew install nvm
-      mkdir -p ~/.nvm
-      export NVM_DIR="$HOME/.nvm"
-      [ -s "$(brew --prefix nvm)/nvm.sh" ] && . "$(brew --prefix nvm)/nvm.sh"
-      nvm install --lts
-      nvm use --lts
-      ```
+  Install mise with the standalone installer (**not** Homebrew — the CLI and [dot-zsh](https://github.com/GoodM4ven/CLI_MACOS_dot-zsh) expect `~/.local/bin/mise`):
+  ```bash
+  curl https://mise.run | sh
+  echo 'eval "$(~/.local/bin/mise activate zsh)"' >> ~/.zshrc
+  ```
 
-  - Linux (Ubuntu / EndeavourOS)
-    - Ubuntu:
-      - <a href="https://getcomposer.org">Composer</a>, <a href="https://php.net">PHP</a>, and some of its extensions:
-        ```bash
-        sudo apt update
-        sudo apt install -y curl php-cli unzip php-xml php-bcmath php-sqlite3 php8.3-mysql php-redis php-gd composer
-        sudo phpenmod sockets
-        echo "fs.inotify.max_user_watches=524288" | sudo tee /etc/sysctl.d/99-inotify.conf
-        sudo sysctl --system
-        ```
-    - EndeavourOS:
-      - <a href="https://getcomposer.org">Composer</a>, <a href="https://php.net">PHP</a>, and some of its extensions:
-        ```bash
-        sudo pacman -Syu --needed curl php composer unzip php-gd php-imagick imagemagick php-sqlite php-mysql php-redis
-        sudo sed -i 's/^;extension=bcmath/extension=bcmath/' /etc/php/php.ini
-        sudo sed -i 's/^;extension=exif/extension=exif/' /etc/php/php.ini
-        sudo sed -i 's/^;extension=iconv/extension=iconv/' /etc/php/php.ini
-        sudo sed -i 's/^;extension=intl/extension=intl/' /etc/php/php.ini
-        sudo sed -i 's/^;extension=sockets/extension=sockets/' /etc/php/php.ini
-        sudo install -d /etc/php/conf.d
-        ls /etc/php/conf.d/*gd*.ini >/dev/null 2>&1 || echo "extension=gd" | sudo tee /etc/php/conf.d/20-gd.ini >/dev/null
-        ls /etc/php/conf.d/*imagick*.ini >/dev/null 2>&1 || echo "extension=imagick" | sudo tee /etc/php/conf.d/20-imagick.ini >/dev/null
-        ls /etc/php/conf.d/*sqlite3*.ini >/dev/null 2>&1 || echo "extension=sqlite3" | sudo tee /etc/php/conf.d/20-sqlite3.ini >/dev/null
-        ls /etc/php/conf.d/*pdo_sqlite*.ini >/dev/null 2>&1 || echo "extension=pdo_sqlite" | sudo tee /etc/php/conf.d/20-pdo_sqlite.ini >/dev/null
-        ls /etc/php/conf.d/*pdo_mysql*.ini >/dev/null 2>&1 || echo "extension=pdo_mysql" | sudo tee /etc/php/conf.d/20-pdo_mysql.ini >/dev/null
-        ls /etc/php/conf.d/*mysqli*.ini >/dev/null 2>&1 || echo "extension=mysqli" | sudo tee /etc/php/conf.d/20-mysqli.ini >/dev/null
-        sudo sed -i 's/^;extension=igbinary\.so/extension=igbinary.so/' /etc/php/conf.d/igbinary.ini 2>/dev/null || true
-        sudo sed -i 's/^;extension=redis/extension=redis/' /etc/php/conf.d/redis.ini 2>/dev/null || true
-        grep -Rqs '^extension=igbinary' /etc/php/conf.d || echo "extension=igbinary" | sudo tee /etc/php/conf.d/20-igbinary.ini >/dev/null
-        grep -Rqs '^extension=redis' /etc/php/conf.d || echo "extension=redis" | sudo tee /etc/php/conf.d/20-redis.ini >/dev/null
-        php --ri pdo_sqlite
-        php --ini
-        php -m | grep -Ei '^(bcmath|iconv|gd|imagick|sqlite3|pdo_sqlite|pdo_mysql|mysqli|igbinary|redis)$'
-        php -i | grep '^memory_limit'
-        echo "memory_limit=512M" | sudo tee /etc/php/conf.d/99-lara-stacker-cli.ini >/dev/null
-        echo "fs.inotify.max_user_watches=524288" | sudo tee /etc/sysctl.d/99-inotify.conf
-        sudo sysctl --system
-        ```
-    - <a href="https://nodejs.org">Node.js</a> via <a href="https://github.com/nvm-sh/nvm">NVM</a> preferably:
-      ```bash
-      curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.4/install.sh | bash
-      ```
+  Then configure `~/.config/mise/config.toml` with the [verzly/mise-php](https://github.com/verzly/mise-php) plugin (bundles a per-version Composer) and prebuilt static PHP binaries (fast installs, huge extension set — bcmath, gd, imagick, intl, redis, pdo_mysql, swoole, zip, and more):
+  ```toml
+  [plugins]
+  php = "https://github.com/verzly/mise-php#latest"
+
+  [tools]
+  node = "22"
+  php = "8.4"
+  pnpm = "11"
+
+  [env._.php]
+  prebuilt_static = true
+  prebuilt_static_flavor = "bulk"
+  ```
+
+  And install everything:
+  ```bash
+  mise install
+  ```
+
+  This works the same on **macOS and Linux** — no more brew/apt/pacman PHP extension surgery, and no NVM.
   </details>
 
 - <details>
@@ -175,21 +100,28 @@ https://github.com/user-attachments/assets/137f6d92-e1d6-4047-b73b-f5ce1da5e69f
     mkcert -install
     ```
 
-  - Linux (Ubuntu / EndeavourOS)
-    - Ubuntu:
-      ```bash
-      sudo apt update
-      sudo apt install ca-certificates libnss3-tools golang-go
-      git clone https://github.com/FiloSottile/mkcert && cd mkcert
-      go build -ldflags "-X main.Version=$(git describe --tags)"
-      sudo mv mkcert /usr/local/bin/
-      cd .. && rm -rf mkcert
-      ```
-    - EndeavourOS:
-      ```bash
-      sudo pacman -Syu --needed ca-certificates mkcert nss
-      mkcert -install
-      ```
+  - Linux (Debian-based / Arch-based)
+    ```bash
+    # Debian/Ubuntu
+    sudo apt update && sudo apt install -y ca-certificates libnss3-tools mkcert
+    mkcert -install
+
+    # Arch/EndeavourOS
+    sudo pacman -Syu --needed ca-certificates mkcert nss
+    mkcert -install
+    ```
+  </details>
+
+- <details>
+  <summary>Editor (Zed by default)</summary>
+
+  - [Zed](https://zed.dev) with its **PHP extension** (which ships the Xdebug debug adapter):
+    ```bash
+    brew install --cask zed
+    ```
+    Then install the `PHP` extension from Zed's extension panel (`cmd-shift-x`).
+
+  - Or VS Code/[VSCodium](https://vscodium.com) with the [`xdebug.php-debug` extension](https://marketplace.visualstudio.com/items?itemName=xdebug.php-debug), setting `DEV_EDITOR=vsc` in [.env](./.env.example).
   </details>
 
 - <details>
@@ -203,21 +135,15 @@ https://github.com/user-attachments/assets/137f6d92-e1d6-4047-b73b-f5ce1da5e69f
     brew install --cask android-studio
     ```
 
-  - Linux (Ubuntu / EndeavourOS)
-    - Ubuntu:
-      ```bash
-      sudo apt update
-      sudo apt install openjdk-17-jdk
-      echo 'export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64' >> ~/.bashrc
-      echo 'export PATH=$PATH:$JAVA_HOME/bin' >> ~/.bashrc
-      sudo snap install android-studio --classic
-      ```
-    - EndeavourOS:
-      ```bash
-      sudo pacman -Syu --needed jdk17-openjdk android-studio
-      echo 'export JAVA_HOME=/usr/lib/jvm/java-17-openjdk' >> ~/.bashrc
-      echo 'export PATH=$PATH:$JAVA_HOME/bin' >> ~/.bashrc
-      ```
+  - Linux (Debian-based / Arch-based)
+    ```bash
+    # Debian/Ubuntu
+    sudo apt update && sudo apt install openjdk-17-jdk
+    sudo snap install android-studio --classic
+
+    # Arch/EndeavourOS
+    sudo pacman -Syu --needed jdk17-openjdk android-studio
+    ```
   </details>
 
 - <details>
@@ -235,18 +161,20 @@ https://github.com/user-attachments/assets/137f6d92-e1d6-4047-b73b-f5ce1da5e69f
 
 ### Installation
 
-1. Clone this repo, from the new main `docker` branch, and navigate to it.
+1. Clone this repo, from the new main `docker_and_mise` branch, and navigate to it.
 2. Create `.env` from `.env.example` and fill the values.
    ```bash
    cp .env.example .env
    ```
-   - On macOS, set:
+   - On macOS, keep the defaults:
      - `HOST_HOME_PATH=/Users/$USERNAME`
      - `APPS_ROOT=/Users/$USERNAME/Code/Laravel`
+   - On Linux, switch them to `/home/$USERNAME` equivalents.
 3. Run the CLI:
    ```bash
    chmod +x ./lara-stacker.sh && ./lara-stacker.sh
    ```
+   (With [dot-zsh](https://github.com/GoodM4ven/CLI_MACOS_dot-zsh), that's just `lara`.)
 
 
 ## Usage
@@ -254,11 +182,11 @@ https://github.com/user-attachments/assets/137f6d92-e1d6-4047-b73b-f5ce1da5e69f
 ### Available Commands
 
 Applications:
-- `List` — lists folders under `APPS_ROOT` and whether they’re enabled
+- `List` — lists folders under `APPS_ROOT` and whether they're enabled
 - `Create` — new Laravel app under `APPS_ROOT`, wired to Docker services
 - `Import` — copy an existing app into `APPS_ROOT` and wire it
 - `Refresh` — reinstall deps, clear caches, rewire env (full consistency pass)
-- `Rewire` — updates an application’s `.env` and the Vite configuration file
+- `Rewire` — updates an application's `.env`, Vite config, `mise.toml`, and editor debug files
 - `Delete` — removes application files and its database, bucket, etc.
 - `Enable` — removes `.disabled` marker and serves the app
 - `Disable` — adds `.disabled` marker and returns 503 blocked response
@@ -299,23 +227,25 @@ Edit `.env` (same order as the file):
   - `USERNAME` — system user that owns application files
   - `DB_PASSWORD` — root password for the MySQL container image
   - `HOST_HOME_PATH` — host home path mounted into the app container (read-only) to support Composer path-repository symlinks that resolve outside `APPS_ROOT` (for example local packages under `~/Code/LaravelPackages`).
-    - Linux typical value: `/home/<user>`
     - macOS typical value: `/Users/<user>`
+    - Linux typical value: `/home/<user>`
   - `APPS_ROOT` (default `/var/www/html`) — host directory where applications live and coded from, locally!
-    - Linux typical value: `/home/<user>/Code/Laravel`
     - macOS typical value: `/Users/<user>/Code/Laravel`
+    - Linux typical value: `/home/<user>/Code/Laravel`
     - The CLI will create `APPS_ROOT` if missing and make it owned by `USERNAME`.
   - `OPINIONATED` — copy opinionated application files (Prettier config)
-  - `USE_VSC` — when `true`, `Create`, `Import`, `Refresh`, and `Rewire` generate each app's `.vscode/launch.json` for [xdebug](https://xdebug.org) with [VSCodium](https://vscodium.com)/VS Code.
-    - Xdebug is run in "trigger-only" mode (`xdebug.start_with_request=trigger`).
-    - Install the [`xdebug.php-debug` extension](https://marketplace.visualstudio.com/items?itemName=xdebug.php-debug) for VSC.
+  - `DEV_EDITOR` — which editor's [Xdebug](https://xdebug.org) integration `Create`, `Import`, `Refresh`, and `Rewire` generate per app:
+    - `zed` (default) — writes `.zed/debug.json` for [Zed](https://zed.dev)'s debugger.
+    - `vsc` — writes `.vscode/launch.json` for VS Code/[VSCodium](https://vscodium.com).
+    - `none` — skips editor files entirely.
+    - Xdebug runs in "trigger-only" mode (`xdebug.start_with_request=trigger`) either way.
     - Use the [browser extension](https://chromewebstore.google.com/detail/xdebug-chrome-extension/oiofkammbajfehgpleginfomeppgnglk?hl=en&pli=1) and keep it on **only when needed**.
-  - `VSC_WORKSPACES_DIR` — auto-create `.code-workspace` files (leave empty to disable; `null` is also treated as disabled)
+  - `VSC_WORKSPACES_DIR` — VSC-only: auto-create `.code-workspace` files there (leave empty to disable; `null` is also treated as disabled; ignored for Zed, which opens app folders directly)
 
 - Container
   - `DOCKER_COMPOSE_FILE` — override the compose file path
   - `RESTART_UNLESS_STOPPED` — whether to start the container automatically along Docker.
-  - `PHP_VERSION` — changing this triggers a rebuild on next `Start Container`
+  - `PHP_VERSION` — changing this triggers a rebuild on next `Start Container`. **Keep it in sync with your host mise PHP** — it's also what gets pinned into each app's `mise.toml`.
   - `APT_MIRROR` — Debian main mirror (HTTPS)
   - `APT_SECURITY_MIRROR` — Debian security mirror (HTTPS)
   - `CADDY_HTTP_PORT` / `CADDY_HTTPS_PORT` — host ports for Caddy (**it's recommended to use `80/443` if free**)
@@ -324,25 +254,25 @@ Edit `.env` (same order as the file):
   - `MAILPIT_SMTP_PORT` / `MAILPIT_UI_PORT` — host ports for Mailpit SMTP/UI (container `1025/8025`)
   - `MINIO_PORT` / `MINIO_CONSOLE_PORT` — host ports for MinIO API/Console (container `9000/9001`)
 
-- The **rewire** command writes these host port values into each application’s `.env` (with `DB_HOST=127.0.0.1`, `REDIS_HOST=127.0.0.1`, etc.).
-- After changing any host port variables, restart the container and run the **rewire** command to refresh each app’s `.env`.
+- The **rewire** command writes these host port values into each application's `.env` (with `DB_HOST=127.0.0.1`, `REDIS_HOST=127.0.0.1`, etc.).
+- After changing any host port variables, restart the container and run the **rewire** command to refresh each app's `.env`.
 
 </div>
 
 > [!TIP]
 > `APT_MIRROR` and `APT_SECURITY_MIRROR` are used inside the Debian app container image build (`apt-get` in Docker), not on the macOS host.
-> To compare mirrors from Docker Desktop, time the app image build:
-> ```bash
-> time docker compose --env-file ./.env -f ./configurations/compose.yaml --project-name lara-stacker build --no-cache app
-> ```
->
-> If you see `xcrun: error: unable to find utility "simctl", not a developer tool or in PATH` on macOS, install full Xcode, then run:
-> ```bash
-> sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer
-> sudo xcodebuild -runFirstLaunch
-> ```
 
 <div align="left">
+
+### mise Wiring
+
+- The CLI resolves `php`, `composer`, `node`, and `npm` through `mise which` first (falling back to `PATH`), so whatever versions your `~/.config/mise/config.toml` — or a directory-level `mise.toml` — declares are what run. No NVM, no Homebrew PHP.
+- `Create`, `Import`, `Refresh`, and `Rewire` seed a `mise.toml` into each app (if one doesn't exist) pinning `php = "<PHP_VERSION>"`, so `php artisan ...` inside the app directory uses the **same PHP version the container runs**. Existing pins are never overwritten.
+- The [verzly/mise-php](https://github.com/verzly/mise-php) plugin bundles Composer per PHP version, so there's no separate Composer install.
+- With `prebuilt_static = true`, the static "bulk" build ships nearly every extension a Laravel app declares (`ext-*` checks run automatically before Composer installs). Two gaps worth knowing:
+  - **No `xdebug` on the host CLI** — static builds have a fixed extension set (PIE/PECL requests are skipped). Web debugging is unaffected (the *container* has Xdebug); if you need host-side CLI step-debugging, switch mise to source builds: `prebuilt_static = false` + `_.php = { pie_extensions = "xdebug/xdebug" }`.
+  - **No `pdo_sqlite`** — irrelevant here since apps get wired to the container's MySQL, but Laravel's default sqlite quick-starts won't run on the host CLI.
+- Host CLI `memory_limit` is `128M` on the static build. If a large migration/seed fails with `Allowed memory size exhausted`, run it once with `php -d memory_limit=512M artisan ...`.
 
 ### Ports
 
@@ -362,7 +292,7 @@ Service UIs include:
 </div>
 
 > [!NOTE]
-> It's extremely recommended to use `80/443` ports with Caddy. I only made them different by default in order not to conflict with lara-stacker v4. Check the [.env](./.env) file.
+> It's extremely recommended to use `80/443` ports with Caddy. I only made them different by default in order not to conflict with lara-stacker v4. Check the [.env](./.env.example) file.
 
 <div align="left">
 
@@ -372,21 +302,21 @@ Service UIs include:
   - `xdebug.client_host=host.docker.internal`
   - `xdebug.client_port=9003`
   - `xdebug.start_with_request=trigger`
-- Container path mappings are generated as `/var/www/html/<app> -> ${workspaceFolder}` so imported/created apps map correctly during debug sessions.
-- If you enable `USE_VSC` after apps already exist, run **Rewire** (or **Refresh**) once per app to generate/update debug files.
-- For browser debugging: start "Listen for Xdebug" in VS Code/VSCodium, turn on the Xdebug browser trigger, and hit the app URL.
+- Container path mappings are generated as `/var/www/html/<app> -> <local app folder>` so imported/created apps map correctly during debug sessions.
+- **Zed** (`DEV_EDITOR=zed`): each app gets a `.zed/debug.json` with a "Listen for Xdebug" configuration. Install Zed's `PHP` extension once, open the app folder, open the debug panel, and start "Listen for Xdebug". Then turn on the Xdebug browser trigger and hit the app URL.
+- **VS Code/VSCodium** (`DEV_EDITOR=vsc`): same flow via the generated `.vscode/launch.json` and the `xdebug.php-debug` extension.
+- If you switch `DEV_EDITOR` (or enable it) after apps already exist, run **Rewire** (or **Refresh**) once per app to generate/update debug files.
 
 
 ## Responsibilities
 
 - The container does install and expose the main services (Caddy, MySQL, Redis, MinIO, etc.) ports for you, does runtime stuff in place (PHP, PHP Extensions, PHP-FPM, etc.) too, and finally includes whatever extra packages the local server may need, such as the media's (ImageMagick, Ghostscript, FFmpeg, etc.).
-- Application `.env` files are **host-wired** (`127.0.0.1` + host ports) because all dev tooling (Composer/PHP/Artisan/NPM) runs on the host.
-- Host CLI PHP config can differ by distro (extensions and `memory_limit`). If a large migration fails with `Allowed memory size exhausted`, either raise host CLI memory (example: `memory_limit=512M` in `/etc/php/conf.d/99-lara-stacker-cli.ini`) or run once with `php -d memory_limit=512M artisan migrate`.
+- Application `.env` files are **host-wired** (`127.0.0.1` + host ports) because all dev tooling (Composer/PHP/Artisan/NPM) runs on the host — through mise.
 - The app container is injected with internal service hosts so runtime still connects to MySQL/Redis/MinIO when serving requests.
 - The app container also mounts `HOST_HOME_PATH` read-only to keep local Composer path-repository symlinks resolvable at runtime (preventing missing vendor class/provider errors when a dependency points outside `APPS_ROOT`).
-- **The container does NOT contain the [development tools](#prerequisites) themselves that need to exist locally.** This includes Java/Android tooling and Xcode/iOS tooling, etc.
+- **The container does NOT contain the [development tools](#prerequisites) themselves that need to exist locally.** This includes mise's toolchain as well as Java/Android tooling and Xcode/iOS tooling, etc.
 
-TLDR: **Docker provides the runtime container group**, but there are **essential [prerequisites](#prerequisites) that must be installed on the host** for ever so many reasons really... All in all, the CLI will DISFUNCTION if those tools are missing.
+TLDR: **Docker provides the runtime container group**, and **mise provides the host toolchain** — but there are still [prerequisites](#prerequisites) (Docker itself, mise, mkcert...) that must be installed on the host. The CLI will DISFUNCTION if those tools are missing.
 
 - Inside the container, applications are always mounted at `/var/www/html` (Caddy/PHP-FPM depend on this).
 - Applications can be **disabled** via the CLI. This creates a `.disabled` file, and Caddy responds with **503** while keeping files intact.
@@ -399,7 +329,7 @@ TLDR: **Docker provides the runtime container group**, but there are **essential
 </div>
 
 > [!IMPORTANT]
-> This stack uses PHP-FPM (with OPcache), which is fast but **can sometimes make changes appear “stuck” due to caching** configs, routes, views, or bytecode. If something behaves oddly after a change, try `php artisan optimize:clear` first.
+> This stack uses PHP-FPM (with OPcache), which is fast but **can sometimes make changes appear "stuck" due to caching** configs, routes, views, or bytecode. If something behaves oddly after a change, try `php artisan optimize:clear` first.
 > **But if that does NOT help** — especially on **Docker Desktop for Linux**, where edits and Composer changes only apply after a container restart — it's a filesystem-layer (virtiofs) problem, not OPcache. See [Troubleshooting → Stale code on Docker Desktop](#stale-code-on-docker-desktop-linux-editscomposer-changes-dont-apply-until-a-container-restart).
 
 <div align="left">
@@ -458,7 +388,7 @@ docker context use default
 ./lara-stacker.sh
 ```
 
-On macOS, Docker Desktop is unavoidable; prefer its **VirtioFS** file sharing and just restart the app container when content goes stale.
+On macOS a VM is unavoidable; **OrbStack** is the recommended engine — its file sharing has proven far less prone to stale-content issues than Docker Desktop's, and the CLI auto-detects its socket. If you must use Docker Desktop on macOS, prefer its **VirtioFS** file sharing and just restart the app container when content goes stale.
 
 
 ## Support
@@ -468,9 +398,11 @@ Support ongoing package maintenance as well as the development of other projects
 
 ## Credits
 
-- [ChatGPT](https://chatgpt.com) and [Codex CLI](https://developers.openai.com/codex/cli/)
+- [ChatGPT](https://chatgpt.com), [Codex CLI](https://developers.openai.com/codex/cli/), and [Claude Code](https://claude.com/claude-code)
 - [Laravel](https://laravel.com/)
 - [Spatie](https://spatie.be/open-source/packages)
+- [mise](https://mise.jdx.dev) and [verzly/mise-php](https://github.com/verzly/mise-php)
+- [OrbStack](https://orbstack.dev) and [Zed](https://zed.dev)
 - [Active Contributors](https://github.com/GoodM4ven/CLI_LARAVEL_lara-stacker/graphs/contributors?from=1%2F3%2F2026)
 - All the technologies used to set up this whole development environment, and eventually the apps... Perhaps the browsers too?! -Please help!
 
