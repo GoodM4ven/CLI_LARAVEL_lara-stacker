@@ -5,6 +5,9 @@ applicationRegistryMarkerPath() {
 
 isRegisteredApplicationDir() {
     local application_path="$1"
+    if [[ "$(basename "$application_path")" == "_funnel_app" ]]; then
+        return 1
+    fi
     local marker
     marker=$(applicationRegistryMarkerPath "$application_path")
     [[ -f "$marker" ]]

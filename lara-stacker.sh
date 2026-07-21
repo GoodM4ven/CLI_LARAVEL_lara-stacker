@@ -2,6 +2,11 @@
 
 clear
 
+if [[ "$(uname -s)" != "Darwin" ]]; then
+    echo "Lara-Stacker v6, now supports macOS only."
+    exit 1
+fi
+
 # * ===========================
 # * Display a status indicator
 # * =========================
@@ -55,11 +60,11 @@ fi
 cat <<'EOF'
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║ ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ ║
- _              _____                ____ _______       ____ _  __ ____ _____  
-| |       /\   |  __ \     /\       / ___|__   __|/\   / ___| |/ /  ___|  __ \ 
+ _              _____                ____ _______       ____ _  __ ____ _____
+| |       /\   |  __ \     /\       / ___|__   __|/\   / ___| |/ /  ___|  __ \
 | |      /  \  | |__) |   /  \ ____| (__    | |  /  \ | |   | ' /| |_  | |__) |
-| |     / /\ \ |  _  /   / /\ \_____\__ \   | | / /\ \| |   |  < |  _| |  _  / 
-| |___ / ____ \| | \ \  / ____ \    ___) |  | |/ ____ \ |___| . \| |___| | \ \ 
+| |     / /\ \ |  _  /   / /\ \_____\__ \   | | / /\ \| |   |  < |  _| |  _  /
+| |___ / ____ \| | \ \  / ____ \    ___) |  | |/ ____ \ |___| . \| |___| | \ \
 |_____/_/    \_\_|  \_\/_/    \_\  |____/   |_/_/    \_\____|_|\_\_____|_|  \_\
 ║                                                                              ║
 EOF
@@ -164,7 +169,7 @@ check_for_updates() {
 
 check_for_updates "$@"
 
-# ? Allow non-sudo runs (Docker Desktop uses user sockets)
+# ? OrbStack runs through the current macOS user's socket
 
 # ? Ensure that the environment file exists
 if [ ! -f "./.env" ]; then
@@ -249,11 +254,13 @@ while true; do
     col3_title="Applications"
 
     col1_options=(
-        "17|Start"
-        "18|Status"
-        "19|Stop"
-        "20|Certify"
-        "21|Purge"
+        "18|Start"
+        "19|Debug"
+        "20|Status"
+        "21|Stop"
+        "22|Certify"
+        "23|Purge"
+        "24|Setup / Tools"
     )
 
     col2_options=(
@@ -265,6 +272,7 @@ while true; do
         "14|MinIO > Delete"
         "15|Redis > Browse"
         "16|Redis > Delete"
+        "17|Tailscale > Funnel"
     )
 
     col3_options=(
@@ -345,7 +353,7 @@ while true; do
     if [[ $counter -eq 1 && "$1" ]]; then
         choice="$1"
     else
-        read -r -p "Choose an operation (1-21, or Q to quit): " choice
+        read -r -p "Choose an operation (1-24, or Q to quit): " choice
     fi
     choice=$(echo "$choice" | tr -d '[:space:]')
     if [[ "$choice" == "q" || "$choice" == "Q" ]]; then
@@ -412,19 +420,28 @@ while true; do
         RAN_MAIN_SCRIPT="true" ./scripts/redis_delete.sh
         ;;
     17)
-        RAN_MAIN_SCRIPT="true" ./scripts/start.sh
+        RAN_MAIN_SCRIPT="true" ./scripts/tailscale.sh
         ;;
     18)
-        RAN_MAIN_SCRIPT="true" ./scripts/status.sh
+        RAN_MAIN_SCRIPT="true" ./scripts/start.sh
         ;;
     19)
-        RAN_MAIN_SCRIPT="true" ./scripts/stop.sh
+        RAN_MAIN_SCRIPT="true" ./scripts/debug.sh
         ;;
     20)
-        RAN_MAIN_SCRIPT="true" ./scripts/certify.sh
+        RAN_MAIN_SCRIPT="true" ./scripts/status.sh
         ;;
     21)
+        RAN_MAIN_SCRIPT="true" ./scripts/stop.sh
+        ;;
+    22)
+        RAN_MAIN_SCRIPT="true" ./scripts/certify.sh
+        ;;
+    23)
         RAN_MAIN_SCRIPT="true" ./scripts/purge.sh
+        ;;
+    24)
+        RAN_MAIN_SCRIPT="true" ./scripts/setup.sh
         ;;
     *)
         prompt "-=|[ LARA-STACKER [$current_version] ]|=-" "Invalid option! Please type one the of digits in the list..." false true

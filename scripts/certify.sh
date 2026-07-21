@@ -36,11 +36,7 @@ if ! command -v docker >/dev/null 2>&1; then
 fi
 
 if ! ensureDockerAccess; then
-    if [[ "$EUID" -eq 0 ]]; then
-        prompt "Docker daemon is not reachable." "Try running without sudo: [./lara-stacker.sh]" false
-    else
-        prompt "Docker daemon is not reachable." "Start Docker (or fix your Docker Desktop socket) and try again." false
-    fi
+    prompt "OrbStack's Docker daemon is not reachable." "Open OrbStack and run Lara-Stacker without sudo." false
 fi
 
 if ! docker compose version >/dev/null 2>&1; then
@@ -54,7 +50,7 @@ sourcer "trustHttps"
 # Ensure container is running (also restarts if trust mode changed)
 composeUp
 if [[ $? -ne 0 ]]; then
-    prompt "Failed to start Docker container." "Check Docker daemon/compose output, then retry." false
+    prompt "Failed to start the container stack." "Check OrbStack/Compose output, then retry." false
 fi
 
 if ! trustHttps; then

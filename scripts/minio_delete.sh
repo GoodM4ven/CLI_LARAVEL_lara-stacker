@@ -33,7 +33,7 @@ sourcer "composeUp"
 
 resolveDockerHost || true
 if ! ensureDockerAccess; then
-    prompt "Docker daemon is not reachable." "Start Docker and retry." false
+    prompt "OrbStack's Docker daemon is not reachable." "Open OrbStack and retry." false
 fi
 
 if ! docker compose version >/dev/null 2>&1; then

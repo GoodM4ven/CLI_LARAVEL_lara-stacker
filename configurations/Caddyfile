@@ -1,21 +1,18 @@
-# Tailscale Funnel entrypoint (local dev only, opt-in via TS_FUNNEL_HOST).
-# Serves ONE app plus its Reverb websocket over the single :443 funnel domain, so
-# a phone/browser reaches both without a port — Telegram's login-widget domain is
-# host-only and rejects ports. TLS is pinned to the local dev cert; the funnel
-# connects with `--https=443 https+insecure://localhost:443`, so the cert-name
-# mismatch on the .ts.net host is expected and ignored. When TS_FUNNEL_HOST is
-# unset it defaults to funnel-disabled.invalid and this block never matches.
-{$TS_FUNNEL_HOST:funnel-disabled.invalid} {
-	tls /etc/caddy/certs/dev.localhost.pem /etc/caddy/certs/dev.localhost-key.pem
-
-	# Reverb websocket rides the same :443 funnel instead of a second funnel port.
+# Internal-only entrypoint for the optional Tailscale container. The CLI points
+# `_funnel_app` at the selected app and Tailscale terminates public HTTPS on :443.
+:8081 {
 	@reverb path /app /app/*
 	handle @reverb {
-		reverse_proxy host.docker.internal:{$TS_FUNNEL_REVERB_PORT:8080}
+		reverse_proxy host.docker.internal:{$TAILSCALE_REVERB_PORT:8080}
 	}
 
 	handle {
-		root * /var/www/html/{$TS_FUNNEL_APP}/public
+		root * /var/www/html/_funnel_app
+		try_files /.disabled /public/.disabled {path}
+		@disabled path /.disabled /public/.disabled
+		respond @disabled "Application disabled" 503
+
+		root * /var/www/html/_funnel_app/public
 		php_fastcgi lara-stacker-app-1:9000
 		file_server
 		encode zstd gzip
@@ -40,7 +37,7 @@
 	# `handle @reverb` slots in ahead of @app in source order.
 	@reverb path /app /app/*
 	handle @reverb {
-		reverse_proxy host.docker.internal:{$TS_FUNNEL_REVERB_PORT:8080}
+		reverse_proxy host.docker.internal:{$TAILSCALE_REVERB_PORT:8080}
 	}
 
 	@app header_regexp app Host ^([a-z0-9-]+)\.dev\.localhost(?::\d+)?$

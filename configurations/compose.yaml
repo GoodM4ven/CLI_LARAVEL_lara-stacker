@@ -4,14 +4,7 @@ services:
     image: caddy:2
     environment:
       CADDY_HTTPS_PORT: ${CADDY_HTTPS_PORT:-8443}
-      # Optional Tailscale Funnel entrypoint (local dev only). Leave TS_FUNNEL_HOST
-      # unset to disable; set it to your node's funnel FQDN (e.g. box.tailXXXX.ts.net).
-      # TS_FUNNEL_APP is NOT project-specific here: it defaults to the `_funnel_app`
-      # symlink under APPS_ROOT, which each project's funnel script points at itself —
-      # so this generic multi-project setup needs no per-app value.
-      TS_FUNNEL_HOST: ${TS_FUNNEL_HOST:-funnel-disabled.invalid}
-      TS_FUNNEL_APP: ${TS_FUNNEL_APP:-_funnel_app}
-      TS_FUNNEL_REVERB_PORT: ${TS_FUNNEL_REVERB_PORT:-8080}
+      TAILSCALE_REVERB_PORT: ${TAILSCALE_REVERB_PORT:-8080}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:
@@ -51,14 +44,30 @@ services:
       - ${APPS_ROOT}:/var/www/html
       - ./synchronizer.sh:/usr/local/bin/synchronizer.sh:ro
 
+  tailscale:
+    profiles: ["tailscale"]
+    restart: "${STACKER_RESTART_POLICY:-unless-stopped}"
+    image: tailscale/tailscale:latest
+    network_mode: "service:caddy"
+    depends_on:
+      - caddy
+    environment:
+      TS_AUTHKEY: ${TAILSCALE_AUTH_KEY:-}
+      TS_AUTH_ONCE: "true"
+      TS_HOSTNAME: ${TAILSCALE_HOSTNAME:-lara-stacker}
+      TS_STATE_DIR: /var/lib/tailscale
+      TS_USERSPACE: "true"
+    volumes:
+      - tailscale_state:/var/lib/tailscale
+
   app:
     restart: "${STACKER_RESTART_POLICY:-unless-stopped}"
     build:
       context: .
       args:
-        PHP_VERSION: ${PHP_VERSION:-8.3}
-        APT_MIRROR: ${APT_MIRROR:-deb.debian.org}
-        APT_SECURITY_MIRROR: ${APT_SECURITY_MIRROR:-security.debian.org}
+        PHP_VERSION: ${PHP_VERSION:-8.4}
+        CONTAINER_APT_MIRROR: ${CONTAINER_APT_MIRROR:-deb.debian.org}
+        CONTAINER_APT_SECURITY_MIRROR: ${CONTAINER_APT_SECURITY_MIRROR:-security.debian.org}
     working_dir: /var/www/html
     volumes:
       - ${HOST_HOME_PATH}:${HOST_HOME_PATH}:ro
@@ -134,3 +143,4 @@ volumes:
   mysql_data:
   minio_data:
   redis_data:
+  tailscale_state:

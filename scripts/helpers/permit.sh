@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Standalone helper used by the dot-zsh `permit` alias:
-#   sudo ~/Code/Scripts/CLI_LARAVEL_lara-stacker/scripts/helpers/permit.sh <path>
+#   sudo ~/Code/Scripts/CLI_MACOS_lara-stacker/scripts/helpers/permit.sh <path>
 # Restores application files to the invoking user with sane permissions after
 # container-side processes (queues, storage writes, etc.) leave root-owned files.
 

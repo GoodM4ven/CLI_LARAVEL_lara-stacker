@@ -11,18 +11,18 @@ composeUp() {
         last_build_hash="${STACKER_BUILD_HASH:-}"
     fi
 
-    local current_php="${PHP_VERSION:-8.3}"
+    local current_php="${PHP_VERSION:-8.4}"
     local current_build_hash=""
 
-    if command -v sha256sum >/dev/null 2>&1; then
+    if command -v shasum >/dev/null 2>&1; then
         local repo_dir="$PWD"
         if [[ -f "$repo_dir/configurations/Dockerfile" ]]; then
             current_build_hash=$(
-                sha256sum \
+                shasum -a 256 \
                     "$repo_dir/configurations/Dockerfile" \
                     "$repo_dir/configurations/xdebug.ini" \
                     "$repo_dir/configurations/opcache.ini" \
-                    2>/dev/null | sha256sum | awk '{print $1}'
+                    2>/dev/null | shasum -a 256 | awk '{print $1}'
             )
         fi
     fi

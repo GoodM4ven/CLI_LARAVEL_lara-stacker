@@ -1,7 +1,7 @@
 [
     {
-        "label": "Listen for Xdebug",
-        "adapter": "PHP",
+        "label": "PHP: Listen to Xdebug",
+        "adapter": "Xdebug",
         "request": "launch",
         "port": 9003,
         "pathMappings": {

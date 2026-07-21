@@ -4,10 +4,11 @@ dockerCompose() {
     local compose_project_name="lara-stacker"
     local host_home_path="${HOST_HOME_PATH:-}"
     local apps_root="${APPS_ROOT:-/var/www/html}"
-    local php_version="${PHP_VERSION:-8.3}"
+    local php_version="${PHP_VERSION:-8.4}"
     local restart_unless_stopped="${RESTART_UNLESS_STOPPED:-true}"
     local restart_unless_stopped_lower
     local restart_policy="unless-stopped"
+    local -a compose_profile_args=()
 
     if [[ -f "$lara_stacker_dir/scripts/functions/helpers/platform.sh" ]]; then
         # shellcheck source=/dev/null
@@ -32,7 +33,7 @@ dockerCompose() {
     fi
 
     if [[ -z "$host_home_path" ]]; then
-        host_home_path="${HOME:-/home}"
+        host_home_path="${HOME:-/Users/${USERNAME:-$(id -un)}}"
         if [[ -n "${USERNAME:-}" ]] && declare -F resolveUserHomePath >/dev/null 2>&1; then
             local resolved_home
             resolved_home=$(resolveUserHomePath "$USERNAME")
@@ -61,6 +62,10 @@ dockerCompose() {
             ;;
     esac
 
+    if [[ -n "${TAILSCALE_AUTH_KEY:-}" && "$TAILSCALE_AUTH_KEY" != *"<your-"* ]]; then
+        compose_profile_args=(--profile tailscale)
+    fi
+
     HOST_HOME_PATH="$host_home_path" \
     APPS_ROOT="$apps_root" \
     HOST_UID="$host_uid" \
@@ -71,5 +76,6 @@ dockerCompose() {
         --env-file "$lara_stacker_dir/.env" \
         -f "$compose_file" \
         --project-name "$compose_project_name" \
+        "${compose_profile_args[@]}" \
         "$@"
 }

@@ -26,12 +26,12 @@ viteUp() {
     local vite_host="vite-${escaped_application_name}.${domain_suffix}"
     local https_port="${CADDY_HTTPS_PORT:-8443}"
 
-    local server_block="    server: {\n        host: true,\n        strictPort: true,\n        port: 5173,\n        hmr: {\n            host: '${vite_host}',\n            protocol: 'wss',\n            clientPort: ${https_port},\n        },\n    },"
+    local server_block="    server: {\n        host: true,\n        strictPort: true,\n        port: 5173,\n        watch: {\n            ignored: ['**/storage/framework/views/**'],\n        },\n        hmr: {\n            host: '${vite_host}',\n            protocol: 'wss',\n            clientPort: ${https_port},\n        },\n    },"
 
     local build_block="    build: {\n        emptyOutDir: false,\n    },"
 
     if grep -q "server:" "$file"; then
-        if grep -q "clientPort:[[:space:]]*${https_port}" "$file" && grep -q "protocol:[[:space:]]*'wss'" "$file" && grep -q "strictPort:[[:space:]]*true" "$file"; then
+        if grep -q "clientPort:[[:space:]]*${https_port}" "$file" && grep -q "protocol:[[:space:]]*'wss'" "$file" && grep -q "strictPort:[[:space:]]*true" "$file" && grep -Fq "ignored: ['**/storage/framework/views/**']" "$file"; then
             echo -e "\nDetected Docker-friendly Vite server config; skipped auto-patch."
         else
             awk -v replacement="$server_block" '

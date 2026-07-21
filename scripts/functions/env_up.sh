@@ -132,7 +132,9 @@ envUp() {
         fi
     fi
 
-    if [[ "$env_preexists" == "true" ]]; then
+    # Creation deliberately enables the full stack. Import and rewire preserve
+    # an existing application's database, cache, and filesystem preferences.
+    if [[ "$env_preexists" == "true" && "$env_mode" != "new" ]]; then
         local existing_db_connection
         existing_db_connection=$(read_env_value "DB_CONNECTION" "$env_file")
         local existing_cache_store
@@ -202,12 +204,22 @@ envUp() {
         local group_keys=("$@")
         local key_value_line="${key}=${value}"
 
-        if grep -Eq "^[[:space:]]*${key}=" "$env_file"; then
-            if declare -F sedi >/dev/null 2>&1; then
-                sedi -E "/^[[:space:]]*${key}=/d" "$env_file"
-            else
-                sed -i -E "/^[[:space:]]*${key}=/d" "$env_file"
-            fi
+        # Preserve Laravel's original .env layout. Replace an active or commented
+        # key exactly where Laravel placed it; only insert when the key is absent.
+        if grep -Eq "^[[:space:]]*#?[[:space:]]*${key}=" "$env_file"; then
+            local tmp_replace
+            tmp_replace=$(mktemp "${TMPDIR:-/tmp}/stacker-env-up.XXXXXX")
+            awk -v key="$key" -v kv="$key_value_line" '
+            BEGIN { replaced = 0 }
+            {
+                if (!replaced && $0 ~ "^[[:space:]]*#?[[:space:]]*" key "=") {
+                    print kv
+                    replaced = 1
+                    next
+                }
+                print
+            }' "$env_file" >"$tmp_replace" && mv "$tmp_replace" "$env_file"
+            return
         fi
 
         local before_key=""
@@ -293,6 +305,7 @@ envUp() {
     local mail_group=(MAIL_MAILER MAIL_SCHEME MAIL_HOST MAIL_PORT MAIL_USERNAME MAIL_PASSWORD MAIL_FROM_ADDRESS MAIL_FROM_NAME)
     local aws_group=(FILESYSTEM_DISK FILESYSTEM_DRIVER AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_DEFAULT_REGION AWS_BUCKET AWS_USE_PATH_STYLE_ENDPOINT AWS_ENDPOINT AWS_URL)
     local vite_group=(VITE_APP_NAME VITE_DEV_SERVER_URL)
+    local reverb_group=(BROADCAST_CONNECTION REVERB_APP_ID REVERB_APP_KEY REVERB_APP_SECRET REVERB_HOST REVERB_PORT REVERB_SCHEME REVERB_SERVER_HOST REVERB_SERVER_PORT VITE_REVERB_APP_KEY VITE_REVERB_HOST VITE_REVERB_PORT VITE_REVERB_SCHEME)
 
     set_env_var_in_group "APP_NAME" "$escaped_application_name" "${app_group[@]}"
     set_env_var_in_group "APP_URL" "https://${app_domain}${https_suffix}" "${app_group[@]}"
@@ -341,6 +354,19 @@ envUp() {
     fi
 
     set_env_var_in_group "VITE_DEV_SERVER_URL" "https://${vite_domain}${https_suffix}" "${vite_group[@]}"
+
+    if grep -Eq '^[[:space:]]*BROADCAST_CONNECTION=reverb$|^[[:space:]]*REVERB_APP_KEY=' "$env_file"; then
+        set_env_var_in_group "BROADCAST_CONNECTION" "reverb" "${reverb_group[@]}"
+        set_env_var_in_group "REVERB_HOST" "$app_domain" "${reverb_group[@]}"
+        set_env_var_in_group "REVERB_PORT" "$https_port" "${reverb_group[@]}"
+        set_env_var_in_group "REVERB_SCHEME" "https" "${reverb_group[@]}"
+        set_env_var_in_group "REVERB_SERVER_HOST" "0.0.0.0" "${reverb_group[@]}"
+        set_env_var_in_group "REVERB_SERVER_PORT" "8080" "${reverb_group[@]}"
+        set_env_var_in_group "VITE_REVERB_APP_KEY" '${REVERB_APP_KEY}' "${reverb_group[@]}"
+        set_env_var_in_group "VITE_REVERB_HOST" '${REVERB_HOST}' "${reverb_group[@]}"
+        set_env_var_in_group "VITE_REVERB_PORT" '${REVERB_PORT}' "${reverb_group[@]}"
+        set_env_var_in_group "VITE_REVERB_SCHEME" '${REVERB_SCHEME}' "${reverb_group[@]}"
+    fi
 
     echo -e "\nRewired the application's .env file to match host-exposed services."
 }

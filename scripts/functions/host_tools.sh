@@ -31,13 +31,15 @@ runAsHostUser() {
             composer) [[ -n "${HOST_COMPOSER_CMD:-}" ]] && cmd[0]="$HOST_COMPOSER_CMD" ;;
             node) [[ -n "${HOST_NODE_CMD:-}" ]] && cmd[0]="$HOST_NODE_CMD" ;;
             npm) [[ -n "${HOST_NPM_CMD:-}" ]] && cmd[0]="$HOST_NPM_CMD" ;;
+            pnpm) [[ -n "${HOST_PNPM_CMD:-}" ]] && cmd[0]="$HOST_PNPM_CMD" ;;
+            laravel) [[ -n "${HOST_LARAVEL_CMD:-}" ]] && cmd[0]="$HOST_LARAVEL_CMD" ;;
         esac
     fi
 
     # Prefix resolved tool directories so cross-tool lookups work (Composer's
     # shebang resolves `php` from PATH, npm scripts resolve `node`, etc.)
     local tool_cmd tool_dir
-    for tool_cmd in "${HOST_PHP_CMD:-}" "${HOST_COMPOSER_CMD:-}" "${HOST_NODE_CMD:-}" "${HOST_NPM_CMD:-}"; do
+    for tool_cmd in "${HOST_PHP_CMD:-}" "${HOST_COMPOSER_CMD:-}" "${HOST_NODE_CMD:-}" "${HOST_NPM_CMD:-}" "${HOST_PNPM_CMD:-}" "${HOST_LARAVEL_CMD:-}"; do
         if [[ -z "$tool_cmd" ]]; then
             continue
         fi
@@ -62,7 +64,7 @@ resolveHostCommandPath() {
     local target_user="${USERNAME:-$USER}"
     local resolved=""
 
-    # mise first: respects ~/.config/mise and per-directory mise.toml files
+    # Resolve from Lara-Stacker's repository-level mise environment first.
     local mise_bin
     mise_bin=$(resolveMiseBin || true)
     if [[ -n "$mise_bin" ]]; then
@@ -83,6 +85,15 @@ resolveHostCommandPath() {
         return 0
     fi
 
+    local user_home="${HOME:-}"
+    if declare -F resolveUserHomePath >/dev/null 2>&1; then
+        user_home=$(resolveUserHomePath "$target_user")
+    fi
+    if [[ -n "$user_home" && -x "$user_home/.composer/vendor/bin/$cmd" ]]; then
+        echo "$user_home/.composer/vendor/bin/$cmd"
+        return 0
+    fi
+
     return 1
 }
 
@@ -97,8 +108,43 @@ requireHostCommand() {
 
 requireHostMise() {
     if ! resolveMiseBin >/dev/null 2>&1; then
-        prompt "Missing host tool: mise." "Install it via [curl https://mise.run | sh] and activate it in your shell." false
+        prompt "Missing host tool: mise." "Run [./scripts/setup.sh] to install Lara-Stacker's complete macOS toolchain." false
     fi
+}
+
+requireHostLaravelInstaller() {
+    requireHostComposer
+
+    local laravel_cmd
+    laravel_cmd=$(resolveHostCommandPath "laravel" || true)
+
+    if [[ -z "$laravel_cmd" ]]; then
+        echo -e "\nInstalling the Laravel installer globally..."
+        if ! runAsHostUser composer global require laravel/installer --with-all-dependencies --no-interaction; then
+            prompt "Failed to install laravel/installer globally." "Run [./scripts/setup.sh], then retry." false
+        fi
+        laravel_cmd=$(resolveHostCommandPath "laravel" || true)
+    fi
+
+    if [[ -z "$laravel_cmd" ]]; then
+        prompt "Laravel's global installer is unavailable." "Ensure [$HOME/.composer/vendor/bin] is in PATH, then retry." false
+    fi
+
+    export HOST_LARAVEL_CMD="$laravel_cmd"
+}
+
+runInApplicationAsHostUser() {
+    local application_path="$1"
+    shift
+
+    if [[ -z "$application_path" || ! -d "$application_path" ]]; then
+        return 1
+    fi
+
+    (
+        cd "$application_path"
+        runAsHostUser "$@"
+    )
 }
 
 requireHostComposer() {
@@ -109,10 +155,10 @@ requireHostComposer() {
     composer_cmd=$(resolveHostCommandPath "composer" || true)
 
     if [[ -z "$php_cmd" ]]; then
-        prompt "Missing host tool: php." "Install it via mise [mise use -g php@${PHP_VERSION:-8.4}] and retry." false
+        prompt "Missing host tool: php." "Run [./scripts/setup.sh] to install this repository's mise toolchain." false
     fi
     if [[ -z "$composer_cmd" ]]; then
-        prompt "Missing host tool: composer." "The mise PHP plugin bundles Composer per version [mise use -g php@${PHP_VERSION:-8.4}]." false
+        prompt "Missing host tool: composer." "Run [./scripts/setup.sh]; the repository's mise PHP installation bundles Composer." false
     fi
 
     export HOST_PHP_CMD="$php_cmd"
@@ -120,6 +166,15 @@ requireHostComposer() {
 
     if ! runAsHostUser composer --version >/dev/null 2>&1; then
         prompt "Composer is not runnable on the host." "Check [mise doctor] and reinstall PHP via mise if needed." false
+    fi
+
+    # Warn (not abort) when the host PHP diverges from the container's version
+    if [[ -n "${PHP_VERSION:-}" ]]; then
+        local host_php_version
+        host_php_version=$(runAsHostUser php -r 'echo PHP_MAJOR_VERSION . "." . PHP_MINOR_VERSION;' 2>/dev/null || true)
+        if [[ -n "$host_php_version" && "$host_php_version" != "$PHP_VERSION" ]]; then
+            echo -e "\nWarning: Host PHP is $host_php_version while the container's PHP_VERSION is $PHP_VERSION. Consider aligning them (mise + [.env])."
+        fi
     fi
 }
 
@@ -131,14 +186,21 @@ requireHostNode() {
     npm_cmd=$(resolveHostCommandPath "npm" || true)
 
     if [[ -z "$node_cmd" ]]; then
-        prompt "Missing host tool: node." "Install it via mise [mise use -g node@22] and retry." false
+        prompt "Missing host tool: node." "Run [./scripts/setup.sh] to install this repository's mise toolchain." false
     fi
     if [[ -z "$npm_cmd" ]]; then
-        prompt "Missing host tool: npm." "Install Node.js via mise [mise use -g node@22] and retry." false
+        prompt "Missing host tool: npm." "Run [./scripts/setup.sh]; the repository's mise Node.js installation bundles npm." false
     fi
 
     export HOST_NODE_CMD="$node_cmd"
     export HOST_NPM_CMD="$npm_cmd"
+
+    # pnpm is optional at this point; it's only required for pnpm-lock.yaml apps
+    local pnpm_cmd
+    pnpm_cmd=$(resolveHostCommandPath "pnpm" || true)
+    if [[ -n "$pnpm_cmd" ]]; then
+        export HOST_PNPM_CMD="$pnpm_cmd"
+    fi
 
     if ! runAsHostUser "$HOST_NODE_CMD" --version >/dev/null 2>&1; then
         prompt "Node.js is not runnable on the host." "Check [mise doctor] and reinstall Node.js via mise if needed." false
@@ -202,7 +264,7 @@ requireHostComposerExtensionsForApp() {
     if [[ -n "$missing" ]]; then
         local missing_list
         missing_list=$(echo "$missing" | tr '\n' ',' | sed 's/,$//; s/,/, /g')
-        prompt "Missing host PHP extension(s): $missing_list." "The prebuilt static mise PHP has a fixed extension set; switch to a source build with [pie_extensions] to add more (see README)." false
+        prompt "Missing host PHP extension(s): $missing_list." "Add the PIE package to this repository's [mise.toml], then rerun [./scripts/setup.sh]." false
     fi
 }
 
@@ -211,6 +273,19 @@ installHostNpmDependencies() {
 
     if [[ -z "$application_path" || ! -f "$application_path/package.json" ]]; then
         return 0
+    fi
+
+    # Respect the app's package manager: pnpm-lock.yaml means pnpm, otherwise npm
+    if [[ -f "$application_path/pnpm-lock.yaml" ]]; then
+        if [[ -z "${HOST_PNPM_CMD:-}" ]]; then
+            HOST_PNPM_CMD=$(resolveHostCommandPath "pnpm" || true)
+            export HOST_PNPM_CMD
+        fi
+        if [[ -z "${HOST_PNPM_CMD:-}" ]]; then
+            prompt "Missing host tool: pnpm (the app has a pnpm-lock.yaml)." "Run [./scripts/setup.sh] to install this repository's mise toolchain." false
+        fi
+        runAsHostUser pnpm install --dir "$application_path"
+        return $?
     fi
 
     if runAsHostUser npm install --prefix "$application_path"; then

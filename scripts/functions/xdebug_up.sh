@@ -11,11 +11,7 @@ xdebugUp() {
         apps_root=$(normalizePathForHost "$apps_root" "${USERNAME:-}")
     fi
 
-    local dev_editor=""
-    if declare -F resolveDevEditor >/dev/null 2>&1; then
-        dev_editor=$(resolveDevEditor)
-    fi
-    if [[ -z "$dev_editor" ]]; then
+    if ! declare -F resolveDevEditor >/dev/null 2>&1 || [[ "$(resolveDevEditor)" != "zed" ]]; then
         return 0
     fi
 
@@ -29,33 +25,18 @@ xdebugUp() {
         return 0
     fi
 
-    local target_dir=""
-    local target_file=""
-    local stub_file=""
-    local editor_label=""
-
-    if [[ "$dev_editor" == "zed" ]]; then
-        target_dir="$application_path/.zed"
-        target_file="$target_dir/debug.json"
-        stub_file="$lara_stacker_dir/stubs/.zed/debug.json"
-        editor_label="Zed"
-    else
-        target_dir="$application_path/.vscode"
-        target_file="$target_dir/launch.json"
-        stub_file="$lara_stacker_dir/stubs/.vscode/launch.json"
-        editor_label="VSC"
+    if [ ! -d "$application_path/.zed" ]; then
+        mkdir -p "$application_path/.zed"
     fi
 
-    if [ ! -d "$target_dir" ]; then
-        mkdir -p "$target_dir"
-    fi
+    local debug_file="$application_path/.zed/debug.json"
 
-    cp "$stub_file" "$target_file"
+    cp "$lara_stacker_dir/stubs/.zed/debug.json" "$debug_file"
     if declare -F sedi >/dev/null 2>&1; then
-        sedi "s~\[applicationName\]~$escaped_application_name~g" "$target_file"
+        sedi "s~\[applicationName\]~$escaped_application_name~g" "$debug_file"
     else
-        sed -i "s~\[applicationName\]~$escaped_application_name~g" "$target_file"
+        sed -i "s~\[applicationName\]~$escaped_application_name~g" "$debug_file"
     fi
 
-    echo -e "\nConfigured $editor_label debug settings for Xdebug (Docker and container path mappings)."
+    echo -e "\nConfigured Zed debug settings for Xdebug (Docker and container path mappings)."
 }

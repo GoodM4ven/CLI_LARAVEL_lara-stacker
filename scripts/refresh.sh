@@ -40,11 +40,9 @@ sourcer "envUp"
 sourcer "mysqlUp"
 sourcer "minioUp"
 sourcer "viteUp"
-sourcer "miseUp"
 sourcer "xdebugUp"
 sourcer "trustHttps"
 sourcer "opinionatedUp"
-sourcer "workspaceUp"
 sourcer "sessionTable"
 sourcer "dockerHost"
 sourcer "hostTools"
@@ -69,7 +67,7 @@ waitForApplicationInContainer() {
 
 resolveDockerHost || true
 if ! ensureDockerAccess; then
-    prompt "Docker daemon is not reachable." "Start Docker and retry refresh." false
+    prompt "OrbStack's Docker daemon is not reachable." "Open OrbStack and retry refresh." false
 fi
 
 # ? List applications and get the application name/number from the user
@@ -143,7 +141,7 @@ if [[ -z "$(dockerCompose ps -q app)" ]]; then
 fi
 trustHttps || true
 
-# ? Ensure the container can see the application files (Docker Desktop sync or stale mounts)
+# ? Ensure the container can see the application files through OrbStack's bind mount
 if ! waitForApplicationInContainer "$escaped_application_name"; then
     echo -e "\nApp container couldn't see the application yet. Restarting the container...\n"
     composeDown || true
@@ -202,10 +200,8 @@ fi
 # ? Re-wire application configuration
 envUp "$escaped_application_name" "existing"
 viteUp "$escaped_application_name"
-miseUp "$escaped_application_name"
 xdebugUp "$escaped_application_name"
 opinionatedUp "$escaped_application_name"
-workspaceUp "$escaped_application_name"
 mysqlUp "$escaped_application_name"
 minioUp "$escaped_application_name"
 if ! appKeyUp "$escaped_application_name"; then

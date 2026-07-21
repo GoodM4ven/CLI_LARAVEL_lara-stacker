@@ -186,7 +186,15 @@ check_autoload_static_file() {
         previous_mtime="$(cat "$mtime_state_file" 2>/dev/null || printf '')"
     fi
 
-    if [ "$current_mtime" = "$previous_mtime" ] && [ ! -f "$cooldown_state_file" ]; then
+    # The first observation establishes a baseline. Subsequent settled changes are
+    # Composer operations and should make FPM drop its old autoload/OPcache state.
+    if [ -z "$previous_mtime" ]; then
+        printf '%s' "$current_mtime" > "$mtime_state_file"
+        rm -f "$cooldown_state_file"
+        return 0
+    fi
+
+    if [ "$current_mtime" = "$previous_mtime" ]; then
         return 0
     fi
 
@@ -196,40 +204,30 @@ check_autoload_static_file() {
         return 0
     fi
 
-    host_header="$(app_host_header "$app_name")"
-    response="$(probe_url "https://caddy/" "$host_header")"
-
-    if ! autoload_parse_error_detected "$response"; then
-        printf '%s' "$current_mtime" > "$mtime_state_file"
-        rm -f "$cooldown_state_file"
-        return 0
-    fi
-
     if cooldown_is_active "$cooldown_state_file"; then
-        log "autoload parse error cooldown active for ${app_name}"
-        printf '%s' "$current_mtime" > "$mtime_state_file"
+        log "Composer autoload reload cooldown active for ${app_name}"
         return 0
     fi
 
-    echo "[synchronizer] detected Composer autoload desync for ${app_name}; reloading PHP-FPM"
+    echo "[synchronizer] detected a settled Composer autoload change for ${app_name}; reloading PHP-FPM"
     record_cooldown "$cooldown_state_file"
     printf '%s' "$current_mtime" > "$mtime_state_file"
 
-    if ! kill -USR2 "$APP_MASTER_PID" >/dev/null 2>&1; then
-        echo "[synchronizer] failed to signal PHP-FPM master process ${APP_MASTER_PID} for ${app_name}"
+    if ! reload_php_fpm_master "Composer autoload changed for ${app_name}"; then
         return 0
     fi
 
     sleep "$RETRY_DELAY_SECONDS"
 
+    host_header="$(app_host_header "$app_name")"
     response="$(probe_url "https://caddy/" "$host_header")"
     if autoload_parse_error_detected "$response"; then
-        echo "[synchronizer] Composer autoload parse error persists for ${app_name} after PHP-FPM reload"
+        echo "[synchronizer] Composer autoload parse error persists for ${app_name} after the proactive PHP-FPM reload"
         return 0
     fi
 
     rm -f "$cooldown_state_file"
-    echo "[synchronizer] reloaded PHP-FPM to recover Composer autoload sync for ${app_name}"
+    echo "[synchronizer] Composer autoload change is active for ${app_name}"
 }
 
 run_iteration() {
@@ -243,6 +241,9 @@ run_iteration() {
         fi
 
         app_name="$(basename "$app_dir")"
+        if [ "$app_name" = "_funnel_app" ]; then
+            continue
+        fi
         check_hot_file "$app_name" "$app_dir/public/hot"
         check_autoload_static_file "$app_name" "$app_dir/vendor/composer/autoload_static.php"
     done
@@ -257,7 +258,7 @@ reload_php_fpm_master() {
     fi
 
     echo "[synchronizer] failed to signal PHP-FPM master process ${APP_MASTER_PID} (${reason})"
-    return 0
+    return 1
 }
 
 last_iteration_epoch="$(date +%s)"

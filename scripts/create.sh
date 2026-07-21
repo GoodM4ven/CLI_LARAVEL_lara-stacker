@@ -48,16 +48,16 @@ sourcer "envUp"
 sourcer "mysqlUp"
 sourcer "minioUp"
 sourcer "viteUp"
-sourcer "miseUp"
 sourcer "xdebugUp"
 sourcer "trustHttps"
 sourcer "opinionatedUp"
-sourcer "workspaceUp"
 sourcer "sessionTable"
 sourcer "dockerHost"
 sourcer "hostTools"
 sourcer "autoloadGuard"
 sourcer "helpers.applicationRegistry"
+sourcer "applicationDefaultsUp"
+sourcer "diagnosticsUp"
 
 waitForApplicationInContainer() {
     local application_name="$1"
@@ -77,10 +77,10 @@ waitForApplicationInContainer() {
 
 resolveDockerHost || true
 if ! ensureDockerAccess; then
-    prompt "Docker daemon is not reachable." "Start Docker and retry application creation." false
+    prompt "OrbStack's Docker daemon is not reachable." "Open OrbStack and retry application creation." false
 fi
 
-requireHostComposer
+requireHostLaravelInstaller
 requireHostNode
 
 # ? Get the application name from the user
@@ -104,13 +104,23 @@ if [[ -z "$(dockerCompose ps -q app)" ]]; then
 fi
 trustHttps || true
 
-# ? Create the Laravel application (host composer)
-echo -e "\nInstalling the application via Composer..."
-if ! runAsHostUser composer create-project laravel/laravel "$application_path" --no-interaction --no-scripts; then
-    prompt "Failed to create the application via Composer." "Ensure Composer is working on the host and retry." false
+# ? Create the Laravel application using Laravel's official defaults for Pest and Boost
+echo -e "\nInstalling the application via Laravel's installer..."
+if ! (
+    cd "$apps_root"
+    runAsHostUser laravel new "$escaped_application_name" \
+        --database=sqlite \
+        --pest \
+        --boost \
+        --no-node \
+        --no-interaction
+); then
+    prompt "Failed to create the application via laravel new." "Run [./scripts/setup.sh], then retry." false
 fi
 
-# ? Ensure the container can see the new application files (Docker Desktop sync or stale mounts)
+applicationDefaultsUp "$escaped_application_name"
+
+# ? Ensure the container can see the new application files through OrbStack's bind mount
 if ! waitForApplicationInContainer "$escaped_application_name"; then
     echo -e "\nApp container couldn't see the new application yet. Restarting the container...\n"
     composeDown || true
@@ -135,10 +145,16 @@ if ! sessionTableUp "$escaped_application_name"; then
     prompt "Failed to create session table or run migrations." "Check database connectivity and retry." false
 fi
 viteUp "$escaped_application_name"
-miseUp "$escaped_application_name"
 xdebugUp "$escaped_application_name"
 opinionatedUp "$escaped_application_name"
-workspaceUp "$escaped_application_name"
+diagnosticsUp "$escaped_application_name"
+
+if ! installHostNpmDependencies "$application_path"; then
+    prompt "Failed to install the application's JavaScript dependencies." "Review npm's output and retry." false
+fi
+if ! runAsHostUser npm run build --prefix "$application_path"; then
+    prompt "Failed to build the application's frontend assets." "Review Vite's output and retry." false
+fi
 
 if ! registerApplicationDir "$application_path"; then
     prompt "Failed to mark application as registered." "Check permissions and retry."

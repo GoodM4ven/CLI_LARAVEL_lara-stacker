@@ -1,11 +1,11 @@
-ARG PHP_VERSION=8.3
+ARG PHP_VERSION=8.4
 FROM php:${PHP_VERSION}-fpm-bookworm
 
 # System dependencies
-ARG APT_MIRROR=deb.debian.org
-ARG APT_SECURITY_MIRROR=security.debian.org
-RUN mirror="$APT_MIRROR"; \
-    security="$APT_SECURITY_MIRROR"; \
+ARG CONTAINER_APT_MIRROR=deb.debian.org
+ARG CONTAINER_APT_SECURITY_MIRROR=security.debian.org
+RUN mirror="$CONTAINER_APT_MIRROR"; \
+    security="$CONTAINER_APT_SECURITY_MIRROR"; \
     case "$mirror" in \
         http://*|https://*) ;; \
         "") mirror="https://deb.debian.org" ;; \
@@ -70,6 +70,8 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     && php -r 'foreach (["Zend OPcache","dom","xml"] as $ext) { if (!extension_loaded($ext)) { fwrite(STDERR, "Missing required extension: {$ext}\n"); exit(1); } }' \
     && rm -f /usr/local/etc/php/conf.d/*xdebug*.ini \
     && rm -rf /var/lib/apt/lists/*
+
+RUN docker-php-ext-enable imagick
 
 COPY ./xdebug.ini /usr/local/etc/php/conf.d/99-xdebug.ini
 COPY ./opcache.ini /usr/local/etc/php/conf.d/10-opcache.ini

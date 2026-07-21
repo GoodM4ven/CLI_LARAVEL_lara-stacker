@@ -35,13 +35,12 @@ sourcer "composeCmd"
 sourcer "composeUp"
 sourcer "mysqlDown"
 sourcer "minioDown"
-sourcer "workspaceDown"
 sourcer "dockerHost"
 sourcer "helpers.applicationRegistry"
 
 resolveDockerHost || true
 if ! ensureDockerAccess; then
-    prompt "Docker daemon is not reachable." "Start Docker and retry deletion. Application files were not removed." false
+    prompt "OrbStack's Docker daemon is not reachable." "Open OrbStack and retry deletion. Application files were not removed." false
 fi
 
 if ! docker compose version >/dev/null 2>&1; then
@@ -153,8 +152,6 @@ else
 fi
 
 echo -e "\nDeleted application files."
-
-workspaceDown "$escaped_application_name"
 
 # * Display a success message
 echo -e "\nApplication $application_name deleted successfully!\n"

@@ -1,11 +1,3 @@
-isMacOS() {
-    [[ "$(uname -s)" == "Darwin" ]]
-}
-
-isLinux() {
-    [[ "$(uname -s)" == "Linux" ]]
-}
-
 isNullLike() {
     local value="${1:-}"
     local lowered
@@ -46,19 +38,6 @@ normalizePathForHost() {
         normalized=$(eval echo "$normalized" 2>/dev/null || echo "$normalized")
     fi
 
-    local user_home
-    user_home=$(resolveUserHomePath "$target_user")
-
-    if [[ -n "$user_home" && -n "$target_user" ]]; then
-        if isMacOS && [[ "$normalized" == "/home/$target_user"* ]]; then
-            normalized="$user_home${normalized#/home/$target_user}"
-        fi
-
-        if isLinux && [[ "$normalized" == "/Users/$target_user"* ]]; then
-            normalized="$user_home${normalized#/Users/$target_user}"
-        fi
-    fi
-
     echo "$normalized"
 }
 
@@ -75,32 +54,16 @@ resolveUserGroup() {
 }
 
 sedi() {
-    if isMacOS; then
-        sed -i '' "$@"
-    else
-        sed -i "$@"
-    fi
+    sed -i '' "$@"
 }
 
-# Normalizes DEV_EDITOR into "zed", "vsc", or "" (disabled).
-# Falls back to the legacy USE_VSC toggle when DEV_EDITOR is absent.
+# Normalizes DEV_EDITOR into "zed" or "" (disabled).
 resolveDevEditor() {
     local editor
     editor=$(printf '%s' "${DEV_EDITOR:-}" | tr '[:upper:]' '[:lower:]')
 
-    case "$editor" in
-        zed)
-            echo "zed"
-            return 0
-            ;;
-        vsc|vscode|code|vscodium)
-            echo "vsc"
-            return 0
-            ;;
-    esac
-
-    if isNullLike "$editor" && [[ "${USE_VSC:-}" == "true" ]]; then
-        echo "vsc"
+    if [[ "$editor" == "zed" ]]; then
+        echo "zed"
         return 0
     fi
 

@@ -31,11 +31,7 @@ source $lara_stacker_dir/.env
 sourcer "dockerHost"
 resolveDockerHost || true
 if ! ensureDockerAccess; then
-    if [[ "$EUID" -eq 0 ]]; then
-        prompt "Docker daemon is not reachable." "Try running without sudo: [./lara-stacker.sh]" false
-    else
-        prompt "Docker daemon is not reachable." "Start Docker (or fix your Docker Desktop socket) and try again." false
-    fi
+    prompt "OrbStack's Docker daemon is not reachable." "Open OrbStack and run Lara-Stacker without sudo." false
 fi
 
 sourcer "composeCmd"
@@ -44,7 +40,7 @@ sourcer "composeDown"
 composeDown
 
 if [[ $? -ne 0 ]]; then
-    prompt "Failed to stop the Docker container." "Check Docker daemon and socket permissions, then retry." false
+    prompt "Failed to stop the container stack." "Check OrbStack and its socket, then retry." false
 fi
 
 echo -e "\nDocker container is stopped."

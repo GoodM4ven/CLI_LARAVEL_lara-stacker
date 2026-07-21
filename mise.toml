@@ -1,0 +1,15 @@
+[plugins]
+php = "https://github.com/verzly/mise-php#latest"
+
+[tools]
+node = "22"
+php = "8.4"
+pnpm = "11"
+
+[env]
+_.path = ["{{env.HOME}}/.composer/vendor/bin"]
+
+# Source-built PHP lets PIE install the extensions Composer and Lara-Stacker need.
+# The plugin installs PHP's macOS build dependencies; setup.sh provides ImageMagick.
+[env._.php]
+pie_extensions = "phpredis/phpredis imagick/imagick"

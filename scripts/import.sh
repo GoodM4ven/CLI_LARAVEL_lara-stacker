@@ -48,11 +48,9 @@ sourcer "envUp"
 sourcer "mysqlUp"
 sourcer "minioUp"
 sourcer "viteUp"
-sourcer "miseUp"
 sourcer "xdebugUp"
 sourcer "trustHttps"
 sourcer "opinionatedUp"
-sourcer "workspaceUp"
 sourcer "sessionTable"
 sourcer "dockerHost"
 sourcer "hostTools"
@@ -110,13 +108,13 @@ refreshDependenciesAfterImport() {
 
 resolveDockerHost || true
 if ! ensureDockerAccess; then
-    prompt "Docker daemon is not reachable." "Start Docker and retry application import." false
+    prompt "OrbStack's Docker daemon is not reachable." "Open OrbStack and retry application import." false
 fi
 
 # ? Get the application path from the user
 example_home_path=$(resolveUserHomePath "${USERNAME:-$USER}")
 if [[ -z "$example_home_path" ]]; then
-    example_home_path="${HOME:-/home/${USERNAME:-$USER}}"
+    example_home_path="${HOME:-/Users/${USERNAME:-$USER}}"
 fi
 echo -ne "\nEnter the full application path (e.g., $example_home_path/Code/some_laravel_app): "
 read full_directory
@@ -234,7 +232,7 @@ if [[ -f "$target_application_path/package.json" && ! -d "$target_application_pa
     fi
 fi
 
-# ? Ensure the container can see the application files (Docker Desktop sync or stale mounts)
+# ? Ensure the container can see the application files through OrbStack's bind mount
 if ! waitForApplicationInContainer "$escaped_application_name"; then
     echo -e "\nApp container couldn't see the application yet. Restarting the container...\n"
     composeDown || true
@@ -252,10 +250,8 @@ autoloadGuard "$escaped_application_name"
 # ? Rewire application configuration
 envUp "$escaped_application_name" "existing"
 viteUp "$escaped_application_name"
-miseUp "$escaped_application_name"
 xdebugUp "$escaped_application_name"
 opinionatedUp "$escaped_application_name"
-workspaceUp "$escaped_application_name"
 mysqlUp "$escaped_application_name"
 minioUp "$escaped_application_name"
 if ! appKeyUp "$escaped_application_name"; then

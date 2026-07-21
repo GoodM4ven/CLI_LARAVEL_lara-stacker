@@ -40,12 +40,7 @@ if ! command -v docker >/dev/null 2>&1; then
 fi
 
 if ! ensureDockerAccess; then
-    if [[ "$EUID" -eq 0 ]]; then
-        echo -e "\nDocker Desktop is running under your user session."
-        echo -e "Run without sudo: ./lara-stacker.sh\n"
-    else
-        echo -e "\nDocker daemon is not reachable. Start Docker and try again.\n"
-    fi
+    echo -e "\nOrbStack's Docker daemon is not reachable. Open OrbStack and try again.\n"
     echo
     echo -n "Press any key to continue..."
     read whatever
