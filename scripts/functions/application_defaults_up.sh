@@ -1,6 +1,7 @@
 applicationDefaultsUp() {
     local application_name="$1"
     local apps_root="${APPS_ROOT:-/var/www/html}"
+    local repo_dir="${lara_stacker_dir:-$PWD}"
 
     if declare -F normalizePathForHost >/dev/null 2>&1; then
         apps_root=$(normalizePathForHost "$apps_root" "${USERNAME:-}")
@@ -47,6 +48,9 @@ applicationDefaultsUp() {
         || ! runAsHostUser composer show pestphp/pest-plugin-laravel --working-dir="$application_path" >/dev/null 2>&1; then
         prompt "Pest was not installed by laravel new." "Update laravel/installer globally and retry application creation." false
     fi
+
+    runAsHostUser php "$repo_dir/scripts/helpers/install_reverb_dev.php" "$application_path" \
+        || prompt "Failed to add Reverb to Composer's dev workflow." "Review composer.json and retry application creation." false
 
     echo -e "\nVerified SQLite, Boost, Pest, Reverb, and the MinIO filesystem adapter."
 }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 $applicationPath = rtrim($argv[1] ?? "", DIRECTORY_SEPARATOR);
 $routesPath = $applicationPath . "/routes/web.php";
 $welcomePath = $applicationPath . "/resources/views/welcome.blade.php";
+$appJsPath = $applicationPath . "/resources/js/app.js";
 
 if (!is_file($routesPath) || !is_file($welcomePath)) {
     fwrite(STDERR, "Missing generated Laravel routes or welcome view.\n");
@@ -39,6 +40,7 @@ if (!str_contains($routes, $routeMarker)) {
         ->group(function (): void {
             Route::get('/', 'index')->name('lara-stacker.diagnostics');
             Route::post('/lara-stacker/diagnostics', 'run')->name('lara-stacker.diagnostics.run');
+            Route::post('/lara-stacker/welcome/ping', 'ping')->name('lara-stacker.welcome.ping');
         });
     PHP;
 
@@ -51,6 +53,14 @@ if (!str_contains($routes, $routeMarker)) {
     }
 
     file_put_contents($routesPath, $diagnosticRoutes . PHP_EOL);
+} elseif (!str_contains($routes, "lara-stacker.welcome.ping")) {
+    $diagnosticRoute = "            Route::post('/lara-stacker/diagnostics', 'run')->name('lara-stacker.diagnostics.run');";
+    $pingRoute = "            Route::post('/lara-stacker/welcome/ping', 'ping')->name('lara-stacker.welcome.ping');";
+
+    if (str_contains($routes, $diagnosticRoute)) {
+        $routes = str_replace($diagnosticRoute, $diagnosticRoute . PHP_EOL . $pingRoute, $routes);
+        file_put_contents($routesPath, $routes);
+    }
 }
 
 $welcome = file_get_contents($welcomePath);
@@ -67,6 +77,7 @@ if (!str_contains($welcome, $viewMarker)) {
                             :round-trip="$laraStackerRoundTrip"
                             :token="$laraStackerToken"
                             :checked-at="$laraStackerCheckedAt"
+                            :reverb-enabled="$laraStackerReverbEnabled"
                         />
     BLADE;
 
@@ -77,4 +88,26 @@ if (!str_contains($welcome, $viewMarker)) {
 
     $welcome = str_replace($title, $title . PHP_EOL . $diagnostics, $welcome);
     file_put_contents($welcomePath, $welcome);
+}
+
+if (is_file($appJsPath)) {
+    $appJs = (string) file_get_contents($appJsPath);
+    $welcomeImport = "import './lara-stacker-welcome';";
+    $echoImport = "import './echo';";
+
+    if (!str_contains($appJs, $welcomeImport)) {
+        if (str_contains($appJs, $echoImport)) {
+            $appJs = str_replace($echoImport, $echoImport . PHP_EOL . $welcomeImport, $appJs);
+        } else {
+            $appJs = $welcomeImport . PHP_EOL . $appJs;
+        }
+
+        file_put_contents($appJsPath, $appJs);
+    } elseif (str_contains($appJs, $echoImport)
+        && strpos($appJs, $welcomeImport) < strpos($appJs, $echoImport)
+    ) {
+        $appJs = str_replace($welcomeImport . PHP_EOL, '', $appJs, 1);
+        $appJs = str_replace($echoImport, $echoImport . PHP_EOL . $welcomeImport, $appJs, 1);
+        file_put_contents($appJsPath, $appJs);
+    }
 }

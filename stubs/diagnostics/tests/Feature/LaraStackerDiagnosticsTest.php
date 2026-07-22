@@ -1,6 +1,8 @@
 <?php
 
+use App\Events\LaraStackerWelcomePing;
 use App\Services\LaraStackerDiagnostics;
+use Illuminate\Support\Facades\Event;
 
 function healthyLaraStackerResults(): array
 {
@@ -36,4 +38,18 @@ it('runs the service round trips with a valid token', function (): void {
     $this->post('/lara-stacker/diagnostics', ['_diagnostics_token' => $token])
         ->assertOk()
         ->assertSee('Permanent mail and object created');
+});
+
+it('broadcasts a welcome ping with a valid token', function (): void {
+    Event::fake([LaraStackerWelcomePing::class]);
+    $token = hash_hmac('sha256', 'lara-stacker-diagnostics', (string) config('app.key'));
+
+    $this->postJson('/lara-stacker/welcome/ping', [
+        '_diagnostics_token' => $token,
+        'sender' => 'welcome.test',
+        'message' => 'Lara-Stacker welcome ping',
+        'page_id' => 'test-page',
+    ])->assertOk()->assertJson(['sent' => true]);
+
+    Event::assertDispatched(LaraStackerWelcomePing::class);
 });

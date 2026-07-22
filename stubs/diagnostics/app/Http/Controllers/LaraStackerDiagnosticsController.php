@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\LaraStackerWelcomePing;
 use App\Services\LaraStackerDiagnostics;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 use Illuminate\View\View;
 
 class LaraStackerDiagnosticsController extends Controller
@@ -20,6 +22,19 @@ class LaraStackerDiagnosticsController extends Controller
         return $this->view($diagnostics, $diagnostics->runAll(), true);
     }
 
+    public function ping(Request $request): JsonResponse
+    {
+        abort_unless(hash_equals($this->token(), (string) $request->input('_diagnostics_token')), 419);
+
+        broadcast(new LaraStackerWelcomePing(
+            sender: trim((string) $request->input('sender', 'a welcome page')),
+            message: trim((string) $request->input('message', 'Lara-Stacker ping')),
+            pageId: trim((string) $request->input('page_id', '')),
+        ));
+
+        return response()->json(['sent' => true]);
+    }
+
     /** @param array<string, array<string, mixed>> $results */
     private function view(LaraStackerDiagnostics $diagnostics, array $results, bool $roundTrip): View
     {
@@ -29,6 +44,8 @@ class LaraStackerDiagnosticsController extends Controller
             'laraStackerRoundTrip' => $roundTrip,
             'laraStackerToken' => $this->token(),
             'laraStackerCheckedAt' => now(),
+            'laraStackerReverbEnabled' => config('broadcasting.default') === 'reverb'
+                && filled(config('broadcasting.connections.reverb.key')),
         ]);
     }
 

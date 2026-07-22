@@ -356,16 +356,18 @@ envUp() {
     set_env_var_in_group "VITE_DEV_SERVER_URL" "https://${vite_domain}${https_suffix}" "${vite_group[@]}"
 
     if grep -Eq '^[[:space:]]*BROADCAST_CONNECTION=reverb$|^[[:space:]]*REVERB_APP_KEY=' "$env_file"; then
+        # PHP runs inside OrbStack; broadcast writes use the host Reverb process,
+        # while browser clients use the public Caddy HTTPS endpoint below.
         set_env_var_in_group "BROADCAST_CONNECTION" "reverb" "${reverb_group[@]}"
-        set_env_var_in_group "REVERB_HOST" "$app_domain" "${reverb_group[@]}"
-        set_env_var_in_group "REVERB_PORT" "$https_port" "${reverb_group[@]}"
-        set_env_var_in_group "REVERB_SCHEME" "https" "${reverb_group[@]}"
+        set_env_var_in_group "REVERB_HOST" "host.docker.internal" "${reverb_group[@]}"
+        set_env_var_in_group "REVERB_PORT" "8080" "${reverb_group[@]}"
+        set_env_var_in_group "REVERB_SCHEME" "http" "${reverb_group[@]}"
         set_env_var_in_group "REVERB_SERVER_HOST" "0.0.0.0" "${reverb_group[@]}"
         set_env_var_in_group "REVERB_SERVER_PORT" "8080" "${reverb_group[@]}"
         set_env_var_in_group "VITE_REVERB_APP_KEY" '${REVERB_APP_KEY}' "${reverb_group[@]}"
-        set_env_var_in_group "VITE_REVERB_HOST" '${REVERB_HOST}' "${reverb_group[@]}"
-        set_env_var_in_group "VITE_REVERB_PORT" '${REVERB_PORT}' "${reverb_group[@]}"
-        set_env_var_in_group "VITE_REVERB_SCHEME" '${REVERB_SCHEME}' "${reverb_group[@]}"
+        set_env_var_in_group "VITE_REVERB_HOST" "$app_domain" "${reverb_group[@]}"
+        set_env_var_in_group "VITE_REVERB_PORT" "$https_port" "${reverb_group[@]}"
+        set_env_var_in_group "VITE_REVERB_SCHEME" "https" "${reverb_group[@]}"
     fi
 
     echo -e "\nRewired the application's .env file to match host-exposed services."

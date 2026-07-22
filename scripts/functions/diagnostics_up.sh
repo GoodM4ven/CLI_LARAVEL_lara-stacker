@@ -12,13 +12,17 @@ diagnosticsUp() {
 
     mkdir -p \
         "$application_path/app/Http/Controllers" \
+        "$application_path/app/Events" \
         "$application_path/app/Services" \
         "$application_path/resources/views/components" \
+        "$application_path/resources/js" \
         "$application_path/tests/Feature"
 
     cp "$stub_root/app/Http/Controllers/LaraStackerDiagnosticsController.php" "$application_path/app/Http/Controllers/"
+    cp "$stub_root/app/Events/LaraStackerWelcomePing.php" "$application_path/app/Events/"
     cp "$stub_root/app/Services/LaraStackerDiagnostics.php" "$application_path/app/Services/"
     cp "$stub_root/resources/views/components/lara-stacker-diagnostics.blade.php" "$application_path/resources/views/components/"
+    cp "$stub_root/resources/js/lara-stacker-welcome.js" "$application_path/resources/js/"
     cp "$stub_root/tests/Feature/LaraStackerDiagnosticsTest.php" "$application_path/tests/Feature/"
 
     runAsHostUser php "$repo_dir/scripts/helpers/install_diagnostics.php" "$application_path" \

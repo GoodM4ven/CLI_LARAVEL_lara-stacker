@@ -78,6 +78,7 @@ This intentionally delegates Boost and Pest setup to Laravel's current official 
 - installs `league/flysystem-aws-s3-v3` for MinIO;
 - preserves Laravel's original `.env` line ordering while doing some required **changes**;
 - preserves Laravel's Vite `server.watch.ignored` setting;
+- adds `php artisan reverb:start --host=0.0.0.0 --port=8080` to the generated `composer dev` process group;
 - adds the compact diagnostics panel and its Pest coverage.
 
 ### Services
@@ -88,6 +89,8 @@ This intentionally delegates Boost and Pest setup to Laravel's current official 
 - `Tailscale > Funnel` — install/start, inspect, or stop the optional Funnel container.
 
 The welcome-page diagnostics show all four service states. “Test all” performs MySQL and Redis round trips with temporary data, sends an email that remains visible in Mailpit, and writes a timestamped file that remains in MinIO. Mailpit and MinIO cards link to their dashboards.
+
+When Reverb is enabled, the same panel includes **Ping open pages**. Clicking it broadcasts a small live event over the public `lara-stacker.welcome` channel; every other open welcome page for that application briefly highlights the sender and timestamp. The generated project includes the Echo client and Reverb event wiring automatically. Run `composer dev` (which starts Reverb with the other development processes), or leave `php artisan reverb:start --host=0.0.0.0 --port=8080` running from that application's directory before testing; Lara-Stacker and Caddy expose its `/app` websocket endpoint through the application's HTTPS host.
 
 ### Container
 
@@ -114,6 +117,7 @@ The welcome-page diagnostics show all four service states. “Test all” perfor
 - `RESTART_UNLESS_STOPPED` — persistent service restart policy.
 - `PHP_VERSION` — official PHP-FPM image version; keep it aligned with PHP in this repository's `mise.toml`.
 - `CONTAINER_APT_MIRROR` / `CONTAINER_APT_SECURITY_MIRROR` — Debian mirrors used only while building the app image.
+- Reverb server settings use `REVERB_HOST=host.docker.internal`, `REVERB_PORT=8080`, and `REVERB_SCHEME=http` for PHP inside the container; `VITE_REVERB_HOST`, `VITE_REVERB_PORT`, and `VITE_REVERB_SCHEME` retain the public HTTPS browser endpoint.
 - `CADDY_HTTP_PORT` / `CADDY_HTTPS_PORT`
 - `MYSQL_PORT`, `REDIS_PORT`
 - `MAILPIT_SMTP_PORT` / `MAILPIT_UI_PORT`
