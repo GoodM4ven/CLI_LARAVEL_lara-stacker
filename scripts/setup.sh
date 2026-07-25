@@ -23,7 +23,7 @@ if ! command -v brew >/dev/null 2>&1; then
 fi
 
 echo "Installing Lara-Stacker's native macOS dependencies..."
-brew install imagemagick mkcert nss
+brew install cocoapods imagemagick mkcert nss watchman
 if [[ -d /Applications/OrbStack.app || -d "$user_home/Applications/OrbStack.app" ]]; then
     echo "OrbStack is already installed."
 else

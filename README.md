@@ -45,7 +45,14 @@ Fill the environment variables in `.env`, then run:
 ./lara-stacker.sh
 ```
 
-`setup.sh` installs Homebrew when absent, OrbStack, mise, the native PHP build dependencies, mkcert, and Zed when enabled. It installs this repository's mise tools, trusts the local HTTPS authority, and runs `composer global require laravel/installer`.
+`setup.sh` installs Homebrew when absent, OrbStack, mise, the native PHP build dependencies, mobile development requirements, mkcert, and Zed when enabled. It installs this repository's mise tools, trusts the local HTTPS authority, and runs `composer global require laravel/installer`.
+
+For NativePHP iOS development, after installing or updating Xcode, make its full developer toolchain active so `xcrun` can find Simulator utilities:
+
+```bash
+sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer
+sudo xcodebuild -runFirstLaunch
+```
 
 It also makes the global Laravel installer available to ordinary shells by adding `$HOME/.composer/vendor/bin` to `PATH` when no existing shell file already does so. Open a new terminal after first-time setup.
 
