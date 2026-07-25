@@ -20,6 +20,7 @@ composeUp() {
             current_build_hash=$(
                 shasum -a 256 \
                     "$repo_dir/configurations/Dockerfile" \
+                    "$repo_dir/configurations/memory.ini" \
                     "$repo_dir/configurations/xdebug.ini" \
                     "$repo_dir/configurations/opcache.ini" \
                     2>/dev/null | shasum -a 256 | awk '{print $1}'

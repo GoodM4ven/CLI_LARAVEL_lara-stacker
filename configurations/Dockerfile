@@ -73,6 +73,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 
 RUN docker-php-ext-enable imagick
 
+COPY ./memory.ini /usr/local/etc/php/conf.d/05-memory.ini
 COPY ./xdebug.ini /usr/local/etc/php/conf.d/99-xdebug.ini
 COPY ./opcache.ini /usr/local/etc/php/conf.d/10-opcache.ini
 

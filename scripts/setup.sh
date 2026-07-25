@@ -71,6 +71,24 @@ cd "$repo_dir"
 php_cmd=$("$mise_bin" which php)
 composer_cmd=$("$mise_bin" which composer)
 
+# Raise the host PHP memory_limit to 512M to avoid fatal "Allowed memory size of
+# X bytes exhausted" errors during Composer/artisan work with large dependencies.
+# The verzly/mise-php plugin has no native ini hook, so we drop a drop-in into
+# PHP's scan directory (parsed via `php --ini`) idempotently.
+host_memory_ini_target="memory_limit = 512M"
+host_memory_ini_name="lara-stacker-memory.ini"
+host_scan_dir=$("$php_cmd" --ini 2>/dev/null | sed -n 's/^Scan for additional \.ini files in: *//p' | tail -n 1)
+if [[ -n "$host_scan_dir" && -d "$host_scan_dir" ]]; then
+    host_memory_ini_path="$host_scan_dir/$host_memory_ini_name"
+    host_current=""
+    if [[ -f "$host_memory_ini_path" ]]; then
+        host_current=$(grep -E '^memory_limit' "$host_memory_ini_path" 2>/dev/null | tail -n 1 || true)
+    fi
+    if [[ "$host_current" != "$host_memory_ini_target" ]]; then
+        printf '%s\n' "$host_memory_ini_target" >"$host_memory_ini_path"
+    fi
+fi
+
 echo "Installing the Laravel installer globally for this macOS user..."
 "$php_cmd" "$composer_cmd" global require laravel/installer --with-all-dependencies --no-interaction
 
